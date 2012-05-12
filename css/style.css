@@ -4,8 +4,6 @@ body {
 
 canvas {
     background-color: #555;
-    width: 682px; 
-    height: 512px;
     position: fixed;
     top: 50%;
     left: 50%;

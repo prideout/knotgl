@@ -24,6 +24,7 @@ void main(void)
     vPosition = (Modelview * Position).xyz;
     vNormal = NormalMatrix * Normal;
     gl_Position = Projection * Modelview * Position;
+    gl_Position = Position;
 }
 </script>
 
@@ -39,7 +40,7 @@ void main()
     highp float cosTheta = abs(dot(I, N));
     highp float fresnel = pow(1.0 - cosTheta, 3.0);
     highp float depth = gl_FrontFacing ? gl_FragCoord.z : -gl_FragCoord.z;
-    gl_FragColor = vec4(depth, fresnel, 0, 0);
+    gl_FragColor = vec4(0,0,0,1); // vec4(depth, fresnel, 0, 0);
 }
 </script>
 
@@ -68,7 +69,7 @@ function glerr(msg)
 
 <!-- WEB PAGE BODY -->
 <body onload="window.AppInit();">
-  <canvas>
+  <canvas width="682" height="512" style="width: 682px; height: 512px;">
   </canvas>
 </body>
 </html>
