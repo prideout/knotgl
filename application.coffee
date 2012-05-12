@@ -1,13 +1,16 @@
+root = exports ? this
+
 theta = 0
 projection = mat4.create()
 modelview = mat4.create()
 normalMatrix = mat3.create()
 
 AppRender = ->
+  gl = root.gl
   gl.clearColor(0.7,0.5,0.5,1)
   gl.clear(gl.COLOR_BUFFER_BIT)
 
-AppInit = ->
+root.AppInit = ->
   canvas = $("canvas")
   w = parseInt(canvas.css('width'))
   h = parseInt(canvas.css('height'))
@@ -42,3 +45,4 @@ AppInit = ->
 
   canvas.width = canvas.clientWidth
   canvas.height = canvas.clientHeight
+  root.gl = gl
