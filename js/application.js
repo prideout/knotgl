@@ -39,7 +39,7 @@
   };
 
   Render = function() {
-    var aspect, eye, far, fov, gl, model, modelview, near, normalMatrix, offset, program, projection, stride, target, up, view;
+    var aspect, canvas, eye, far, fov, gl, h, model, modelview, near, normalMatrix, offset, program, projection, stride, target, up, view, w;
     projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
     view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
     model = mat4.create();
@@ -50,10 +50,13 @@
     normalMatrix = mat4.toMat3(modelview);
     theta += 0.02;
     gl = root.gl;
+    canvas = $("canvas");
+    w = parseInt(canvas.css('width'));
+    h = parseInt(canvas.css('height'));
     program = programs.vignette;
     gl.disable(gl.DEPTH_TEST);
     gl.useProgram(program);
-    gl.uniform2f(program.viewport, 682, 512);
+    gl.uniform2f(program.viewport, w, h);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbos.bigtri);
     gl.enableVertexAttribArray(VERTEXID);
     gl.vertexAttribPointer(VERTEXID, 2, gl.FLOAT, false, stride = 8, 0);
