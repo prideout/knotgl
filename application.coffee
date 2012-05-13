@@ -76,8 +76,8 @@ InitBuffers = ->
       vertex[5] = n[2]
       vertex[6] = u
       vertex[7] = v
-
-  console.log "#{i} floats generated from #{Slices} slices and #{Stacks} stacks."
+  msg = "#{i} floats generated from #{Slices} slices and #{Stacks} stacks."
+  console.log msg # Ctrl+Shift+J to see console, Alt+Cmd+J on a Mac.
   gl = root.gl
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
@@ -100,10 +100,12 @@ root.AppInit = ->
   canvas.css('margin-left', -w/2)
   canvas.css('margin-top', -h/2)
   root.gl = gl = canvas.get(0).getContext("experimental-webgl", { antialias: true } )
-
   if not gl.getExtension("OES_texture_float")
     glerr("Your browser does not support floating-point textures.")
+  if not gl.getExtension("OES_standard_derivatives")
+    glerr("Your browser does not support GLSL derivatives.")
 
+  # Create Vertex Data
   InitBuffers()
 
   # Create Program
@@ -117,7 +119,6 @@ root.AppInit = ->
   gl.linkProgram(program)
   if not gl.getProgramParameter(program, gl.LINK_STATUS)
     glerr('Could not link shaders')
-
   gl.useProgram(program)
   program.projectionUniform = gl.getUniformLocation(program, "Projection")
   program.modelviewUniform = gl.getUniformLocation(program, "Modelview")
