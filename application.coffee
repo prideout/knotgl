@@ -7,8 +7,8 @@ NORMAL = 1
 TEXCOORD = 2
 
 # Global Constants
-Slices = 16 # Cross-Section
-Stacks = 64 # Longitunidal
+Slices = 32 # Cross-Section
+Stacks = 96 # Longitunidal
 TWOPI = 2 * Math.PI
 
 # Various Globals
@@ -28,7 +28,7 @@ Render = ->
   model = mat4.create()
   modelview = mat4.create()
   mat4.identity(model)
-  mat4.rotateZ(model, theta)
+  mat4.rotateY(model, theta)
   mat4.multiply(view, model, modelview)
   normalMatrix = mat4.toMat3(modelview)
   theta += 0.02
@@ -73,11 +73,11 @@ InitBuffers = ->
   rawBuffer = new Float32Array(Slices * Stacks * 8)
   [slice, i] = [-1, 0]
   BmA = CmA = n = N = vec3.create()
-  EPSILON = 0.001
+  EPSILON = 0.00001
   while ++slice < Slices
-    [v, stack] = [slice * TWOPI / Slices, -1]
+    [v, stack] = [slice * TWOPI / (Slices-1), -1]
     while ++stack < Stacks
-      u = stack * TWOPI / Stacks
+      u = stack * TWOPI / (Stacks-1)
       A = p = MobiusTube(u, v)
       B = MobiusTube(u + EPSILON, v)
       C = MobiusTube(u, v + EPSILON)

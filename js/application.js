@@ -12,9 +12,9 @@
 
   TEXCOORD = 2;
 
-  Slices = 16;
+  Slices = 32;
 
-  Stacks = 64;
+  Stacks = 96;
 
   TWOPI = 2 * Math.PI;
 
@@ -45,7 +45,7 @@
     model = mat4.create();
     modelview = mat4.create();
     mat4.identity(model);
-    mat4.rotateZ(model, theta);
+    mat4.rotateY(model, theta);
     mat4.multiply(view, model, modelview);
     normalMatrix = mat4.toMat3(modelview);
     theta += 0.02;
@@ -85,11 +85,11 @@
     rawBuffer = new Float32Array(Slices * Stacks * 8);
     _ref1 = [-1, 0], slice = _ref1[0], i = _ref1[1];
     BmA = CmA = n = N = vec3.create();
-    EPSILON = 0.001;
+    EPSILON = 0.00001;
     while (++slice < Slices) {
-      _ref2 = [slice * TWOPI / Slices, -1], v = _ref2[0], stack = _ref2[1];
+      _ref2 = [slice * TWOPI / (Slices - 1), -1], v = _ref2[0], stack = _ref2[1];
       while (++stack < Stacks) {
-        u = stack * TWOPI / Stacks;
+        u = stack * TWOPI / (Stacks - 1);
         A = p = MobiusTube(u, v);
         B = MobiusTube(u + EPSILON, v);
         C = MobiusTube(u, v + EPSILON);
