@@ -43,6 +43,25 @@ void main()
 }
 </script>
 
+<!-- VERTEX SHADER -->
+<script id="VS-Vignette" type="x-shader/x-vertex">
+attribute vec2 VertexID;
+void main(void)
+{
+    vec2 p = 3.0 - 4.0 * VertexID;
+    gl_Position = vec4(p, 0, 1);
+}
+</script>
+
+<!-- FRAGMENT SHADER -->
+<script id="FS-Vignette" type="x-shader/x-fragment">
+uniform highp vec2 Viewport;
+void main()
+{
+    gl_FragColor = vec4(gl_FragCoord.xy / Viewport, 1, 1);
+}
+</script>
+
 <!-- SHADER UTILITIES -->
 <script type="text/javascript">
 function getShader(gl, id)
