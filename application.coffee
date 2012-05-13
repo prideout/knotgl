@@ -1,5 +1,12 @@
 root = exports ? this
 
+DevTips =
+  """
+  In Chrome, use Ctrl+Shift+J to see console, Alt+Cmd+J on a Mac.
+  To experiment with coffescript, try this from the console:
+  > coffee --require './js/gl-matrix-min.js'
+  """
+
 # Vertex Attribute Semantics
 VERTEXID = 0
 POSITION = 0
@@ -73,7 +80,7 @@ Render = ->
 # Evaluate a Bezier function for smooth interpolation
 GetKnotPath = (data, slices) ->
   rawBuffer = new Float32Array(data.length * slices)
-  i = 0
+  [i,j] = [0,0]
   while i < data.length - 9
     a = data[i+0...i+3]
     b = data[i+3...i+6]
@@ -86,19 +93,19 @@ GetKnotPath = (data, slices) ->
     v3 = vec3.create(v4)
     vec3.lerp(v2, b, 1/3)
     vec3.lerp(v3, b, 1/3)
-    t = 0 # from 0 to 1
-    tt = 1-t
-    α = tt*tt*tt
-    β = 3*tt*tt*t
-    γ = 3*tt*t*t
-    ε = t*t*t
-    vec3.scale(v1,α)
-    vec3.scale(v2,β)
-    vec3.scale(v3,γ)
-    vec3.scale(v4,ε)
-    p = vec3.add(vec3.add(vec3.add(v1,v2),v3),v4)
-    rawBuffer.set(p, i)
-    console.log ">> #{vec3.str(rawBuffer.subarray(i, i+3))}"
+    dt = 1 / (slices+1)
+    t = dt
+    for slice in [0...slices]
+      tt = 1-t
+      c = [tt*tt*tt,3*tt*tt*t,3*tt*t*t,t*t*t]
+      p = (vec3.create(v) for v in [v1,v2,v3,v4])
+      vec3.scale(p[ii],c[ii]) for ii in [0...4]
+      #p.reduce(a,b) -> vec3.add
+      #p = vec3.add(vec3.add(vec3.add(p[0],p[1]),p[2]),p[3]) # is there a better way?
+      rawBuffer.set(p[0], j)
+      console.log ">> #{vec3.str(rawBuffer.subarray(i, i+3))}"
+      j += 3
+      t += dt
     i += 3
 
 GetLinkPaths = (links, slices) ->
@@ -138,7 +145,7 @@ InitBuffers = ->
       rawBuffer.set([u,v], i+6)
       i += 8
   msg = "#{i} floats generated from #{Slices} slices and #{Stacks} stacks."
-  console.log msg # Ctrl+Shift+J to see console, Alt+Cmd+J on a Mac.
+  console.log msg
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
