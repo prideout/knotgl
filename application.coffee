@@ -14,17 +14,8 @@ EPSILON = 0.0001
 
 # Various Globals
 theta = 0
-programs =
-  mesh: 0
-  vignette: 0
-vbos =
-  mesh: 0
-  bigtri: 0
-uniforms =
-  projection: 0
-  modelview: 0
-  normalmatrix: 0
-  viewport: 0
+programs = {}
+vbos = {}
 
 # Shortcuts
 [sin, cos, pow, abs] = [Math.sin, Math.cos, Math.pow, Math.abs]
@@ -33,7 +24,6 @@ sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 # Main Render Loop
 Render = ->
 
-  # Compute transormation matrices and viewing parameters:
   projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)
   view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
   model = mat4.create()
@@ -45,27 +35,24 @@ Render = ->
   theta += 0.02
 
   gl = root.gl
-
-  # Issue GL commands
   gl.clearColor(0.5,0.5,0.5,1)
   gl.clear(gl.COLOR_BUFFER_BIT)
-  vbo = vbos.bigtri
-  gl.useProgram(programs.vignette)
-  gl.uniform2f(uniforms.viewport, 682, 512)
-  gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
+
+  program = programs.vignette
+  gl.useProgram(program)
+  gl.uniform2f(program.viewport, 682, 512)
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbos.bigtri)
   gl.enableVertexAttribArray(VERTEXID)
   gl.vertexAttribPointer(VERTEXID, 2, gl.FLOAT, false, stride = 8, 0)
   gl.drawArrays(gl.TRIANGLES, 0, 3)
   gl.disableVertexAttribArray(VERTEXID)
-  if gl.getError() != gl.NO_ERROR
-    glerr("OpenGL error A")
 
-  vbo = vbos.mesh
-  gl.useProgram(programs.mesh)
-  gl.uniformMatrix4fv(uniforms.projection, false, projection)
-  gl.uniformMatrix4fv(uniforms.modelview, false, modelview)
-  gl.uniformMatrix3fv(uniforms.normalmatrix, false, normalMatrix)
-  gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
+  program = programs.mesh
+  gl.useProgram(program)
+  gl.uniformMatrix4fv(program.projection, false, projection)
+  gl.uniformMatrix4fv(program.modelview, false, modelview)
+  gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbos.mesh)
   gl.enableVertexAttribArray(POSITION)
   gl.enableVertexAttribArray(NORMAL)
   gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 32, 0)
@@ -73,8 +60,9 @@ Render = ->
   gl.drawArrays(gl.TRIANGLES, 0, Slices * Stacks)
   gl.disableVertexAttribArray(POSITION)
   gl.disableVertexAttribArray(NORMAL)
+
   if gl.getError() != gl.NO_ERROR
-    glerr("OpenGL error B")
+    glerr("Render")
 
 # Create VBOs
 InitBuffers = ->
@@ -126,7 +114,7 @@ MobiusTube = (u, v) ->
   [x, y, z]
 
 # Compile and link the given shader strings and metadata
-CompileProgram = (vName, fName, attribs, unames) ->
+CompileProgram = (vName, fName, attribs, uniforms) ->
   vs = getShader(gl, vName)
   fs = getShader(gl, fName)
   program = gl.createProgram()
@@ -136,7 +124,7 @@ CompileProgram = (vName, fName, attribs, unames) ->
   gl.linkProgram(program)
   if not gl.getProgramParameter(program, gl.LINK_STATUS)
     glerr('Could not link #{vName} with #{fName}')
-  uniforms[value] = gl.getUniformLocation(program, key) for key, value of unames
+  program[value] = gl.getUniformLocation(program, key) for key, value of uniforms
   program
 
 # Initialization Function
@@ -165,12 +153,12 @@ root.AppInit = ->
     NormalMatrix: 'normalmatrix'
   programs.mesh = CompileProgram("VS-Scene", "FS-Scene", attribs, unif)
 
-  # Compile Vignette Progra
+  # Compile Vignette Program
   attribs =
     VertexID: VERTEXID
-  unames =
+  uniforms =
     Viewport: 'viewport'
-  programs.vignette = CompileProgram("VS-Vignette", "FS-Vignette", attribs, unames)
+  programs.vignette = CompileProgram("VS-Vignette", "FS-Vignette", attribs, uniforms)
 
   gl.disable(gl.CULL_FACE)
   gl.disable(gl.DEPTH_TEST)

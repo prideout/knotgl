@@ -55,10 +55,15 @@ void main(void)
 
 <!-- FRAGMENT SHADER -->
 <script id="FS-Vignette" type="x-shader/x-fragment">
-uniform highp vec2 Viewport;
+precision highp float;
+precision highp vec2;
+
+uniform vec2 Viewport;
 void main()
 {
-    gl_FragColor = vec4(gl_FragCoord.xy / Viewport, 1, 1);
+    vec2 c = gl_FragCoord.xy / Viewport;
+    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);
+    gl_FragColor = vec4(f, f, f, 1);
 }
 </script>
 
