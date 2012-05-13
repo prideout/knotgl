@@ -70,8 +70,52 @@ Render = ->
   if gl.getError() != gl.NO_ERROR
     glerr("Render")
 
+# Evaluate a Bezier function for smooth interpolation
+GetKnotPath = (data, slices) ->
+  rawBuffer = new Float32Array(data.length * slices)
+  i = 0
+  while i < data.length - 9
+    a = data[i+0...i+3]
+    b = data[i+3...i+6]
+    c = data[i+6...i+9]
+    v1 = vec3.create(a)
+    v4 = vec3.create(b)
+    vec3.lerp(v1, b, 0.5)
+    vec3.lerp(v4, c, 0.5)
+    v2 = vec3.create(v1)
+    v3 = vec3.create(v4)
+    vec3.lerp(v2, b, 1/3)
+    vec3.lerp(v3, b, 1/3)
+    t = 0 # from 0 to 1
+    tt = 1-t
+    α = tt*tt*tt
+    β = 3*tt*tt*t
+    γ = 3*tt*t*t
+    ε = t*t*t
+    vec3.scale(v1,α)
+    vec3.scale(v2,β)
+    vec3.scale(v3,γ)
+    vec3.scale(v4,ε)
+    p = vec3.add(vec3.add(vec3.add(v1,v2),v3),v4)
+    rawBuffer.set(p, i)
+    console.log ">> #{vec3.str(rawBuffer.subarray(i, i+3))}"
+    i += 3
+
+GetLinkPaths = (links, slices) ->
+  GetKnotPath(link, slices) for link in links
+
 # General VBOs
 InitBuffers = ->
+
+  gl = root.gl
+
+  # Create a line loop VBO for a knot centerline
+  rawBuffer = GetLinkPaths(window.knot_data, 1)[0]
+  vbo = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
+  gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
+  vbos.knotPath = vbo
+  vbos.knotPath.count = rawBuffer.length / 3
 
   # Create positions/normals/texcoords for the tube verts
   rawBuffer = new Float32Array(Slices * Stacks * 8)
@@ -89,18 +133,12 @@ InitBuffers = ->
       CmA = vec3.subtract(C,A)
       n = vec3.cross(BmA,CmA)
       n = vec3.normalize(n)
-      [vertex, i] = [rawBuffer.subarray(i, i+8), i+8]
-      vertex[0] = p[0]
-      vertex[1] = p[1]
-      vertex[2] = p[2]
-      vertex[3] = n[0]
-      vertex[4] = n[1]
-      vertex[5] = n[2]
-      vertex[6] = u
-      vertex[7] = v
+      rawBuffer.set(p, i)
+      rawBuffer.set(n, i+3)
+      rawBuffer.set([u,v], i+6)
+      i += 8
   msg = "#{i} floats generated from #{Slices} slices and #{Stacks} stacks."
   console.log msg # Ctrl+Shift+J to see console, Alt+Cmd+J on a Mac.
-  gl = root.gl
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
