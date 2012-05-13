@@ -7,10 +7,9 @@ NORMAL = 1
 TEXCOORD = 2
 
 # Global Constants
-Slices = 4
-Stacks = 4
+Slices = 16 # Cross-Section
+Stacks = 64 # Longitunidal
 TWOPI = 2 * Math.PI
-EPSILON = 0.0001
 
 # Various Globals
 theta = 0
@@ -35,10 +34,9 @@ Render = ->
   theta += 0.02
 
   gl = root.gl
-  gl.clearColor(0.5,0.5,0.5,1)
-  gl.clear(gl.COLOR_BUFFER_BIT)
 
   program = programs.vignette
+  gl.disable(gl.DEPTH_TEST)
   gl.useProgram(program)
   gl.uniform2f(program.viewport, 682, 512)
   gl.bindBuffer(gl.ARRAY_BUFFER, vbos.bigtri)
@@ -46,6 +44,9 @@ Render = ->
   gl.vertexAttribPointer(VERTEXID, 2, gl.FLOAT, false, stride = 8, 0)
   gl.drawArrays(gl.TRIANGLES, 0, 3)
   gl.disableVertexAttribArray(VERTEXID)
+
+  gl.clear(gl.DEPTH_BUFFER_BIT)
+  gl.enable(gl.DEPTH_TEST)
 
   program = programs.mesh
   gl.useProgram(program)
@@ -57,18 +58,22 @@ Render = ->
   gl.enableVertexAttribArray(NORMAL)
   gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 32, 0)
   gl.vertexAttribPointer(NORMAL, 3, gl.FLOAT, false, stride = 32, offset = 12)
-  gl.drawArrays(gl.TRIANGLES, 0, Slices * Stacks)
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.faces)
+  gl.drawElements(gl.TRIANGLES, vbos.faces.count, gl.UNSIGNED_SHORT, 0)
   gl.disableVertexAttribArray(POSITION)
   gl.disableVertexAttribArray(NORMAL)
 
   if gl.getError() != gl.NO_ERROR
     glerr("Render")
 
-# Create VBOs
+# General VBOs
 InitBuffers = ->
+
+  # Create positions/normals/texcoords for the tube verts
   rawBuffer = new Float32Array(Slices * Stacks * 8)
   [slice, i] = [-1, 0]
-  BmA = CmA = n = vec3.create()
+  BmA = CmA = n = N = vec3.create()
+  EPSILON = 0.001
   while ++slice < Slices
     [v, stack] = [slice * TWOPI / Slices, -1]
     while ++stack < Stacks
@@ -76,10 +81,10 @@ InitBuffers = ->
       A = p = MobiusTube(u, v)
       B = MobiusTube(u + EPSILON, v)
       C = MobiusTube(u, v + EPSILON)
-      vec3.subtract(B,A,BmA)
-      vec3.subtract(C,A,CmA)
-      vec3.cross(BmA,CmA,n)
-      vec3.normalize(n,n)
+      BmA = vec3.subtract(B,A)
+      CmA = vec3.subtract(C,A)
+      n = vec3.cross(BmA,CmA)
+      n = vec3.normalize(n)
       [vertex, i] = [rawBuffer.subarray(i, i+8), i+8]
       vertex[0] = p[0]
       vertex[1] = p[1]
@@ -97,7 +102,31 @@ InitBuffers = ->
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
   vbos.mesh = vbo
 
-  # Fullscreen triangles are better than fullscreen quads.
+  # Create the index buffer for the tube faces
+  faceCount = (Slices - 1) * Stacks * 2
+  rawBuffer = new Uint16Array(faceCount * 3)
+  [i, ptr, v] = [0, 0, 0]
+  while ++i < Slices
+    j = -1
+    while ++j < Stacks
+      next = (j + 1) % Stacks
+      tri = rawBuffer.subarray(ptr+0, ptr+3)
+      tri[0] = v+next+Stacks
+      tri[1] = v+next
+      tri[2] = v+j
+      tri = rawBuffer.subarray(ptr+3, ptr+6)
+      tri[0] = v+j
+      tri[1] = v+j+Stacks
+      tri[2] = v+next+Stacks
+      ptr += 6
+    v += Stacks
+  vbo = gl.createBuffer()
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbo)
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
+  vbos.faces = vbo
+  vbos.faces.count = rawBuffer.length
+
+  # Create a fullscreen triangle
   corners = [ -1, 3, -1, -1, 3, -1]
   rawBuffer = new Float32Array(corners)
   vbo = gl.createBuffer()
@@ -161,7 +190,6 @@ root.AppInit = ->
   programs.vignette = CompileProgram("VS-Vignette", "FS-Vignette", attribs, uniforms)
 
   gl.disable(gl.CULL_FACE)
-  gl.disable(gl.DEPTH_TEST)
   if gl.getError() != gl.NO_ERROR
     glerr("OpenGL error during init")
 

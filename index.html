@@ -22,24 +22,52 @@ varying vec3 vNormal;
 void main(void)
 {
     vPosition = (Modelview * Position).xyz;
-    vNormal = NormalMatrix * Normal;
+    vNormal = -(NormalMatrix * Normal);
     gl_Position = Projection * Modelview * Position;
 }
 </script>
 
 <!-- FRAGMENT SHADER -->
 <script id="FS-Scene" type="x-shader/x-fragment">
-varying highp vec3 vNormal;
-varying highp vec3 vPosition;
+precision highp float;
+precision highp vec3;
+varying vec3 vNormal;
+varying vec3 vPosition;
+
+vec3 LightPosition = vec3(0.25, 0.25, 1.0);
+vec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);
+vec3 SpecularMaterial = vec3(0.5, 0.5, 0.5);
+vec3 FrontMaterial = vec3(0.25, 0.5, 0.75);
+vec3 BackMaterial = vec3(0.75, 0.75, 0.7);
+float Shininess = 50.0;
+
 void main()
 {
-    highp vec3 N = normalize(vNormal);
-    highp vec3 P = vPosition;
-    highp vec3 I = normalize(P);
-    highp float cosTheta = abs(dot(I, N));
-    highp float fresnel = pow(1.0 - cosTheta, 3.0);
-    highp float depth = gl_FrontFacing ? gl_FragCoord.z : -gl_FragCoord.z;
-    gl_FragColor = vec4(depth, fresnel, 0, 1);
+    vec3 N = normalize(vNormal);
+    if (!gl_FrontFacing)
+        N = -N;
+        
+    vec3 L = normalize(LightPosition);
+    vec3 Eye = vec3(0, 0, 1);
+    vec3 H = normalize(L + Eye);
+    
+    float df = max(0.0, dot(N, L));
+    float sf = max(0.0, dot(N, H));
+    sf = pow(sf, Shininess);
+
+    vec3 P = vPosition;
+    vec3 I = normalize(P);
+    float cosTheta = abs(dot(I, N));
+    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);
+
+    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;
+    vec3 lighting = AmbientMaterial + df * color;
+    if (gl_FrontFacing)
+        lighting += sf * SpecularMaterial;
+
+    lighting += fresnel;
+
+    gl_FragColor = vec4(lighting,1);
 }
 </script>
 
@@ -62,7 +90,7 @@ uniform vec2 Viewport;
 void main()
 {
     vec2 c = gl_FragCoord.xy / Viewport;
-    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);
+    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.75)), 1.5);
     gl_FragColor = vec4(f, f, f, 1);
 }
 </script>
@@ -96,7 +124,7 @@ function glinfo(msg)
 
 <!-- WEB PAGE BODY -->
 <body onload="window.AppInit();">
-  <canvas width="682" height="512" style="width: 682px; height: 512px;">
+  <canvas width="1024" height="768" style="width: 1024px; height: 768px;">
   </canvas>
 </body>
 </html>
