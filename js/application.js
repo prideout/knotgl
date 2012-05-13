@@ -123,13 +123,13 @@
       while (++j < Stacks) {
         next = (j + 1) % Stacks;
         tri = rawBuffer.subarray(ptr + 0, ptr + 3);
-        tri[0] = v + next + Stacks;
-        tri[1] = v + next;
-        tri[2] = v + j;
-        tri = rawBuffer.subarray(ptr + 3, ptr + 6);
-        tri[0] = v + j;
-        tri[1] = v + j + Stacks;
         tri[2] = v + next + Stacks;
+        tri[1] = v + next;
+        tri[0] = v + j;
+        tri = rawBuffer.subarray(ptr + 3, ptr + 6);
+        tri[2] = v + j;
+        tri[1] = v + j + Stacks;
+        tri[0] = v + next + Stacks;
         ptr += 6;
       }
       v += Stacks;
