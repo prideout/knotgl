@@ -125,6 +125,20 @@ MobiusTube = (u, v) ->
   z = -0.5*sin(u/2)*pow(abs(cos(v)), 2/n)*sgn(cos(v)) + 0.125*cos(u/2)*pow(abs(sin(v)), 2/n)*sgn(sin(v))
   [x, y, z]
 
+# Compile and link the given shader strings and metadata
+CompileProgram = (vName, fName, attribs, unames) ->
+  vs = getShader(gl, vName)
+  fs = getShader(gl, fName)
+  program = gl.createProgram()
+  gl.attachShader(program, vs)
+  gl.attachShader(program, fs)
+  gl.bindAttribLocation(program, value, key) for key, value of attribs
+  gl.linkProgram(program)
+  if not gl.getProgramParameter(program, gl.LINK_STATUS)
+    glerr('Could not link #{vName} with #{fName}')
+  uniforms[value] = gl.getUniformLocation(program, key) for key, value of unames
+  program
+
 # Initialization Function
 root.AppInit = ->
   canvas = $("canvas")
@@ -142,33 +156,21 @@ root.AppInit = ->
   InitBuffers()
 
   # Compile Mesh Program
-  vs = getShader(gl, "VS-Scene")
-  fs = getShader(gl, "FS-Scene")
-  program = gl.createProgram()
-  gl.attachShader(program, vs)
-  gl.attachShader(program, fs)
-  gl.bindAttribLocation(program, POSITION, "Position")
-  gl.bindAttribLocation(program, NORMAL, "Normal")
-  gl.linkProgram(program)
-  if not gl.getProgramParameter(program, gl.LINK_STATUS)
-    glerr('Could not link shaders')
-  uniforms.projection = gl.getUniformLocation(program, "Projection")
-  uniforms.modelview = gl.getUniformLocation(program, "Modelview")
-  uniforms.normalmatrix = gl.getUniformLocation(program, "NormalMatrix")
-  programs.mesh = program
+  attribs =
+    Position: POSITION
+    Normal: NORMAL
+  unif =
+    Projection: 'projection'
+    Modelview: 'modelview'
+    NormalMatrix: 'normalmatrix'
+  programs.mesh = CompileProgram("VS-Scene", "FS-Scene", attribs, unif)
 
-  # Compile Vignette Program
-  vs = getShader(gl, "VS-Vignette")
-  fs = getShader(gl, "FS-Vignette")
-  program = gl.createProgram()
-  gl.attachShader(program, vs)
-  gl.attachShader(program, fs)
-  gl.bindAttribLocation(program, VERTEXID, "VertexID")
-  gl.linkProgram(program)
-  if not gl.getProgramParameter(program, gl.LINK_STATUS)
-    glerr('Could not link shaders')
-  uniforms.viewport = gl.getUniformLocation(program, "Viewport")
-  programs.vignette = program
+  # Compile Vignette Progra
+  attribs =
+    VertexID: VERTEXID
+  unames =
+    Viewport: 'viewport'
+  programs.vignette = CompileProgram("VS-Vignette", "FS-Vignette", attribs, unames)
 
   gl.disable(gl.CULL_FACE)
   gl.disable(gl.DEPTH_TEST)
