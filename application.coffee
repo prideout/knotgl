@@ -25,11 +25,12 @@ vbos = {}
 
 # Aliases and Monkey Patches
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
+dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 vec3.perp = (u, dest) ->
   v = vec3.create([1,0,0])
   vec3.cross(u,v,dest)
-  e = vec3.dot(dest,dest)
+  e = dot(dest,dest)
   if e < 0.01
     vec3.set(v,[0,1,0])
     vec3.cross(u,v,dest)
@@ -105,33 +106,66 @@ Render = ->
     glerr("Render")
 
 # Sweep a n-sided polygon along the given centerline
-# see "Computation of Rotation Minimizing Frame" by Wang et al
+# see "Computation of Rotation Minimizing Frame" by Wang and Jüttler
+
 GenerateTube = (centerline, n) ->
 
+  # Allocate arrays for orthonormal basis vectors
   count = centerline.length / 3
+  frameR = new Float32Array(count * 3)
+  frameS = new Float32Array(count * 3)
+  frameT = new Float32Array(count * 3)
 
-  # Allocate some arrays for vector math
-  [v1, c1] = vec3.create() for n in [0...2]
-  [r0, s0, t0] = vec3.create() for n in [0...2]
-
-  # Create a somewhat-arbitrary initial frame (r0, s0, t0)
-  [i,j] = [0,1]
-  xi = centerline.subarray(i*3, i*3+3)
-  xj = centerline.subarray(j*3, j*3+3)
-  vec3.subtract(xj, xi, t0)
-  vec3.perp(t0, s0)
-  vec3.cross(s0, t0, r0)
-
-  # Crawl through the centerline
-  [ri, si, ti] = [r0, s0, t0]
-  while i < count
-    j = (i+1) % count
+  # Obtain unit-length tangent vectors
+  i = -1
+  while ++i < count
+    j = (i+1) % (count-1)
     xi = centerline.subarray(i*3, i*3+3)
     xj = centerline.subarray(j*3, j*3+3)
-    vec3.subtract(xj, xi, v1)
-    vec3.dot(v1, v1, c1)
-    i++
+    ti = frameT.subarray(i*3, i*3+3)
+    vec3.direction(xi, xj, ti)
 
+  # Allocate some temporaries for vector math
+  [v1,  v2,  tmp] = (vec3.create() for n in [0..2])
+  [r0,  s0,  t0]  = (vec3.create() for n in [0..2])
+  [rj,  sj,  tj]  = (vec3.create() for n in [0..2])
+  [riL, siL, tiL] = (vec3.create() for n in [0..2])
+
+  # Create a somewhat-arbitrary initial frame (r0, s0, t0)
+  vec3.set(frameT.subarray(0, 3), t0)
+  vec3.perp(t0, s0)
+  vec3.cross(s0, t0, r0)
+  vec3.normalize(r0)
+  vec3.normalize(s0)
+  vec3.set(r0, frameR.subarray(0, 3))
+  vec3.set(s0, frameS.subarray(0, 3))
+
+  # Use frameT and the RMF algorithm to populate frameR and frameS
+  [i,j] = [0,1]
+  [ri, si, ti] = [r0, s0, t0]
+  while i < count
+    j = (i+1) % (count-1)
+    xi = centerline.subarray(i*3, i*3+3)
+    xj = centerline.subarray(j*3, j*3+3)
+    ti = frameT.subarray(i*3, i*3+3)
+    tj = frameT.subarray(j*3, j*3+3)
+    vec3.subtract(xj, xi, v1)
+    #console.log "#{i} A: #{vec3.str(xj)} - #{vec3.str(xi)} = #{vec3.str(v1)}"
+    c1 = dot(v1, v1)
+    vec3.scale(v1, (2/c1)*dot(v1,ri), tmp)
+    vec3.subtract(ri, tmp, riL)
+    #console.log "#{i} B: #{vec3.str(ri)} - #{vec3.str(tmp)} = #{vec3.str(riL)}"
+    vec3.scale(v1, (2/c1)*dot(v1,ti), tmp)
+    vec3.subtract(ti, tmp, tiL)
+    vec3.subtract(tj, tiL, v2)
+    c2 = dot(v2, v2)
+    vec3.scale(v2, (2/c2)*dot(v2,riL), tmp)
+    vec3.subtract(riL, tmp, rj)
+    vec3.cross(tj, rj, sj)
+    vec3.set(rj, frameR.subarray(j*3, j*3+3))
+    vec3.set(sj, frameS.subarray(j*3, j*3+3))
+    #console.log "#{i} C: #{vec3.str(rj)}, #{vec3.str(sj)}, #{vec3.str(tj)}"
+    ++i
 
 # Evaluate a Bezier function for smooth interpolation
 GetKnotPath = (data, slices) ->
@@ -176,7 +210,7 @@ InitBuffers = ->
   gl = root.gl
 
   # Create a line loop VBO for a knot centerline
-  rawBuffer = GetLinkPaths(window.knot_data, slices = 3)[0]
+  rawBuffer = GetLinkPaths(window.knot_data, slices = 2)[0]
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
