@@ -14,8 +14,8 @@ NORMAL = 1
 TEXCOORD = 2
 
 # Global Constants
-Slices = 32 # Cross-Section
-Stacks = 96 # Longitunidal
+Slices = 32 # Cross-Section Geometric LOD
+Stacks = 96 # Longitudinal Geometric LOD
 TWOPI = 2 * Math.PI
 
 # Various Globals
@@ -23,9 +23,17 @@ theta = 0
 programs = {}
 vbos = {}
 
-# Shortcuts
-[sin, cos, pow, abs] = [Math.sin, Math.cos, Math.pow, Math.abs]
+# Aliases and Monkey Patches
+[sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
+vec3.perp = (u, dest) ->
+  v = vec3.create([1,0,0])
+  vec3.cross(u,v,dest)
+  e = vec3.dot(dest,dest)
+  if e < 0.01
+    vec3.set(v,[0,1,0])
+    vec3.cross(u,v,dest)
+  vec3.normalize(dest)
 
 # Main Render Loop
 Render = ->
@@ -68,10 +76,10 @@ Render = ->
     gl.useProgram(program)
     gl.uniformMatrix4fv(program.projection, false, projection)
     gl.uniformMatrix4fv(program.modelview, false, modelview)
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbos.wireframe)
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbos.centerline)
     gl.enableVertexAttribArray(POSITION)
     gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 12, 0)
-    gl.drawArrays(gl.LINE_STRIP, 0, vbos.wireframe.count)
+    gl.drawArrays(gl.LINE_STRIP, 0, vbos.centerline.count)
     gl.disableVertexAttribArray(POSITION)
 
   # Draw the mesh
@@ -95,6 +103,35 @@ Render = ->
 
   if gl.getError() != gl.NO_ERROR
     glerr("Render")
+
+# Sweep a n-sided polygon along the given centerline
+# see "Computation of Rotation Minimizing Frame" by Wang et al
+GenerateTube = (centerline, n) ->
+
+  count = centerline.length / 3
+
+  # Allocate some arrays for vector math
+  [v1, c1] = vec3.create() for n in [0...2]
+  [r0, s0, t0] = vec3.create() for n in [0...2]
+
+  # Create a somewhat-arbitrary initial frame (r0, s0, t0)
+  [i,j] = [0,1]
+  xi = centerline.subarray(i*3, i*3+3)
+  xj = centerline.subarray(j*3, j*3+3)
+  vec3.subtract(xj, xi, t0)
+  vec3.perp(t0, s0)
+  vec3.cross(s0, t0, r0)
+
+  # Crawl through the centerline
+  [ri, si, ti] = [r0, s0, t0]
+  while i < count
+    j = (i+1) % count
+    xi = centerline.subarray(i*3, i*3+3)
+    xj = centerline.subarray(j*3, j*3+3)
+    vec3.subtract(xj, xi, v1)
+    vec3.dot(v1, v1, c1)
+    i++
+
 
 # Evaluate a Bezier function for smooth interpolation
 GetKnotPath = (data, slices) ->
@@ -143,8 +180,16 @@ InitBuffers = ->
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
-  vbos.wireframe = vbo
-  vbos.wireframe.count = rawBuffer.length / 3
+  vbos.centerline = vbo
+  vbos.centerline.count = rawBuffer.length / 3
+
+  # Create a tube VBO for a thick knot
+  rawBuffer = GenerateTube(rawBuffer, side = 5)
+  vbo = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
+  gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
+  vbos.tube = vbo
+  vbos.tube.count = rawBuffer.length / 3
 
   # Create positions/normals/texcoords for the tube verts
   rawBuffer = new Float32Array(Slices * Stacks * 8)
