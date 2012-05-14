@@ -28,6 +28,27 @@ void main(void)
 }
 </script>
 
+<!-- VERTEX SHADER -->
+<script id="VS-Wireframe" type="x-shader/x-vertex">
+attribute vec4 Position;
+uniform mat4 Modelview;
+uniform mat4 Projection;
+void main(void)
+{
+    gl_Position = Projection * Modelview * Position;
+}
+</script>
+
+<!-- FRAGMENT SHADER -->
+<script id="FS-Wireframe" type="x-shader/x-fragment">
+precision highp float;
+precision highp vec3;
+void main()
+{
+    gl_FragColor = vec4(1, 1, 1, 0.5);
+}
+</script>
+
 <!-- FRAGMENT SHADER -->
 <script id="FS-Scene" type="x-shader/x-fragment">
 precision highp float;

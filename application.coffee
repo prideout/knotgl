@@ -46,6 +46,7 @@ Render = ->
   w = parseInt(canvas.css('width'))
   h = parseInt(canvas.css('height'))
 
+  # Draw the background
   program = programs.vignette
   gl.disable(gl.DEPTH_TEST)
   gl.useProgram(program)
@@ -56,35 +57,52 @@ Render = ->
   gl.drawArrays(gl.TRIANGLES, 0, 3)
   gl.disableVertexAttribArray(VERTEXID)
 
-  gl.clear(gl.DEPTH_BUFFER_BIT)
-  gl.enable(gl.DEPTH_TEST)
+  # Draw the wireframe
+  if true
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.lineWidth(3)
+    program = programs.wireframe
+    gl.useProgram(program)
+    gl.uniformMatrix4fv(program.projection, false, projection)
+    gl.uniformMatrix4fv(program.modelview, false, modelview)
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbos.wireframe)
+    gl.enableVertexAttribArray(POSITION)
+    gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 12, 0)
+    gl.drawArrays(gl.LINE_STRIP, 0, vbos.wireframe.count)
+    gl.disableVertexAttribArray(POSITION)
 
-  program = programs.mesh
-  gl.useProgram(program)
-  gl.uniformMatrix4fv(program.projection, false, projection)
-  gl.uniformMatrix4fv(program.modelview, false, modelview)
-  gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
-  gl.bindBuffer(gl.ARRAY_BUFFER, vbos.mesh)
-  gl.enableVertexAttribArray(POSITION)
-  gl.enableVertexAttribArray(NORMAL)
-  gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 32, 0)
-  gl.vertexAttribPointer(NORMAL, 3, gl.FLOAT, false, stride = 32, offset = 12)
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.faces)
-  gl.drawElements(gl.TRIANGLES, vbos.faces.count, gl.UNSIGNED_SHORT, 0)
-  gl.disableVertexAttribArray(POSITION)
-  gl.disableVertexAttribArray(NORMAL)
+  # Draw the mesh
+  if false
+    program = programs.mesh
+    gl.clear(gl.DEPTH_BUFFER_BIT)
+    gl.enable(gl.DEPTH_TEST)
+    gl.useProgram(program)
+    gl.uniformMatrix4fv(program.projection, false, projection)
+    gl.uniformMatrix4fv(program.modelview, false, modelview)
+    gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbos.mesh)
+    gl.enableVertexAttribArray(POSITION)
+    gl.enableVertexAttribArray(NORMAL)
+    gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 32, 0)
+    gl.vertexAttribPointer(NORMAL, 3, gl.FLOAT, false, stride = 32, offset = 12)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.faces)
+    gl.drawElements(gl.TRIANGLES, vbos.faces.count, gl.UNSIGNED_SHORT, 0)
+    gl.disableVertexAttribArray(POSITION)
+    gl.disableVertexAttribArray(NORMAL)
 
   if gl.getError() != gl.NO_ERROR
     glerr("Render")
 
 # Evaluate a Bezier function for smooth interpolation
 GetKnotPath = (data, slices) ->
-  rawBuffer = new Float32Array(data.length * slices)
+  rawBuffer = new Float32Array((data.length+3) * slices)
   [i,j] = [0,0]
-  while i < data.length - 9
-    a = data[i+0...i+3]
-    b = data[i+3...i+6]
-    c = data[i+6...i+9]
+  while i < data.length+3
+    r = ((i+n)%data.length for n in [0,2,3,5,6,8])
+    a = data[r[0]..r[1]]
+    b = data[r[2]..r[3]]
+    c = data[r[4]..r[5]]
     v1 = vec3.create(a)
     v4 = vec3.create(b)
     vec3.lerp(v1, b, 0.5)
@@ -93,20 +111,20 @@ GetKnotPath = (data, slices) ->
     v3 = vec3.create(v4)
     vec3.lerp(v2, b, 1/3)
     vec3.lerp(v3, b, 1/3)
-    dt = 1 / (slices+1)
-    t = dt
+    t = dt = 1 / (slices+1)
     for slice in [0...slices]
       tt = 1-t
       c = [tt*tt*tt,3*tt*tt*t,3*tt*t*t,t*t*t]
       p = (vec3.create(v) for v in [v1,v2,v3,v4])
       vec3.scale(p[ii],c[ii]) for ii in [0...4]
-      #p.reduce(a,b) -> vec3.add
-      #p = vec3.add(vec3.add(vec3.add(p[0],p[1]),p[2]),p[3]) # is there a better way?
-      rawBuffer.set(p[0], j)
-      console.log ">> #{vec3.str(rawBuffer.subarray(i, i+3))}"
+      p = p.reduce (a,b) -> vec3.add(a,b)
+      vec3.scale(p, 0.15) # Shrink it!
+      rawBuffer.set(p, j)
       j += 3
       t += dt
     i += 3
+  console.log "Bezier: generated #{j/3} points from #{data.length/3} control points."
+  rawBuffer
 
 GetLinkPaths = (links, slices) ->
   GetKnotPath(link, slices) for link in links
@@ -117,12 +135,12 @@ InitBuffers = ->
   gl = root.gl
 
   # Create a line loop VBO for a knot centerline
-  rawBuffer = GetLinkPaths(window.knot_data, 1)[0]
+  rawBuffer = GetLinkPaths(window.knot_data, slices = 4)[0]
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
-  vbos.knotPath = vbo
-  vbos.knotPath.count = rawBuffer.length / 3
+  vbos.wireframe = vbo
+  vbos.wireframe.count = rawBuffer.length / 3
 
   # Create positions/normals/texcoords for the tube verts
   rawBuffer = new Float32Array(Slices * Stacks * 8)
@@ -221,7 +239,7 @@ root.AppInit = ->
   # Create Vertex Data
   InitBuffers()
 
-  # Compile Mesh Program
+  # Compile Programs
   attribs =
     Position: POSITION
     Normal: NORMAL
@@ -230,8 +248,12 @@ root.AppInit = ->
     Modelview: 'modelview'
     NormalMatrix: 'normalmatrix'
   programs.mesh = CompileProgram("VS-Scene", "FS-Scene", attribs, unif)
-
-  # Compile Vignette Program
+  attribs =
+    Position: POSITION
+  unif =
+    Projection: 'projection'
+    Modelview: 'modelview'
+  programs.wireframe = CompileProgram("VS-Wireframe", "FS-Wireframe", attribs, unif)
   attribs =
     VertexID: VERTEXID
   uniforms =
@@ -245,4 +267,4 @@ root.AppInit = ->
   canvas.width = canvas.clientWidth
   canvas.height = canvas.clientHeight
   root.gl = gl
-  setInterval(Render, 15)
+  setInterval(Render, 32)

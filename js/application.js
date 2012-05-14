@@ -64,36 +64,61 @@
     gl.vertexAttribPointer(VERTEXID, 2, gl.FLOAT, false, stride = 8, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.disableVertexAttribArray(VERTEXID);
-    gl.clear(gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
-    program = programs.mesh;
-    gl.useProgram(program);
-    gl.uniformMatrix4fv(program.projection, false, projection);
-    gl.uniformMatrix4fv(program.modelview, false, modelview);
-    gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbos.mesh);
-    gl.enableVertexAttribArray(POSITION);
-    gl.enableVertexAttribArray(NORMAL);
-    gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 32, 0);
-    gl.vertexAttribPointer(NORMAL, 3, gl.FLOAT, false, stride = 32, offset = 12);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.faces);
-    gl.drawElements(gl.TRIANGLES, vbos.faces.count, gl.UNSIGNED_SHORT, 0);
-    gl.disableVertexAttribArray(POSITION);
-    gl.disableVertexAttribArray(NORMAL);
+    if (true) {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.lineWidth(3);
+      program = programs.wireframe;
+      gl.useProgram(program);
+      gl.uniformMatrix4fv(program.projection, false, projection);
+      gl.uniformMatrix4fv(program.modelview, false, modelview);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbos.wireframe);
+      gl.enableVertexAttribArray(POSITION);
+      gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 12, 0);
+      gl.drawArrays(gl.LINE_STRIP, 0, vbos.wireframe.count);
+      gl.disableVertexAttribArray(POSITION);
+    }
+    if (false) {
+      program = programs.mesh;
+      gl.clear(gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.DEPTH_TEST);
+      gl.useProgram(program);
+      gl.uniformMatrix4fv(program.projection, false, projection);
+      gl.uniformMatrix4fv(program.modelview, false, modelview);
+      gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbos.mesh);
+      gl.enableVertexAttribArray(POSITION);
+      gl.enableVertexAttribArray(NORMAL);
+      gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 32, 0);
+      gl.vertexAttribPointer(NORMAL, 3, gl.FLOAT, false, stride = 32, offset = 12);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.faces);
+      gl.drawElements(gl.TRIANGLES, vbos.faces.count, gl.UNSIGNED_SHORT, 0);
+      gl.disableVertexAttribArray(POSITION);
+      gl.disableVertexAttribArray(NORMAL);
+    }
     if (gl.getError() !== gl.NO_ERROR) {
       return glerr("Render");
     }
   };
 
   GetKnotPath = function(data, slices) {
-    var a, b, c, dt, i, ii, j, p, rawBuffer, slice, t, tt, v, v1, v2, v3, v4, _i, _j, _ref1, _results;
-    rawBuffer = new Float32Array(data.length * slices);
+    var a, b, c, dt, i, ii, j, n, p, r, rawBuffer, slice, t, tt, v, v1, v2, v3, v4, _i, _j, _ref1;
+    rawBuffer = new Float32Array((data.length + 3) * slices);
     _ref1 = [0, 0], i = _ref1[0], j = _ref1[1];
-    _results = [];
-    while (i < data.length - 9) {
-      a = data.slice(i + 0, i + 3);
-      b = data.slice(i + 3, i + 6);
-      c = data.slice(i + 6, i + 9);
+    while (i < data.length + 3) {
+      r = (function() {
+        var _i, _len, _ref2, _results;
+        _ref2 = [0, 2, 3, 5, 6, 8];
+        _results = [];
+        for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+          n = _ref2[_i];
+          _results.push((i + n) % data.length);
+        }
+        return _results;
+      })();
+      a = data.slice(r[0], r[1] + 1 || 9e9);
+      b = data.slice(r[2], r[3] + 1 || 9e9);
+      c = data.slice(r[4], r[5] + 1 || 9e9);
       v1 = vec3.create(a);
       v4 = vec3.create(b);
       vec3.lerp(v1, b, 0.5);
@@ -102,32 +127,35 @@
       v3 = vec3.create(v4);
       vec3.lerp(v2, b, 1 / 3);
       vec3.lerp(v3, b, 1 / 3);
-      dt = 1 / (slices + 1);
-      t = dt;
+      t = dt = 1 / (slices + 1);
       for (slice = _i = 0; 0 <= slices ? _i < slices : _i > slices; slice = 0 <= slices ? ++_i : --_i) {
         tt = 1 - t;
         c = [tt * tt * tt, 3 * tt * tt * t, 3 * tt * t * t, t * t * t];
         p = (function() {
-          var _j, _len, _ref2, _results1;
+          var _j, _len, _ref2, _results;
           _ref2 = [v1, v2, v3, v4];
-          _results1 = [];
+          _results = [];
           for (_j = 0, _len = _ref2.length; _j < _len; _j++) {
             v = _ref2[_j];
-            _results1.push(vec3.create(v));
+            _results.push(vec3.create(v));
           }
-          return _results1;
+          return _results;
         })();
         for (ii = _j = 0; _j < 4; ii = ++_j) {
           vec3.scale(p[ii], c[ii]);
         }
-        rawBuffer.set(p[0], j);
-        console.log(">> " + (vec3.str(rawBuffer.subarray(i, i + 3))));
+        p = p.reduce(function(a, b) {
+          return vec3.add(a, b);
+        });
+        vec3.scale(p, 0.15);
+        rawBuffer.set(p, j);
         j += 3;
         t += dt;
       }
-      _results.push(i += 3);
+      i += 3;
     }
-    return _results;
+    console.log("Bezier: generated " + (j / 3) + " points from " + (data.length / 3) + " control points.");
+    return rawBuffer;
   };
 
   GetLinkPaths = function(links, slices) {
@@ -141,14 +169,14 @@
   };
 
   InitBuffers = function() {
-    var A, B, BmA, C, CmA, EPSILON, N, corners, faceCount, gl, i, j, msg, n, next, p, ptr, rawBuffer, slice, stack, tri, u, v, vbo, _ref1, _ref2, _ref3;
+    var A, B, BmA, C, CmA, EPSILON, N, corners, faceCount, gl, i, j, msg, n, next, p, ptr, rawBuffer, slice, slices, stack, tri, u, v, vbo, _ref1, _ref2, _ref3;
     gl = root.gl;
-    rawBuffer = GetLinkPaths(window.knot_data, 1)[0];
+    rawBuffer = GetLinkPaths(window.knot_data, slices = 4)[0];
     vbo = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW);
-    vbos.knotPath = vbo;
-    vbos.knotPath.count = rawBuffer.length / 3;
+    vbos.wireframe = vbo;
+    vbos.wireframe.count = rawBuffer.length / 3;
     rawBuffer = new Float32Array(Slices * Stacks * 8);
     _ref1 = [-1, 0], slice = _ref1[0], i = _ref1[1];
     BmA = CmA = n = N = vec3.create();
@@ -267,6 +295,14 @@
     };
     programs.mesh = CompileProgram("VS-Scene", "FS-Scene", attribs, unif);
     attribs = {
+      Position: POSITION
+    };
+    unif = {
+      Projection: 'projection',
+      Modelview: 'modelview'
+    };
+    programs.wireframe = CompileProgram("VS-Wireframe", "FS-Wireframe", attribs, unif);
+    attribs = {
       VertexID: VERTEXID
     };
     uniforms = {
@@ -280,7 +316,7 @@
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
     root.gl = gl;
-    return setInterval(Render, 15);
+    return setInterval(Render, 32);
   };
 
 }).call(this);
