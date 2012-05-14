@@ -42,6 +42,8 @@
 
   Render = function() {
     var aspect, canvas, eye, far, fov, gl, h, model, modelview, near, normalMatrix, offset, program, projection, stride, target, up, view, w;
+    canvas = $("canvas");
+    window.requestAnimFrame(Render, canvas.get(0));
     projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
     view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
     model = mat4.create();
@@ -52,7 +54,6 @@
     normalMatrix = mat4.toMat3(modelview);
     theta += 0.02;
     gl = root.gl;
-    canvas = $("canvas");
     w = parseInt(canvas.css('width'));
     h = parseInt(canvas.css('height'));
     program = programs.vignette;
@@ -316,7 +317,7 @@
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
     root.gl = gl;
-    return setInterval(Render, 32);
+    return Render();
   };
 
 }).call(this);

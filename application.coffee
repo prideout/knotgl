@@ -30,6 +30,9 @@ sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 # Main Render Loop
 Render = ->
 
+  canvas = $("canvas")
+  window.requestAnimFrame(Render, canvas.get(0))
+
   projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)
   view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
   model = mat4.create()
@@ -42,7 +45,6 @@ Render = ->
 
   gl = root.gl
 
-  canvas = $("canvas")
   w = parseInt(canvas.css('width'))
   h = parseInt(canvas.css('height'))
 
@@ -267,4 +269,4 @@ root.AppInit = ->
   canvas.width = canvas.clientWidth
   canvas.height = canvas.clientHeight
   root.gl = gl
-  setInterval(Render, 32)
+  Render()

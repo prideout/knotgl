@@ -141,11 +141,28 @@ function glinfo(msg)
 {
     $.gritter.add({ title: 'General Notice', text: msg });
 }
+function glinit()
+{
+    // Sync animation to refresh rate (from Google's webgl-utils.js)
+    window.requestAnimFrame = (function() {
+    return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+         window.mozRequestAnimationFrame ||
+         window.oRequestAnimationFrame ||
+         window.msRequestAnimationFrame ||
+         function(/* function FrameRequestCallback */ callback, /* DOMElement Element */ element) {
+           window.setTimeout(callback, 1000/60);
+         };
+    })();
+
+    // Now, call our coffeescript application code:
+    window.AppInit();
+}
 </script>
 </head>
 
 <!-- WEB PAGE BODY -->
-<body onload="window.AppInit();">
+<body onload="glinit()">
   <canvas width="1600" height="1200" style="width: 1600px; height: 1200px;">
   </canvas>
 </body>
