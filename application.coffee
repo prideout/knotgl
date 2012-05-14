@@ -36,12 +36,17 @@ vec3.perp = (u, dest) ->
     vec3.cross(u,v,dest)
   vec3.normalize(dest)
 
-# Main Render Loop
+# Render Function
 Render = ->
 
+  # Wait for a refresh event, look at the current canvas size
   canvas = $("canvas")
   window.requestAnimFrame(Render, canvas.get(0))
+  gl = root.gl
+  w = parseInt(canvas.css('width'))
+  h = parseInt(canvas.css('height'))
 
+  # Adjust the camera and compute various transforms
   projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)
   view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
   model = mat4.create()
@@ -52,23 +57,19 @@ Render = ->
   normalMatrix = mat4.toMat3(modelview)
   theta += 0.02
 
-  gl = root.gl
+  # Draw the hot pink background (why is this so slow?)
+  if false
+    program = programs.vignette
+    gl.disable(gl.DEPTH_TEST)
+    gl.useProgram(program)
+    gl.uniform2f(program.viewport, w, h)
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbos.bigtri)
+    gl.enableVertexAttribArray(VERTEXID)
+    gl.vertexAttribPointer(VERTEXID, 2, gl.FLOAT, false, stride = 8, 0)
+    gl.drawArrays(gl.TRIANGLES, 0, 3)
+    gl.disableVertexAttribArray(VERTEXID)
 
-  w = parseInt(canvas.css('width'))
-  h = parseInt(canvas.css('height'))
-
-  # Draw the background
-  program = programs.vignette
-  gl.disable(gl.DEPTH_TEST)
-  gl.useProgram(program)
-  gl.uniform2f(program.viewport, w, h)
-  gl.bindBuffer(gl.ARRAY_BUFFER, vbos.bigtri)
-  gl.enableVertexAttribArray(VERTEXID)
-  gl.vertexAttribPointer(VERTEXID, 2, gl.FLOAT, false, stride = 8, 0)
-  gl.drawArrays(gl.TRIANGLES, 0, 3)
-  gl.disableVertexAttribArray(VERTEXID)
-
-  # Draw the wireframe
+  # Draw the centerline
   if true
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -81,6 +82,22 @@ Render = ->
     gl.enableVertexAttribArray(POSITION)
     gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 12, 0)
     gl.drawArrays(gl.LINE_STRIP, 0, vbos.centerline.count)
+    gl.disableVertexAttribArray(POSITION)
+
+  # Draw the wireframe
+  if true
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.lineWidth(3)
+    program = programs.wireframe
+    gl.useProgram(program)
+    gl.uniformMatrix4fv(program.projection, false, projection)
+    gl.uniformMatrix4fv(program.modelview, false, modelview)
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbos.tube)
+    gl.enableVertexAttribArray(POSITION)
+    gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 12, 0)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.wireframe)
+    gl.drawElements(gl.LINES, vbos.wireframe.count, gl.UNSIGNED_SHORT, 0)
     gl.disableVertexAttribArray(POSITION)
 
   # Draw the mesh
@@ -106,16 +123,44 @@ Render = ->
     glerr("Render")
 
 # Sweep a n-sided polygon along the given centerline
-# see "Computation of Rotation Minimizing Frame" by Wang and Jüttler
-
+# Repeat the vertex along the seam to allow nice texture coords.
 GenerateTube = (centerline, n) ->
+  frames = GenerateFrames(centerline)
+  count = centerline.length / 3
+  mesh = new Float32Array(count * (n+1) * 3)
+  [i, m] = [0, 0]
+  p = vec3.create()
+  r = 0.01
+  while i < count
+      v = 0
+      basis = (frames[C].subarray(i*3,i*3+3) for C in [0..2])
+      basis = ((B[C] for C in [0..2]) for B in basis)
+      basis = (basis.reduce (A,B) -> A.concat(B))
+      basis = mat3.create(basis)
+      theta = 0
+      dtheta = TWOPI / n
+      while v < n+1
+        x = r*cos(theta)
+        y = r*sin(theta)
+        z = 0
+        mat3.multiplyVec3(basis, [x,y,z], p)
+        p[0] += centerline[i*3+0] # TODO clean this
+        p[1] += centerline[i*3+1]
+        p[2] += centerline[i*3+2]
+        #console.log "GenerateTube: P = #{vec3.str(p)}"
+        mesh.set(p, m)
+        [m, v, theta] = [m+3,v+1,theta+dtheta]
+      i++
+  console.log "GenerateTube: generated #{m} vertices from a centerline with #{count} nodes."
+  mesh
 
-  # Allocate arrays for orthonormal basis vectors
+# Generate reasonable orthonormal basis vectors for curve in R3
+# see "Computation of Rotation Minimizing Frame" by Wang and Jüttler
+GenerateFrames = (centerline) ->
   count = centerline.length / 3
   frameR = new Float32Array(count * 3)
   frameS = new Float32Array(count * 3)
   frameT = new Float32Array(count * 3)
-
   # Obtain unit-length tangent vectors
   i = -1
   while ++i < count
@@ -124,13 +169,11 @@ GenerateTube = (centerline, n) ->
     xj = centerline.subarray(j*3, j*3+3)
     ti = frameT.subarray(i*3, i*3+3)
     vec3.direction(xi, xj, ti)
-
   # Allocate some temporaries for vector math
   [v1,  v2,  tmp] = (vec3.create() for n in [0..2])
   [r0,  s0,  t0]  = (vec3.create() for n in [0..2])
   [rj,  sj,  tj]  = (vec3.create() for n in [0..2])
   [riL, siL, tiL] = (vec3.create() for n in [0..2])
-
   # Create a somewhat-arbitrary initial frame (r0, s0, t0)
   vec3.set(frameT.subarray(0, 3), t0)
   vec3.perp(t0, s0)
@@ -139,7 +182,6 @@ GenerateTube = (centerline, n) ->
   vec3.normalize(s0)
   vec3.set(r0, frameR.subarray(0, 3))
   vec3.set(s0, frameS.subarray(0, 3))
-
   # Use frameT and the RMF algorithm to populate frameR and frameS
   [i,j] = [0,1]
   [ri, si, ti] = [r0, s0, t0]
@@ -166,6 +208,7 @@ GenerateTube = (centerline, n) ->
     vec3.set(sj, frameS.subarray(j*3, j*3+3))
     #console.log "#{i} C: #{vec3.str(rj)}, #{vec3.str(sj)}, #{vec3.str(tj)}"
     ++i
+  [frameR, frameS, frameT]
 
 # Evaluate a Bezier function for smooth interpolation
 GetKnotPath = (data, slices) ->
@@ -209,21 +252,45 @@ InitBuffers = ->
 
   gl = root.gl
 
-  # Create a line loop VBO for a knot centerline
-  rawBuffer = GetLinkPaths(window.knot_data, slices = 2)[0]
+  # Create a line strip VBO for a knot centerline
+  # The first vertex is repeated for good uv hygiene
+  rawBuffer = GetLinkPaths(window.knot_data, slices = 3)[0]
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
   vbos.centerline = vbo
   vbos.centerline.count = rawBuffer.length / 3
 
-  # Create a tube VBO for a thick knot
-  rawBuffer = GenerateTube(rawBuffer, side = 5)
+  # Create a positions buffer for a swept pentagon
+  rawBuffer = GenerateTube(rawBuffer, sides = 5)
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
+  console.log "Tube positions has #{rawBuffer.length/3} verts."
   vbos.tube = vbo
-  vbos.tube.count = rawBuffer.length / 3
+
+  # Create the index buffer for the tube wireframe
+  polygonCount = vbos.centerline.count - 1
+  lineCount = polygonCount * sides * 2
+  rawBuffer = new Uint16Array(lineCount * 2)
+  [i, ptr] = [0, 0]
+  while i < polygonCount * (n+1)
+    j = 0
+    while j < n
+      polygonEdge = rawBuffer.subarray(ptr+0, ptr+2)
+      polygonEdge[0] = i+j
+      polygonEdge[1] = i+j+1
+      sweepEdge = rawBuffer.subarray(ptr+2, ptr+4)
+      sweepEdge[0] = i+j
+      sweepEdge[1] = i+j+n+1
+      [ptr, j] = [ptr+4, j+1]
+    i += n+1
+  vbo = gl.createBuffer()
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbo)
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
+  vbos.wireframe = vbo
+  vbos.wireframe.count = rawBuffer.length
+  console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{vbos.centerline.count-1} polygons."
 
   # Create positions/normals/texcoords for the tube verts
   rawBuffer = new Float32Array(Slices * Stacks * 8)
