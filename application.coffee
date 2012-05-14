@@ -98,7 +98,8 @@ Render = ->
 
 # Evaluate a Bezier function for smooth interpolation
 GetKnotPath = (data, slices) ->
-  rawBuffer = new Float32Array((data.length+3) * slices)
+  globalScale = 0.15
+  rawBuffer = new Float32Array(data.length * slices + 3)
   [i,j] = [0,0]
   while i < data.length+3
     r = ((i+n)%data.length for n in [0,2,3,5,6,8])
@@ -120,13 +121,14 @@ GetKnotPath = (data, slices) ->
       p = (vec3.create(v) for v in [v1,v2,v3,v4])
       vec3.scale(p[ii],c[ii]) for ii in [0...4]
       p = p.reduce (a,b) -> vec3.add(a,b)
-      vec3.scale(p, 0.15) # Shrink it!
+      vec3.scale(p, globalScale)
       rawBuffer.set(p, j)
       j += 3
+      if j >= rawBuffer.length
+        console.log "Bezier: generated #{j/3} points from #{data.length/3} control points."
+        return rawBuffer
       t += dt
     i += 3
-  console.log "Bezier: generated #{j/3} points from #{data.length/3} control points."
-  rawBuffer
 
 GetLinkPaths = (links, slices) ->
   GetKnotPath(link, slices) for link in links
@@ -137,7 +139,7 @@ InitBuffers = ->
   gl = root.gl
 
   # Create a line loop VBO for a knot centerline
-  rawBuffer = GetLinkPaths(window.knot_data, slices = 4)[0]
+  rawBuffer = GetLinkPaths(window.knot_data, slices = 3)[0]
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)

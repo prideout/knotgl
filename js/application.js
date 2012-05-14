@@ -103,8 +103,9 @@
   };
 
   GetKnotPath = function(data, slices) {
-    var a, b, c, dt, i, ii, j, n, p, r, rawBuffer, slice, t, tt, v, v1, v2, v3, v4, _i, _j, _ref1;
-    rawBuffer = new Float32Array((data.length + 3) * slices);
+    var a, b, c, dt, globalScale, i, ii, j, n, p, r, rawBuffer, slice, t, tt, v, v1, v2, v3, v4, _i, _j, _ref1;
+    globalScale = 0.15;
+    rawBuffer = new Float32Array(data.length * slices + 3);
     _ref1 = [0, 0], i = _ref1[0], j = _ref1[1];
     while (i < data.length + 3) {
       r = (function() {
@@ -148,15 +149,17 @@
         p = p.reduce(function(a, b) {
           return vec3.add(a, b);
         });
-        vec3.scale(p, 0.15);
+        vec3.scale(p, globalScale);
         rawBuffer.set(p, j);
         j += 3;
+        if (j >= rawBuffer.length) {
+          console.log("Bezier: generated " + (j / 3) + " points from " + (data.length / 3) + " control points.");
+          return rawBuffer;
+        }
         t += dt;
       }
       i += 3;
     }
-    console.log("Bezier: generated " + (j / 3) + " points from " + (data.length / 3) + " control points.");
-    return rawBuffer;
   };
 
   GetLinkPaths = function(links, slices) {
@@ -172,7 +175,7 @@
   InitBuffers = function() {
     var A, B, BmA, C, CmA, EPSILON, N, corners, faceCount, gl, i, j, msg, n, next, p, ptr, rawBuffer, slice, slices, stack, tri, u, v, vbo, _ref1, _ref2, _ref3;
     gl = root.gl;
-    rawBuffer = GetLinkPaths(window.knot_data, slices = 4)[0];
+    rawBuffer = GetLinkPaths(window.knot_data, slices = 3)[0];
     vbo = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW);
