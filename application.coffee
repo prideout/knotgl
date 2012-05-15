@@ -70,7 +70,7 @@ Render = ->
     gl.disableVertexAttribArray(VERTEXID)
 
   # Draw the centerline
-  if true
+  if false
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     gl.lineWidth(3)
@@ -130,7 +130,7 @@ GenerateTube = (centerline, n) ->
   mesh = new Float32Array(count * (n+1) * 3)
   [i, m] = [0, 0]
   p = vec3.create()
-  r = 0.01
+  r = 0.1
   while i < count
       v = 0
       basis = (frames[C].subarray(i*3,i*3+3) for C in [0..2])
@@ -274,17 +274,17 @@ InitBuffers = ->
   lineCount = polygonCount * sides * 2
   rawBuffer = new Uint16Array(lineCount * 2)
   [i, ptr] = [0, 0]
-  while i < polygonCount * (n+1)
+  while i < polygonCount * (sides+1)
     j = 0
-    while j < n
+    while j < sides
       polygonEdge = rawBuffer.subarray(ptr+0, ptr+2)
       polygonEdge[0] = i+j
       polygonEdge[1] = i+j+1
       sweepEdge = rawBuffer.subarray(ptr+2, ptr+4)
       sweepEdge[0] = i+j
-      sweepEdge[1] = i+j+n+1
+      sweepEdge[1] = i+j+sides+1
       [ptr, j] = [ptr+4, j+1]
-    i += n+1
+    i += sides+1
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)

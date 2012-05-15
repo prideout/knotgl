@@ -90,7 +90,7 @@
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.disableVertexAttribArray(VERTEXID);
     }
-    if (true) {
+    if (false) {
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.lineWidth(3);
@@ -149,7 +149,7 @@
     mesh = new Float32Array(count * (n + 1) * 3);
     _ref1 = [0, 0], i = _ref1[0], m = _ref1[1];
     p = vec3.create();
-    r = 0.01;
+    r = 0.1;
     while (i < count) {
       v = 0;
       basis = (function() {
@@ -367,18 +367,18 @@
     lineCount = polygonCount * sides * 2;
     rawBuffer = new Uint16Array(lineCount * 2);
     _ref1 = [0, 0], i = _ref1[0], ptr = _ref1[1];
-    while (i < polygonCount * (n + 1)) {
+    while (i < polygonCount * (sides + 1)) {
       j = 0;
-      while (j < n) {
+      while (j < sides) {
         polygonEdge = rawBuffer.subarray(ptr + 0, ptr + 2);
         polygonEdge[0] = i + j;
         polygonEdge[1] = i + j + 1;
         sweepEdge = rawBuffer.subarray(ptr + 2, ptr + 4);
         sweepEdge[0] = i + j;
-        sweepEdge[1] = i + j + n + 1;
+        sweepEdge[1] = i + j + sides + 1;
         _ref2 = [ptr + 4, j + 1], ptr = _ref2[0], j = _ref2[1];
       }
-      i += n + 1;
+      i += sides + 1;
     }
     vbo = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbo);
