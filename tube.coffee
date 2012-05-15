@@ -5,7 +5,7 @@ root = exports ? this
 class TubeGenerator
   constructor: () ->
     @scale = 0.15
-    @bezierSlices = 3
+    @bézierSlices = 3
     @tangentSmoothness = 3
     @polygonSides = 8
     @radius = 0.1
@@ -14,9 +14,10 @@ class TubeGenerator
   getLinkPaths: (links) ->
     @getKnotPath(link) for link in links
 
-  # Evaluate a Bézier function for smooth interpolation
+  # Evaluate a Bézier function for smooth interpolation.
+  # Return a Float32Array
   getKnotPath: (data) ->
-    slices = @bezierSlices
+    slices = @bézierSlices
     rawBuffer = new Float32Array(data.length * slices + 3)
     [i,j] = [0,0]
     while i < data.length+3
@@ -43,13 +44,14 @@ class TubeGenerator
         rawBuffer.set(p, j)
         j += 3
         if j >= rawBuffer.length
-          console.log "Bezier: generated #{j/3} points from #{data.length/3} control points."
+          console.log "Bézier: generated #{j/3} points from #{data.length/3} control points."
           return rawBuffer
         t += dt
       i += 3
 
-  # Sweep a n-sided polygon along the given centerline
-  # Repeat the vertex along the seam to allow nice texture coords.
+  # Sweep a n-sided polygon along the given centerline.
+  # Returns the mesh verts as a Float32Arrays.
+  # Repeats the vertex along the seam to allow nice texture coords.
   generateTube: (centerline) ->
     n = @polygonSides
     frames = @generateFrames(centerline)
@@ -81,8 +83,9 @@ class TubeGenerator
     console.log "GenerateTube: generated #{m} vertices from a centerline with #{count} nodes."
     mesh
 
-  # Generate reasonable orthonormal basis vectors for curve in R3
-  # See "Computation of Rotation Minimizing Frame" by Wang and Jüttler
+  # Generate reasonable orthonormal basis vectors for curve in R3.
+  # Returns three lists-of-vec3's for the basis vectors.
+  # See "Computation of Rotation Minimizing Frame" by Wang and Jüttler.
   generateFrames: (centerline) ->
     count = centerline.length / 3
     frameR = new Float32Array(count * 3)
@@ -104,7 +107,7 @@ class TubeGenerator
 
     # Create a somewhat-arbitrary initial frame (r0, s0, t0)
     vec3.set(frameT.subarray(0, 3), t0)
-    vec3.perp(t0, r0)
+    perp(t0, r0)
     vec3.cross(t0, r0, s0)
     vec3.normalize(r0)
     vec3.normalize(s0)
@@ -132,12 +135,12 @@ class TubeGenerator
 
 root.TubeGenerator = TubeGenerator
 
-# Misc private utilities
 TWOPI = 2 * Math.PI
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
-vec3.perp = (u, dest) ->
+
+perp = (u, dest) ->
   v = vec3.create([1,0,0])
   vec3.cross(u,v,dest)
   e = dot(dest,dest)
