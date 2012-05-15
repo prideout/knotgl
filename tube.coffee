@@ -16,15 +16,15 @@ vec3.perp = (u, dest) ->
     vec3.cross(u,v,dest)
   vec3.normalize(dest)
 
-# TODO turn this into a TubeGenerator class with properties:
-#
-#  GlobalScale
-#  BezierSlices
-#  PolygonSides
-#  Scale
-#  Radius
-#
+class TubeGenerator
+  constructor: () ->
+    @globalScale = 0.15
+    @bezierSlices = 3
+    @tangentSmoothness = 3
+    @polygonSides = 8
+    @radius = 0.1
 
+root.TubeGenerator = TubeGenerator
 
 # Returns a list of knot paths
 root.GetLinkPaths = (links, slices) ->
