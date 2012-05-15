@@ -59,11 +59,14 @@ Render = ->
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.disableVertexAttribArray(VERTEXID)
 
+  gl.viewport(0,0,w/8,h/8)
+
   # Draw the centerline
-  if false
+  if true
+    gl.clear(gl.DEPTH_BUFFER_BIT)
+    gl.enable(gl.DEPTH_TEST)
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-    gl.lineWidth(3)
     program = programs.wireframe
     gl.useProgram(program)
     gl.uniformMatrix4fv(program.projection, false, projection)
@@ -71,11 +74,22 @@ Render = ->
     gl.bindBuffer(gl.ARRAY_BUFFER, vbos.centerline)
     gl.enableVertexAttribArray(POSITION)
     gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 12, 0)
+    gl.uniform1f(program.scale, 1)
+    gl.lineWidth(5)
+    gl.uniform4f(program.color, 0,0,0,0.75)
+    gl.uniform1f(program.depthOffset, 0)
+    gl.drawArrays(gl.LINE_STRIP, 0, vbos.centerline.count)
+    gl.lineWidth(2)
+    gl.uniform4f(program.color, 1,1,1,0.75)
+    gl.uniform1f(program.depthOffset, -0.01)
     gl.drawArrays(gl.LINE_STRIP, 0, vbos.centerline.count)
     gl.disableVertexAttribArray(POSITION)
 
+  gl.viewport(0,0,w,h)
+
   # Draw the wireframe
   if true
+    gl.disable(gl.DEPTH_TEST)
     gl.enable(gl.BLEND)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     gl.lineWidth(1)
@@ -83,6 +97,9 @@ Render = ->
     gl.useProgram(program)
     gl.uniformMatrix4fv(program.projection, false, projection)
     gl.uniformMatrix4fv(program.modelview, false, modelview)
+    gl.uniform4f(program.color, 0.5,0.9,1,0.5)
+    gl.uniform1f(program.depthOffset, 0)
+    gl.uniform1f(program.scale, 1)
     gl.bindBuffer(gl.ARRAY_BUFFER, vbos.tube)
     gl.enableVertexAttribArray(POSITION)
     gl.vertexAttribPointer(POSITION, 3, gl.FLOAT, false, stride = 12, 0)
@@ -269,6 +286,9 @@ root.AppInit = ->
   unif =
     Projection: 'projection'
     Modelview: 'modelview'
+    DepthOffset: 'depthOffset'
+    Color: 'color'
+    Scale: 'scale'
   programs.wireframe = CompileProgram("VS-Wireframe", "FS-Wireframe", attribs, unif)
   attribs =
     VertexID: VERTEXID

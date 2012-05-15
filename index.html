@@ -34,9 +34,14 @@ void main(void)
 attribute vec4 Position;
 uniform mat4 Modelview;
 uniform mat4 Projection;
+uniform float DepthOffset;
+uniform float Scale;
 void main(void)
 {
-    gl_Position = Projection * Modelview * Position;
+    vec4 p = Position;
+    p.xyz *= Scale;
+    gl_Position = Projection * Modelview * p;
+    gl_Position.z += DepthOffset;
 }
 </script>
 
@@ -44,9 +49,10 @@ void main(void)
 <script id="FS-Wireframe" type="x-shader/x-fragment">
 precision highp float;
 precision highp vec3;
+uniform vec4 Color;
 void main()
 {
-    gl_FragColor = vec4(1, 1, 1, 0.25);
+    gl_FragColor = Color;
 }
 </script>
 
