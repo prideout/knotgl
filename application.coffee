@@ -59,10 +59,9 @@ Render = ->
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.disableVertexAttribArray(VERTEXID)
 
-  gl.viewport(0,0,w/8,h/8)
-
   # Draw the centerline
   if true
+    gl.viewport(0,0,w/8,h/8)
     gl.clear(gl.DEPTH_BUFFER_BIT)
     gl.enable(gl.DEPTH_TEST)
     gl.enable(gl.BLEND)
@@ -84,8 +83,7 @@ Render = ->
     gl.uniform1f(program.depthOffset, -0.01)
     gl.drawArrays(gl.LINE_STRIP, 0, vbos.centerline.count)
     gl.disableVertexAttribArray(POSITION)
-
-  gl.viewport(0,0,w,h)
+    gl.viewport(0,0,w,h)
 
   # Draw the wireframe
   if true
@@ -133,10 +131,11 @@ Render = ->
 InitBuffers = ->
 
   gl = root.gl
+  tubeGen = new root.TubeGenerator
 
   # Create a line strip VBO for a knot centerline
   # The first vertex is repeated for good uv hygiene
-  rawBuffer = root.GetLinkPaths(window.knot_data, slices = 3)[0]
+  rawBuffer = tubeGen.getLinkPaths(window.knot_data)[0]
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
@@ -144,7 +143,7 @@ InitBuffers = ->
   vbos.centerline.count = rawBuffer.length / 3
 
   # Create a positions buffer for a swept octagon
-  rawBuffer = root.GenerateTube(rawBuffer, sides = 8)
+  rawBuffer = tubeGen.generateTube(rawBuffer)
   vbo = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.bufferData(gl.ARRAY_BUFFER, rawBuffer, gl.STATIC_DRAW)
@@ -153,6 +152,7 @@ InitBuffers = ->
 
   # Create the index buffer for the tube wireframe
   polygonCount = vbos.centerline.count - 1
+  sides = tubeGen.polygonSides
   lineCount = polygonCount * sides * 2
   rawBuffer = new Uint16Array(lineCount * 2)
   [i, ptr] = [0, 0]
