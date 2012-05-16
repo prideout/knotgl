@@ -1,14 +1,5 @@
 root = exports ? this
 
-# Vertex Attribute Semantics
-VERTEXID = 0
-POSITION = 0
-NORMAL = 1
-TEXCOORD = 2
-
-staticRender = ->
-  root.renderer.render()
-
 # All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
   constructor: (@gl, @width, @height) ->
@@ -24,30 +15,10 @@ class Renderer
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
     @render()
 
-  # TODO reduce this to one giant JSON thingy
   compileShaders: ->
-    attribs =
-      Position: POSITION
-      Normal: NORMAL
-    unif =
-      Projection: 'projection'
-      Modelview: 'modelview'
-      NormalMatrix: 'normalmatrix'
-    @programs.mesh = @compileProgram("VS-Scene", "FS-Scene", attribs, unif)
-    attribs =
-      Position: POSITION
-    unif =
-      Projection: 'projection'
-      Modelview: 'modelview'
-      DepthOffset: 'depthOffset'
-      Color: 'color'
-      Scale: 'scale'
-    @programs.wireframe = @compileProgram("VS-Wireframe", "FS-Wireframe", attribs, unif)
-    attribs =
-      VertexID: VERTEXID
-    uniforms =
-      Viewport: 'viewport'
-    @programs.vignette = @compileProgram("VS-Vignette", "FS-Vignette", attribs, uniforms)
+    for name, metadata of root.shaders
+      [vs, fs] = metadata.keys
+      @programs[name] = @compileProgram vs, fs, metadata.attribs, metadata.uniforms
 
   render: ->
     window.requestAnimFrame(staticRender, $("canvas").get(0))
@@ -70,10 +41,10 @@ class Renderer
       @gl.useProgram(program)
       @gl.uniform2f(program.viewport, @width, @height)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.bigtri)
-      @gl.enableVertexAttribArray(VERTEXID)
-      @gl.vertexAttribPointer(VERTEXID, 2, @gl.FLOAT, false, stride = 8, 0)
+      @gl.enableVertexAttribArray(attrs.VERTEXID)
+      @gl.vertexAttribPointer(attrs.VERTEXID, 2, @gl.FLOAT, false, stride = 8, 0)
       @gl.drawArrays(@gl.TRIANGLES, 0, 3)
-      @gl.disableVertexAttribArray(VERTEXID)
+      @gl.disableVertexAttribArray(attrs.VERTEXID)
 
     # Draw the centerline
     if true
@@ -87,8 +58,8 @@ class Renderer
       @gl.uniformMatrix4fv(program.projection, false, projection)
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.centerline)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+      @gl.enableVertexAttribArray(attrs.POSITION)
+      @gl.vertexAttribPointer(attrs.POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
       @gl.uniform1f(program.scale, 1)
       @gl.lineWidth(5)
       @gl.uniform4f(program.color, 0,0,0,0.75)
@@ -98,7 +69,7 @@ class Renderer
       @gl.uniform4f(program.color, 1,1,1,0.75)
       @gl.uniform1f(program.depthOffset, -0.01)
       @gl.drawArrays(@gl.LINE_STRIP, 0, @vbos.centerline.count)
-      @gl.disableVertexAttribArray(POSITION)
+      @gl.disableVertexAttribArray(attrs.POSITION)
       @gl.viewport(0,0,@width,@height)
 
     # Draw the wireframe
@@ -115,11 +86,11 @@ class Renderer
       @gl.uniform1f(program.depthOffset, 0)
       @gl.uniform1f(program.scale, 1)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.tube)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+      @gl.enableVertexAttribArray(attrs.POSITION)
+      @gl.vertexAttribPointer(attrs.POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
       @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, @vbos.wireframe)
       @gl.drawElements(@gl.LINES, @vbos.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-      @gl.disableVertexAttribArray(POSITION)
+      @gl.disableVertexAttribArray(attrs.POSITION)
 
     # Draw the Mobius tube
     if false
@@ -131,14 +102,14 @@ class Renderer
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
       @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.mesh)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.enableVertexAttribArray(NORMAL)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 32, 0)
-      @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 32, offset = 12)
+      @gl.enableVertexAttribArray(attrs.POSITION)
+      @gl.enableVertexAttribArray(attrs.NORMAL)
+      @gl.vertexAttribPointer(attrs.POSITION, 3, @gl.FLOAT, false, stride = 32, 0)
+      @gl.vertexAttribPointer(attrs.NORMAL, 3, @gl.FLOAT, false, stride = 32, offset = 12)
       @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, @vbos.faces)
       @gl.drawElements(@gl.TRIANGLES, @vbos.faces.count, @gl.UNSIGNED_SHORT, 0)
-      @gl.disableVertexAttribArray(POSITION)
-      @gl.disableVertexAttribArray(NORMAL)
+      @gl.disableVertexAttribArray(attrs.POSITION)
+      @gl.disableVertexAttribArray(attrs.NORMAL)
 
     if @gl.getError() != @gl.NO_ERROR
       glerr "Render"
@@ -272,3 +243,5 @@ root.Renderer = Renderer
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 TWOPI = 2 * Math.PI
+attrs = root.semantics
+staticRender = -> root.renderer.render()
