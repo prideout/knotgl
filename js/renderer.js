@@ -43,7 +43,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, eye, far, fov, knot, model, modelview, near, normalMatrix, offset, program, projection, stride, target, up, view, _i, _len, _ref;
+      var aspect, eye, far, fov, knot, model, modelview, near, normalMatrix, offset, program, projection, setColor, stride, target, up, view, _i, _len, _ref;
       window.requestAnimFrame(staticRender, $("canvas").get(0));
       projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
@@ -66,15 +66,22 @@
         this.gl.disableVertexAttribArray(VERTEXID);
       }
       this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
+      this.knots[0].color = [1, 1, 1, 0.75];
+      this.knots[1].color = [0.25, 0.5, 1, 0.75];
+      this.knots[2].color = [1, 1, 0.5, 0.75];
       _ref = this.knots;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         knot = _ref[_i];
+        setColor = function(gl, color) {
+          return gl.uniform4fv(color, knot.color);
+        };
         this.gl.viewport(0, 0, this.width / 8, this.height / 8);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         program = this.programs.wireframe;
         this.gl.useProgram(program);
+        setColor(this.gl, program.color);
         this.gl.uniformMatrix4fv(program.projection, false, projection);
         this.gl.uniformMatrix4fv(program.modelview, false, modelview);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.centerline);
@@ -86,34 +93,16 @@
         this.gl.uniform1f(program.depthOffset, 0);
         this.gl.drawArrays(this.gl.LINE_STRIP, 0, knot.centerline.count);
         this.gl.lineWidth(2);
-        this.gl.uniform4f(program.color, 1, 1, 1, 0.75);
+        setColor(this.gl, program.color);
         this.gl.uniform1f(program.depthOffset, -0.01);
         this.gl.drawArrays(this.gl.LINE_STRIP, 0, knot.centerline.count);
         this.gl.disableVertexAttribArray(POSITION);
         this.gl.viewport(0, 0, this.width, this.height);
-        if (false) {
-          this.gl.disable(this.gl.DEPTH_TEST);
-          this.gl.enable(this.gl.BLEND);
-          this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-          this.gl.lineWidth(1);
-          program = this.programs.wireframe;
-          this.gl.useProgram(program);
-          this.gl.uniformMatrix4fv(program.projection, false, projection);
-          this.gl.uniformMatrix4fv(program.modelview, false, modelview);
-          this.gl.uniform4f(program.color, 0.5, 0.9, 1, 0.5);
-          this.gl.uniform1f(program.depthOffset, 0);
-          this.gl.uniform1f(program.scale, 1);
-          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
-          this.gl.enableVertexAttribArray(POSITION);
-          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
-          this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.wireframe);
-          this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
-          this.gl.disableVertexAttribArray(POSITION);
-        }
         if (true) {
-          program = this.programs.mesh;
+          program = this.programs.solidmesh;
           this.gl.enable(this.gl.DEPTH_TEST);
           this.gl.useProgram(program);
+          setColor(this.gl, program.color);
           this.gl.uniformMatrix4fv(program.projection, false, projection);
           this.gl.uniformMatrix4fv(program.modelview, false, modelview);
           this.gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix);
@@ -127,14 +116,34 @@
           this.gl.disableVertexAttribArray(POSITION);
           this.gl.disableVertexAttribArray(NORMAL);
         }
+        if (false) {
+          this.gl.disable(this.gl.DEPTH_TEST);
+          this.gl.enable(this.gl.BLEND);
+          this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+          this.gl.lineWidth(1);
+          program = this.programs.wireframe;
+          this.gl.useProgram(program);
+          this.gl.uniformMatrix4fv(program.projection, false, projection);
+          this.gl.uniformMatrix4fv(program.modelview, false, modelview);
+          this.gl.uniform4f(program.color, 1, 1, 1, 0.75);
+          this.gl.uniform1f(program.depthOffset, 0);
+          this.gl.uniform1f(program.scale, 1);
+          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
+          this.gl.enableVertexAttribArray(POSITION);
+          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
+          this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.wireframe);
+          this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
+          this.gl.disableVertexAttribArray(POSITION);
+        }
       }
       if (false) {
-        program = this.programs.mesh;
+        program = this.programs.solidmesh;
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.useProgram(program);
         this.gl.uniformMatrix4fv(program.projection, false, projection);
         this.gl.uniformMatrix4fv(program.modelview, false, modelview);
         this.gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix);
+        this.gl.uniform4f(program.color, 1, 1, 1, 1);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.mesh);
         this.gl.enableVertexAttribArray(POSITION);
         this.gl.enableVertexAttribArray(NORMAL);

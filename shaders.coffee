@@ -1,7 +1,7 @@
 root = exports ? this
 
 root.shaders =
-  mesh:
+  solidmesh:
     keys: ["VS-Scene", "FS-Scene"]
     attribs:
       Position: POSITION
@@ -10,6 +10,7 @@ root.shaders =
       Projection: 'projection'
       Modelview: 'modelview'
       NormalMatrix: 'normalmatrix'
+      Color: 'color'
 
   wireframe:
     keys: ["VS-Wireframe", "FS-Wireframe"]
@@ -88,6 +89,8 @@ vec3 FrontMaterial = vec3(0.25, 0.5, 0.75);
 vec3 BackMaterial = vec3(0.75, 0.75, 0.7);
 float Shininess = 50.0;
 
+uniform vec4 Color;
+
 void main()
 {
     vec3 N = normalize(vNormal);
@@ -108,6 +111,7 @@ void main()
     float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);
 
     vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;
+    color *= Color.rgb;
     vec3 lighting = AmbientMaterial + df * color;
     if (gl_FrontFacing)
         lighting += sf * SpecularMaterial;

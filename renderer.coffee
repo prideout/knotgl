@@ -49,7 +49,13 @@ class Renderer
 
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
 
+    @knots[0].color = [1,1,1,0.75]
+    @knots[1].color = [0.25,0.5,1,0.75]
+    @knots[2].color = [1,1,0.5,0.75]
+
     for knot in @knots
+
+      setColor = (gl, color) -> gl.uniform4fv(color, knot.color)
 
       # Draw the centerline
       @gl.viewport(0,0,@width/8,@height/8)
@@ -58,6 +64,7 @@ class Renderer
       @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
       program = @programs.wireframe
       @gl.useProgram(program)
+      setColor(@gl, program.color)
       @gl.uniformMatrix4fv(program.projection, false, projection)
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.centerline)
@@ -65,41 +72,22 @@ class Renderer
       @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
       @gl.uniform1f(program.scale, 1)
       @gl.lineWidth(5)
-      @gl.uniform4f(program.color, 0,0,0,0.75)
+      @gl.uniform4f(program.color,0,0,0,0.75)
       @gl.uniform1f(program.depthOffset, 0)
       @gl.drawArrays(@gl.LINE_STRIP, 0, knot.centerline.count)
       @gl.lineWidth(2)
-      @gl.uniform4f(program.color, 1,1,1,0.75)
+      setColor(@gl, program.color)
       @gl.uniform1f(program.depthOffset, -0.01)
       @gl.drawArrays(@gl.LINE_STRIP, 0, knot.centerline.count)
       @gl.disableVertexAttribArray(POSITION)
       @gl.viewport(0,0,@width,@height)
 
-      # Draw the wireframe
-      if false
-        @gl.disable(@gl.DEPTH_TEST)
-        @gl.enable(@gl.BLEND)
-        @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-        @gl.lineWidth(1)
-        program = @programs.wireframe
-        @gl.useProgram(program)
-        @gl.uniformMatrix4fv(program.projection, false, projection)
-        @gl.uniformMatrix4fv(program.modelview, false, modelview)
-        @gl.uniform4f(program.color, 0.5,0.9,1,0.5)
-        @gl.uniform1f(program.depthOffset, 0)
-        @gl.uniform1f(program.scale, 1)
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-        @gl.enableVertexAttribArray(POSITION)
-        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
-        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-        @gl.disableVertexAttribArray(POSITION)
-
       # Draw the solid knot
       if true
-        program = @programs.mesh
+        program = @programs.solidmesh
         @gl.enable(@gl.DEPTH_TEST)
         @gl.useProgram(program)
+        setColor(@gl, program.color)
         @gl.uniformMatrix4fv(program.projection, false, projection)
         @gl.uniformMatrix4fv(program.modelview, false, modelview)
         @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
@@ -113,15 +101,35 @@ class Renderer
         @gl.disableVertexAttribArray(POSITION)
         @gl.disableVertexAttribArray(NORMAL)
 
+      # Draw the wireframe
+      if false
+        @gl.disable(@gl.DEPTH_TEST)
+        @gl.enable(@gl.BLEND)
+        @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+        @gl.lineWidth(1)
+        program = @programs.wireframe
+        @gl.useProgram(program)
+        @gl.uniformMatrix4fv(program.projection, false, projection)
+        @gl.uniformMatrix4fv(program.modelview, false, modelview)
+        @gl.uniform4f(program.color, 1,1,1,0.75)
+        @gl.uniform1f(program.depthOffset, 0)
+        @gl.uniform1f(program.scale, 1)
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+        @gl.enableVertexAttribArray(POSITION)
+        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
+        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+        @gl.disableVertexAttribArray(POSITION)
 
     # Draw the Mobius tube
     if false
-      program = @programs.mesh
+      program = @programs.solidmesh
       @gl.enable(@gl.DEPTH_TEST)
       @gl.useProgram(program)
       @gl.uniformMatrix4fv(program.projection, false, projection)
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
       @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
+      @gl.uniform4f program.color, 1, 1, 1, 1
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.mesh)
       @gl.enableVertexAttribArray(POSITION)
       @gl.enableVertexAttribArray(NORMAL)

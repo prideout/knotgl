@@ -5,7 +5,7 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   root.shaders = {
-    mesh: {
+    solidmesh: {
       keys: ["VS-Scene", "FS-Scene"],
       attribs: {
         Position: POSITION,
@@ -14,7 +14,8 @@
       uniforms: {
         Projection: 'projection',
         Modelview: 'modelview',
-        NormalMatrix: 'normalmatrix'
+        NormalMatrix: 'normalmatrix',
+        Color: 'color'
       }
     },
     wireframe: {
@@ -49,7 +50,7 @@
 
   root.shaders.source["FS-Wireframe"] = "precision highp float;\nprecision highp vec3;\nuniform vec4 Color;\nvoid main()\n{\n    gl_FragColor = Color;\n}";
 
-  root.shaders.source["FS-Scene"] = "precision highp float;\nprecision highp vec3;\nvarying vec3 vNormal;\nvarying vec3 vPosition;\n\nvec3 LightPosition = vec3(0.25, 0.5, 1.0);\nvec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);\nvec3 SpecularMaterial = vec3(0.25, 0.25, 0.25);\nvec3 FrontMaterial = vec3(0.25, 0.5, 0.75);\nvec3 BackMaterial = vec3(0.75, 0.75, 0.7);\nfloat Shininess = 50.0;\n\nvoid main()\n{\n    vec3 N = normalize(vNormal);\n    if (!gl_FrontFacing)\n        N = -N;\n\n    vec3 L = normalize(LightPosition);\n    vec3 Eye = vec3(0, 0, 1);\n    vec3 H = normalize(L + Eye);\n\n    float df = max(0.0, dot(N, L));\n    float sf = max(0.0, dot(N, H));\n    sf = pow(sf, Shininess);\n\n    vec3 P = vPosition;\n    vec3 I = normalize(P);\n    float cosTheta = abs(dot(I, N));\n    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);\n\n    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;\n    vec3 lighting = AmbientMaterial + df * color;\n    if (gl_FrontFacing)\n        lighting += sf * SpecularMaterial;\n\n    lighting += fresnel;\n    gl_FragColor = vec4(lighting,1);\n}";
+  root.shaders.source["FS-Scene"] = "precision highp float;\nprecision highp vec3;\nvarying vec3 vNormal;\nvarying vec3 vPosition;\n\nvec3 LightPosition = vec3(0.25, 0.5, 1.0);\nvec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);\nvec3 SpecularMaterial = vec3(0.25, 0.25, 0.25);\nvec3 FrontMaterial = vec3(0.25, 0.5, 0.75);\nvec3 BackMaterial = vec3(0.75, 0.75, 0.7);\nfloat Shininess = 50.0;\n\nuniform vec4 Color;\n\nvoid main()\n{\n    vec3 N = normalize(vNormal);\n    if (!gl_FrontFacing)\n        N = -N;\n\n    vec3 L = normalize(LightPosition);\n    vec3 Eye = vec3(0, 0, 1);\n    vec3 H = normalize(L + Eye);\n\n    float df = max(0.0, dot(N, L));\n    float sf = max(0.0, dot(N, H));\n    sf = pow(sf, Shininess);\n\n    vec3 P = vPosition;\n    vec3 I = normalize(P);\n    float cosTheta = abs(dot(I, N));\n    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);\n\n    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;\n    color *= Color.rgb;\n    vec3 lighting = AmbientMaterial + df * color;\n    if (gl_FrontFacing)\n        lighting += sf * SpecularMaterial;\n\n    lighting += fresnel;\n    gl_FragColor = vec4(lighting,1);\n}";
 
   root.shaders.source["VS-Vignette"] = "attribute vec2 VertexID;\nvoid main(void)\n{\n    vec2 p = 3.0 - 4.0 * VertexID;\n    gl_Position = vec4(p, 0, 1);\n}";
 
