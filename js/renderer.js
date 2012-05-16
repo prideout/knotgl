@@ -91,25 +91,45 @@
         this.gl.drawArrays(this.gl.LINE_STRIP, 0, knot.centerline.count);
         this.gl.disableVertexAttribArray(POSITION);
         this.gl.viewport(0, 0, this.width, this.height);
-        this.gl.disable(this.gl.DEPTH_TEST);
-        this.gl.enable(this.gl.BLEND);
-        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-        this.gl.lineWidth(1);
-        program = this.programs.wireframe;
-        this.gl.useProgram(program);
-        this.gl.uniformMatrix4fv(program.projection, false, projection);
-        this.gl.uniformMatrix4fv(program.modelview, false, modelview);
-        this.gl.uniform4f(program.color, 0.5, 0.9, 1, 0.5);
-        this.gl.uniform1f(program.depthOffset, 0);
-        this.gl.uniform1f(program.scale, 1);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
-        this.gl.enableVertexAttribArray(POSITION);
-        this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.wireframe);
-        this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
-        this.gl.disableVertexAttribArray(POSITION);
+        if (true) {
+          this.gl.disable(this.gl.DEPTH_TEST);
+          this.gl.enable(this.gl.BLEND);
+          this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+          this.gl.lineWidth(1);
+          program = this.programs.wireframe;
+          this.gl.useProgram(program);
+          this.gl.uniformMatrix4fv(program.projection, false, projection);
+          this.gl.uniformMatrix4fv(program.modelview, false, modelview);
+          this.gl.uniform4f(program.color, 0.5, 0.9, 1, 0.5);
+          this.gl.uniform1f(program.depthOffset, 0);
+          this.gl.uniform1f(program.scale, 1);
+          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
+          this.gl.enableVertexAttribArray(POSITION);
+          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
+          this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.wireframe);
+          this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
+          this.gl.disableVertexAttribArray(POSITION);
+        }
+        if (false) {
+          program = this.programs.mesh;
+          this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
+          this.gl.enable(this.gl.DEPTH_TEST);
+          this.gl.useProgram(program);
+          this.gl.uniformMatrix4fv(program.projection, false, projection);
+          this.gl.uniformMatrix4fv(program.modelview, false, modelview);
+          this.gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix);
+          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
+          this.gl.enableVertexAttribArray(POSITION);
+          this.gl.enableVertexAttribArray(NORMAL);
+          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 32, 0);
+          this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 32, offset = 12);
+          this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.triangles);
+          this.gl.drawElements(this.gl.TRIANGLES, this.vbos.triangles.count, this.gl.UNSIGNED_SHORT, 0);
+          this.gl.disableVertexAttribArray(POSITION);
+          this.gl.disableVertexAttribArray(NORMAL);
+        }
       }
-      if (true) {
+      if (false) {
         program = this.programs.mesh;
         this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
         this.gl.enable(this.gl.DEPTH_TEST);
@@ -133,7 +153,7 @@
     };
 
     Renderer.prototype.genVertexBuffers = function() {
-      var centerline, i, j, knot, knotData, lineCount, polygonCount, polygonEdge, ptr, rawBuffer, sides, sweepEdge, tube, vbo, wireframe, _i, _len, _ref, _ref1, _ref2, _results;
+      var centerline, faceCount, i, j, knot, knotData, lineCount, next, polygonCount, polygonEdge, ptr, rawBuffer, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _i, _len, _ref, _ref1, _ref2, _ref3, _results;
       this.knots = [];
       _ref = this.tubeGen.getLinkPaths(window.knot_data);
       _results = [];
@@ -174,10 +194,35 @@
         wireframe = vbo;
         wireframe.count = rawBuffer.length;
         console.log("Tube wireframe has " + rawBuffer.length + " indices for " + sides + " sides and " + (centerline.count - 1) + " polygons.");
+        faceCount = (centerline.count - 1) * sides * 2;
+        rawBuffer = new Uint16Array(faceCount * 3);
+        _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
+        while (++i < centerline.count - 1) {
+          j = -1;
+          while (++j < sides) {
+            next = (j + 1) % sides;
+            tri = rawBuffer.subarray(ptr + 0, ptr + 3);
+            tri[2] = v + next + sides;
+            tri[1] = v + next;
+            tri[0] = v + j;
+            tri = rawBuffer.subarray(ptr + 3, ptr + 6);
+            tri[2] = v + j;
+            tri[1] = v + j + sides;
+            tri[0] = v + next + sides;
+            ptr += 6;
+          }
+          v += sides;
+        }
+        vbo = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
+        triangles = vbo;
+        triangles.count = rawBuffer.length;
         knot = {
           centerline: centerline,
           tube: tube,
-          wireframe: wireframe
+          wireframe: wireframe,
+          triangles: triangles
         };
         _results.push(this.knots.push(knot));
       }

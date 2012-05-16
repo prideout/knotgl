@@ -75,26 +75,47 @@ class Renderer
       @gl.viewport(0,0,@width,@height)
 
       # Draw the wireframe
-      @gl.disable(@gl.DEPTH_TEST)
-      @gl.enable(@gl.BLEND)
-      @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-      @gl.lineWidth(1)
-      program = @programs.wireframe
-      @gl.useProgram(program)
-      @gl.uniformMatrix4fv(program.projection, false, projection)
-      @gl.uniformMatrix4fv(program.modelview, false, modelview)
-      @gl.uniform4f(program.color, 0.5,0.9,1,0.5)
-      @gl.uniform1f(program.depthOffset, 0)
-      @gl.uniform1f(program.scale, 1)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
-      @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-      @gl.disableVertexAttribArray(POSITION)
+      if true
+        @gl.disable(@gl.DEPTH_TEST)
+        @gl.enable(@gl.BLEND)
+        @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+        @gl.lineWidth(1)
+        program = @programs.wireframe
+        @gl.useProgram(program)
+        @gl.uniformMatrix4fv(program.projection, false, projection)
+        @gl.uniformMatrix4fv(program.modelview, false, modelview)
+        @gl.uniform4f(program.color, 0.5,0.9,1,0.5)
+        @gl.uniform1f(program.depthOffset, 0)
+        @gl.uniform1f(program.scale, 1)
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+        @gl.enableVertexAttribArray(POSITION)
+        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
+        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+        @gl.disableVertexAttribArray(POSITION)
+
+      # Draw the solid knot
+      if false
+        program = @programs.mesh
+        @gl.clear(@gl.DEPTH_BUFFER_BIT)
+        @gl.enable(@gl.DEPTH_TEST)
+        @gl.useProgram(program)
+        @gl.uniformMatrix4fv(program.projection, false, projection)
+        @gl.uniformMatrix4fv(program.modelview, false, modelview)
+        @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+        @gl.enableVertexAttribArray(POSITION)
+        @gl.enableVertexAttribArray(NORMAL)
+        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 32, 0)
+        @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 32, offset = 12)
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
+        @gl.drawElements(@gl.TRIANGLES, @vbos.triangles.count, @gl.UNSIGNED_SHORT, 0)
+        @gl.disableVertexAttribArray(POSITION)
+        @gl.disableVertexAttribArray(NORMAL)
+
 
     # Draw the Mobius tube
-    if true
+    if false
       program = @programs.mesh
       @gl.clear(@gl.DEPTH_BUFFER_BIT)
       @gl.enable(@gl.DEPTH_TEST)
@@ -118,6 +139,7 @@ class Renderer
 
     @knots = []
     for knotData in @tubeGen.getLinkPaths(window.knot_data)
+
       # Create a line strip VBO for a knot centerline
       # The first vertex is repeated for good uv hygiene
       vbo = @gl.createBuffer()
@@ -158,8 +180,32 @@ class Renderer
       wireframe.count = rawBuffer.length
       console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{centerline.count-1} polygons."
 
+      # Create the index buffer for the solid tube
+      faceCount = (centerline.count - 1) * sides * 2
+      rawBuffer = new Uint16Array(faceCount * 3)
+      [i, ptr, v] = [0, 0, 0]
+      while ++i < centerline.count - 1
+        j = -1
+        while ++j < sides
+          next = (j + 1) % sides
+          tri = rawBuffer.subarray(ptr+0, ptr+3)
+          tri[2] = v+next+sides
+          tri[1] = v+next
+          tri[0] = v+j
+          tri = rawBuffer.subarray(ptr+3, ptr+6)
+          tri[2] = v+j
+          tri[1] = v+j+sides
+          tri[0] = v+next+sides
+          ptr += 6
+        v += sides
+      vbo = @gl.createBuffer()
+      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
+      @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
+      triangles = vbo
+      triangles.count = rawBuffer.length
+
       # Append the knot to the list
-      knot = {centerline: centerline, tube: tube, wireframe: wireframe}
+      knot = {centerline: centerline, tube: tube, wireframe: wireframe, triangles: triangles}
       @knots.push knot
 
   genHugeTriangle: ->
