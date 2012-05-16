@@ -3,7 +3,7 @@ root = exports ? this
 # Constructs tube meshes and smooth centerlines
 # Note that a "tube" is actually a swept polygon.
 class TubeGenerator
-  constructor: () ->
+  constructor: ->
     @scale = 0.15
     @bézierSlices = 3
     @tangentSmoothness = 3
@@ -134,12 +134,10 @@ class TubeGenerator
     [frameR, frameS, frameT]
 
 root.TubeGenerator = TubeGenerator
-
 TWOPI = 2 * Math.PI
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
-
 perp = (u, dest) ->
   v = vec3.create([1,0,0])
   vec3.cross(u,v,dest)
