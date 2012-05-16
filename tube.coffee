@@ -56,10 +56,10 @@ class TubeGenerator
     n = @polygonSides
     frames = @generateFrames(centerline)
     count = centerline.length / 3
-    mesh = new Float32Array(count * (n+1) * 3)
+    mesh = new Float32Array(count * (n+1) * 6)
     [i, m] = [0, 0]
     p = vec3.create()
-    r = 0.1
+    r = @radius
     while i < count
       v = 0
       basis = (frames[C].subarray(i*3,i*3+3) for C in [0..2])
@@ -73,14 +73,35 @@ class TubeGenerator
         y = r*sin(theta)
         z = 0
         mat3.multiplyVec3(basis, [x,y,z], p)
-        p[0] += centerline[i*3+0] # TODO clean this
+        p[0] += centerline[i*3+0]
         p[1] += centerline[i*3+1]
         p[2] += centerline[i*3+2]
-        #console.log "GenerateTube: P = #{vec3.str(p)}"
-        mesh.set(p, m)
-        [m, v, theta] = [m+3,v+1,theta+dtheta]
+
+        # Stamp p into 'm', skipping over the normal:
+        mesh.set p, m
+        [m, v, theta] = [m+6,v+1,theta+dtheta]
       i++
     console.log "GenerateTube: generated #{m} vertices from a centerline with #{count} nodes."
+
+    # Next, populate normals:
+    [i, m] = [0, 0]
+    normal= vec3.create()
+    center = vec3.create()
+    while i < count
+      v = 0
+      while v < n+1
+        p[0] = mesh[m+0]
+        p[1] = mesh[m+1]
+        p[2] = mesh[m+2]
+        center[0] = centerline[i*3+0] # there has GOT to be a better way
+        center[1] = centerline[i*3+1]
+        center[2] = centerline[i*3+2]
+        vec3.direction(p, center, normal)
+
+        # Stamp n into 'm', skipping over the position:
+        mesh.set normal, m+3
+        [m, v] = [m+6,v+1]
+      i++
     mesh
 
   # Generate reasonable orthonormal basis vectors for curve in R3.

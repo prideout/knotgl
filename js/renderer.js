@@ -65,11 +65,11 @@
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
         this.gl.disableVertexAttribArray(VERTEXID);
       }
+      this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
       _ref = this.knots;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         knot = _ref[_i];
         this.gl.viewport(0, 0, this.width / 8, this.height / 8);
-        this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
@@ -91,7 +91,7 @@
         this.gl.drawArrays(this.gl.LINE_STRIP, 0, knot.centerline.count);
         this.gl.disableVertexAttribArray(POSITION);
         this.gl.viewport(0, 0, this.width, this.height);
-        if (true) {
+        if (false) {
           this.gl.disable(this.gl.DEPTH_TEST);
           this.gl.enable(this.gl.BLEND);
           this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
@@ -105,14 +105,13 @@
           this.gl.uniform1f(program.scale, 1);
           this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
           this.gl.enableVertexAttribArray(POSITION);
-          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
+          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
           this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.wireframe);
           this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
           this.gl.disableVertexAttribArray(POSITION);
         }
-        if (false) {
+        if (true) {
           program = this.programs.mesh;
-          this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
           this.gl.enable(this.gl.DEPTH_TEST);
           this.gl.useProgram(program);
           this.gl.uniformMatrix4fv(program.projection, false, projection);
@@ -121,17 +120,16 @@
           this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
           this.gl.enableVertexAttribArray(POSITION);
           this.gl.enableVertexAttribArray(NORMAL);
-          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 32, 0);
-          this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 32, offset = 12);
+          this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
+          this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 24, offset = 12);
           this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.triangles);
-          this.gl.drawElements(this.gl.TRIANGLES, this.vbos.triangles.count, this.gl.UNSIGNED_SHORT, 0);
+          this.gl.drawElements(this.gl.TRIANGLES, knot.triangles.count, this.gl.UNSIGNED_SHORT, 0);
           this.gl.disableVertexAttribArray(POSITION);
           this.gl.disableVertexAttribArray(NORMAL);
         }
       }
       if (false) {
         program = this.programs.mesh;
-        this.gl.clear(this.gl.DEPTH_BUFFER_BIT);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.useProgram(program);
         this.gl.uniformMatrix4fv(program.projection, false, projection);
@@ -202,13 +200,13 @@
           while (++j < sides) {
             next = (j + 1) % sides;
             tri = rawBuffer.subarray(ptr + 0, ptr + 3);
-            tri[2] = v + next + sides;
-            tri[1] = v + next;
-            tri[0] = v + j;
-            tri = rawBuffer.subarray(ptr + 3, ptr + 6);
-            tri[2] = v + j;
-            tri[1] = v + j + sides;
             tri[0] = v + next + sides;
+            tri[1] = v + next;
+            tri[2] = v + j;
+            tri = rawBuffer.subarray(ptr + 3, ptr + 6);
+            tri[0] = v + j;
+            tri[1] = v + j + sides;
+            tri[2] = v + next + sides;
             ptr += 6;
           }
           v += sides;

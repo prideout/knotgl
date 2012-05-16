@@ -47,11 +47,12 @@ class Renderer
       @gl.drawArrays(@gl.TRIANGLES, 0, 3)
       @gl.disableVertexAttribArray(VERTEXID)
 
+    @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
+
     for knot in @knots
 
       # Draw the centerline
       @gl.viewport(0,0,@width/8,@height/8)
-      @gl.clear(@gl.DEPTH_BUFFER_BIT)
       @gl.enable(@gl.DEPTH_TEST)
       @gl.enable(@gl.BLEND)
       @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
@@ -75,7 +76,7 @@ class Renderer
       @gl.viewport(0,0,@width,@height)
 
       # Draw the wireframe
-      if true
+      if false
         @gl.disable(@gl.DEPTH_TEST)
         @gl.enable(@gl.BLEND)
         @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
@@ -89,15 +90,14 @@ class Renderer
         @gl.uniform1f(program.scale, 1)
         @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
         @gl.enableVertexAttribArray(POSITION)
-        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
         @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
         @gl.disableVertexAttribArray(POSITION)
 
       # Draw the solid knot
-      if false
+      if true
         program = @programs.mesh
-        @gl.clear(@gl.DEPTH_BUFFER_BIT)
         @gl.enable(@gl.DEPTH_TEST)
         @gl.useProgram(program)
         @gl.uniformMatrix4fv(program.projection, false, projection)
@@ -106,10 +106,10 @@ class Renderer
         @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
         @gl.enableVertexAttribArray(POSITION)
         @gl.enableVertexAttribArray(NORMAL)
-        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 32, 0)
-        @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 32, offset = 12)
+        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+        @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
-        @gl.drawElements(@gl.TRIANGLES, @vbos.triangles.count, @gl.UNSIGNED_SHORT, 0)
+        @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
         @gl.disableVertexAttribArray(POSITION)
         @gl.disableVertexAttribArray(NORMAL)
 
@@ -117,7 +117,6 @@ class Renderer
     # Draw the Mobius tube
     if false
       program = @programs.mesh
-      @gl.clear(@gl.DEPTH_BUFFER_BIT)
       @gl.enable(@gl.DEPTH_TEST)
       @gl.useProgram(program)
       @gl.uniformMatrix4fv(program.projection, false, projection)
@@ -189,13 +188,13 @@ class Renderer
         while ++j < sides
           next = (j + 1) % sides
           tri = rawBuffer.subarray(ptr+0, ptr+3)
-          tri[2] = v+next+sides
-          tri[1] = v+next
-          tri[0] = v+j
-          tri = rawBuffer.subarray(ptr+3, ptr+6)
-          tri[2] = v+j
-          tri[1] = v+j+sides
           tri[0] = v+next+sides
+          tri[1] = v+next
+          tri[2] = v+j
+          tri = rawBuffer.subarray(ptr+3, ptr+6)
+          tri[0] = v+j
+          tri[1] = v+j+sides
+          tri[2] = v+next+sides
           ptr += 6
         v += sides
       vbo = @gl.createBuffer()

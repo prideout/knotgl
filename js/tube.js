@@ -87,14 +87,14 @@
     };
 
     TubeGenerator.prototype.generateTube = function(centerline) {
-      var B, C, basis, count, dtheta, frames, i, m, mesh, n, p, r, theta, v, x, y, z, _ref, _ref1;
+      var B, C, basis, center, count, dtheta, frames, i, m, mesh, n, normal, p, r, theta, v, x, y, z, _ref, _ref1, _ref2, _ref3;
       n = this.polygonSides;
       frames = this.generateFrames(centerline);
       count = centerline.length / 3;
-      mesh = new Float32Array(count * (n + 1) * 3);
+      mesh = new Float32Array(count * (n + 1) * 6);
       _ref = [0, 0], i = _ref[0], m = _ref[1];
       p = vec3.create();
-      r = 0.1;
+      r = this.radius;
       while (i < count) {
         v = 0;
         basis = (function() {
@@ -136,11 +136,29 @@
           p[1] += centerline[i * 3 + 1];
           p[2] += centerline[i * 3 + 2];
           mesh.set(p, m);
-          _ref1 = [m + 3, v + 1, theta + dtheta], m = _ref1[0], v = _ref1[1], theta = _ref1[2];
+          _ref1 = [m + 6, v + 1, theta + dtheta], m = _ref1[0], v = _ref1[1], theta = _ref1[2];
         }
         i++;
       }
       console.log("GenerateTube: generated " + m + " vertices from a centerline with " + count + " nodes.");
+      _ref2 = [0, 0], i = _ref2[0], m = _ref2[1];
+      normal = vec3.create();
+      center = vec3.create();
+      while (i < count) {
+        v = 0;
+        while (v < n + 1) {
+          p[0] = mesh[m + 0];
+          p[1] = mesh[m + 1];
+          p[2] = mesh[m + 2];
+          center[0] = centerline[i * 3 + 0];
+          center[1] = centerline[i * 3 + 1];
+          center[2] = centerline[i * 3 + 2];
+          vec3.direction(p, center, normal);
+          mesh.set(normal, m + 3);
+          _ref3 = [m + 6, v + 1], m = _ref3[0], v = _ref3[1];
+        }
+        i++;
+      }
       return mesh;
     };
 
