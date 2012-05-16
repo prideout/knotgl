@@ -17,6 +17,7 @@ class Renderer
 
   compileShaders: ->
     for name, metadata of root.shaders
+      continue if name == "source"
       [vs, fs] = metadata.keys
       @programs[name] = @compileProgram vs, fs, metadata.attribs, metadata.uniforms
 
@@ -41,10 +42,10 @@ class Renderer
       @gl.useProgram(program)
       @gl.uniform2f(program.viewport, @width, @height)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.bigtri)
-      @gl.enableVertexAttribArray(attrs.VERTEXID)
-      @gl.vertexAttribPointer(attrs.VERTEXID, 2, @gl.FLOAT, false, stride = 8, 0)
+      @gl.enableVertexAttribArray(VERTEXID)
+      @gl.vertexAttribPointer(VERTEXID, 2, @gl.FLOAT, false, stride = 8, 0)
       @gl.drawArrays(@gl.TRIANGLES, 0, 3)
-      @gl.disableVertexAttribArray(attrs.VERTEXID)
+      @gl.disableVertexAttribArray(VERTEXID)
 
     # Draw the centerline
     if true
@@ -58,8 +59,8 @@ class Renderer
       @gl.uniformMatrix4fv(program.projection, false, projection)
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.centerline)
-      @gl.enableVertexAttribArray(attrs.POSITION)
-      @gl.vertexAttribPointer(attrs.POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+      @gl.enableVertexAttribArray(POSITION)
+      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
       @gl.uniform1f(program.scale, 1)
       @gl.lineWidth(5)
       @gl.uniform4f(program.color, 0,0,0,0.75)
@@ -69,7 +70,7 @@ class Renderer
       @gl.uniform4f(program.color, 1,1,1,0.75)
       @gl.uniform1f(program.depthOffset, -0.01)
       @gl.drawArrays(@gl.LINE_STRIP, 0, @vbos.centerline.count)
-      @gl.disableVertexAttribArray(attrs.POSITION)
+      @gl.disableVertexAttribArray(POSITION)
       @gl.viewport(0,0,@width,@height)
 
     # Draw the wireframe
@@ -86,14 +87,14 @@ class Renderer
       @gl.uniform1f(program.depthOffset, 0)
       @gl.uniform1f(program.scale, 1)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.tube)
-      @gl.enableVertexAttribArray(attrs.POSITION)
-      @gl.vertexAttribPointer(attrs.POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+      @gl.enableVertexAttribArray(POSITION)
+      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
       @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, @vbos.wireframe)
       @gl.drawElements(@gl.LINES, @vbos.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-      @gl.disableVertexAttribArray(attrs.POSITION)
+      @gl.disableVertexAttribArray(POSITION)
 
     # Draw the Mobius tube
-    if false
+    if true
       program = @programs.mesh
       @gl.clear(@gl.DEPTH_BUFFER_BIT)
       @gl.enable(@gl.DEPTH_TEST)
@@ -102,17 +103,16 @@ class Renderer
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
       @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.mesh)
-      @gl.enableVertexAttribArray(attrs.POSITION)
-      @gl.enableVertexAttribArray(attrs.NORMAL)
-      @gl.vertexAttribPointer(attrs.POSITION, 3, @gl.FLOAT, false, stride = 32, 0)
-      @gl.vertexAttribPointer(attrs.NORMAL, 3, @gl.FLOAT, false, stride = 32, offset = 12)
+      @gl.enableVertexAttribArray(POSITION)
+      @gl.enableVertexAttribArray(NORMAL)
+      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 32, 0)
+      @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 32, offset = 12)
       @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, @vbos.faces)
       @gl.drawElements(@gl.TRIANGLES, @vbos.faces.count, @gl.UNSIGNED_SHORT, 0)
-      @gl.disableVertexAttribArray(attrs.POSITION)
-      @gl.disableVertexAttribArray(attrs.NORMAL)
+      @gl.disableVertexAttribArray(POSITION)
+      @gl.disableVertexAttribArray(NORMAL)
 
-    if @gl.getError() != @gl.NO_ERROR
-      glerr "Render"
+    glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
   genVertexBuffers: ->
     # Create a line strip VBO for a knot centerline
@@ -227,14 +227,32 @@ class Renderer
 
   # Compile and link the given shader strings and metadata
   compileProgram: (vName, fName, attribs, uniforms) ->
-    vs = getShader(@gl, vName)
-    fs = getShader(@gl, fName)
+
+    compileShader = (gl, name, handle) ->
+      gl.compileShader handle
+      status = gl.getShaderParameter(handle, gl.COMPILE_STATUS)
+      $.gritter.add {title: "GLSL Error: #{name}", text: gl.getShaderInfoLog(handle)} unless status
+
+    # Compile vertex shader
+    vSource = root.shaders.source[vName]
+    vShader = @gl.createShader(@gl.VERTEX_SHADER)
+    @gl.shaderSource vShader, vSource
+    compileShader @gl, vName, vShader
+
+    # Compile fragment shader
+    fSource = root.shaders.source[fName]
+    fShader = @gl.createShader(@gl.FRAGMENT_SHADER)
+    @gl.shaderSource fShader, fSource
+    compileShader @gl, fName, fShader
+
+    # Link 'em
     program = @gl.createProgram()
-    @gl.attachShader(program, vs)
-    @gl.attachShader(program, fs)
+    @gl.attachShader program, vShader
+    @gl.attachShader program, fShader
     @gl.bindAttribLocation(program, value, key) for key, value of attribs
-    @gl.linkProgram(program)
-    glerr('Could not link #{vName} with #{fName}') unless @gl.getProgramParameter(program, @gl.LINK_STATUS)
+    @gl.linkProgram program
+    status = @gl.getProgramParameter(program, @gl.LINK_STATUS)
+    glerr("Could not link #{vName} with #{fName}") unless status
     program[value] = @gl.getUniformLocation(program, key) for key, value of uniforms
     program
 
@@ -243,5 +261,4 @@ root.Renderer = Renderer
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 TWOPI = 2 * Math.PI
-attrs = root.semantics
 staticRender = -> root.renderer.render()

@@ -9,150 +9,21 @@
 <script type="text/javascript" src="js/jquery.gritter.js"></script>
 <script type="text/javascript" src="js/gl-matrix-min.js"></script>
 <script type="text/javascript" src="js/8.js"></script>
-<script type="text/javascript" src="js/tube.js"></script>
-<script type="text/javascript" src="js/application.js"></script>
-<script type="text/javascript" src="js/shaders.js"></script>
-<script type="text/javascript" src="js/renderer.js"></script>
-
-<!-- VERTEX SHADER -->
-<script id="VS-Scene" type="x-shader/x-vertex">
-attribute vec4 Position;
-attribute vec3 Normal;
-uniform mat4 Modelview;
-uniform mat4 Projection;
-uniform mat3 NormalMatrix;
-varying vec3 vPosition;
-varying vec3 vNormal;
-void main(void)
-{
-    vPosition = Position.xyz;
-    vNormal = NormalMatrix * Normal;
-    gl_Position = Projection * Modelview * Position;
-}
-</script>
-
-<!-- VERTEX SHADER -->
-<script id="VS-Wireframe" type="x-shader/x-vertex">
-attribute vec4 Position;
-uniform mat4 Modelview;
-uniform mat4 Projection;
-uniform float DepthOffset;
-uniform float Scale;
-void main(void)
-{
-    vec4 p = Position;
-    p.xyz *= Scale;
-    gl_Position = Projection * Modelview * p;
-    gl_Position.z += DepthOffset;
-}
-</script>
-
-<!-- FRAGMENT SHADER -->
-<script id="FS-Wireframe" type="x-shader/x-fragment">
-precision highp float;
-precision highp vec3;
-uniform vec4 Color;
-void main()
-{
-    gl_FragColor = Color;
-}
-</script>
-
-<!-- FRAGMENT SHADER -->
-<script id="FS-Scene" type="x-shader/x-fragment">
-precision highp float;
-precision highp vec3;
-varying vec3 vNormal;
-varying vec3 vPosition;
-
-vec3 LightPosition = vec3(0.25, 0.5, 1.0);
-vec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);
-vec3 SpecularMaterial = vec3(0.25, 0.25, 0.25);
-vec3 FrontMaterial = vec3(0.25, 0.5, 0.75);
-vec3 BackMaterial = vec3(0.75, 0.75, 0.7);
-float Shininess = 50.0;
-
-void main()
-{
-    vec3 N = normalize(vNormal);
-    if (!gl_FrontFacing)
-        N = -N;
-        
-    vec3 L = normalize(LightPosition);
-    vec3 Eye = vec3(0, 0, 1);
-    vec3 H = normalize(L + Eye);
-    
-    float df = max(0.0, dot(N, L));
-    float sf = max(0.0, dot(N, H));
-    sf = pow(sf, Shininess);
-
-    vec3 P = vPosition;
-    vec3 I = normalize(P);
-    float cosTheta = abs(dot(I, N));
-    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);
-
-    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;
-    vec3 lighting = AmbientMaterial + df * color;
-    if (gl_FrontFacing)
-        lighting += sf * SpecularMaterial;
-
-    lighting += fresnel;
-    gl_FragColor = vec4(lighting,1);
-}
-</script>
-
-<!-- VERTEX SHADER -->
-<script id="VS-Vignette" type="x-shader/x-vertex">
-attribute vec2 VertexID;
-void main(void)
-{
-    vec2 p = 3.0 - 4.0 * VertexID;
-    gl_Position = vec4(p, 0, 1);
-}
-</script>
-
-<!-- FRAGMENT SHADER -->
-<script id="FS-Vignette" type="x-shader/x-fragment">
-precision highp float;
-precision highp vec2;
-
-uniform vec2 Viewport;
-void main()
-{
-    vec2 c = gl_FragCoord.xy / Viewport;
-    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);
-    gl_FragColor = vec4(f, f, f, 1);
-    gl_FragColor.rgb *= vec3(0.867, 0.18, 0.447); // Hot Pink!
-}
-</script>
-
-<!-- SHADER UTILITIES -->
 <script type="text/javascript">
-function getShader(gl, id)
+
+// Vertex Attribute Semantics
+VERTEXID = 0;
+POSITION = 0;
+NORMAL   = 1;
+TEXCOORD = 2;
+
+// Global Utilities
+function glerr(msg) { $.gritter.add({ title: 'WebGL Error', text: msg }); }
+function toast(msg) { $.gritter.add({ title: 'Notice', text: msg }); }
+
+// Entry Point
+function init()
 {
-    var shaderScript = document.getElementById(id);
-    var shader;
-    if (shaderScript.type == "x-shader/x-fragment")    shader = gl.createShader(gl.FRAGMENT_SHADER);
-    else if (shaderScript.type == "x-shader/x-vertex") shader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(shader, shaderScript.innerText);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        $.gritter.add({title: 'GLSL Error with ' + id, text: gl.getShaderInfoLog(shader) });
-        return null;
-    }
-    return shader;
-}
-function glerr(msg)
-{
-    $.gritter.add({ title: 'WebGL Error', text: msg });
-}
-function glinfo(msg)
-{
-    $.gritter.add({ title: 'General Notice', text: msg });
-}
-function glinit()
-{
-    // Sync animation to refresh rate (from Google's webgl-utils.js)
     window.requestAnimFrame = (function() {
     return window.requestAnimationFrame ||
         window.webkitRequestAnimationFrame ||
@@ -163,15 +34,15 @@ function glinit()
            window.setTimeout(callback, 1000/60);
          };
     })();
-
-    // Now, call our coffeescript application code:
     window.AppInit();
 }
 </script>
+<script type="text/javascript" src="js/tube.js"></script>
+<script type="text/javascript" src="js/application.js"></script>
+<script type="text/javascript" src="js/shaders.js"></script>
+<script type="text/javascript" src="js/renderer.js"></script>
 </head>
-
-<!-- WEB PAGE BODY -->
-<body onload="glinit()">
+<body onload="init()">
   <!--canvas width="1600" height="1200" style="width: 1600px; height: 1200px;"-->
   <canvas width="800" height="600" style="width: 800px; height: 600px;">
   </canvas>
