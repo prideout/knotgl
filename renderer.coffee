@@ -47,8 +47,9 @@ class Renderer
       @gl.drawArrays(@gl.TRIANGLES, 0, 3)
       @gl.disableVertexAttribArray(VERTEXID)
 
-    # Draw the centerline
-    if true
+    for knot in @knots
+
+      # Draw the centerline
       @gl.viewport(0,0,@width/8,@height/8)
       @gl.clear(@gl.DEPTH_BUFFER_BIT)
       @gl.enable(@gl.DEPTH_TEST)
@@ -58,23 +59,22 @@ class Renderer
       @gl.useProgram(program)
       @gl.uniformMatrix4fv(program.projection, false, projection)
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.centerline)
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.centerline)
       @gl.enableVertexAttribArray(POSITION)
       @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
       @gl.uniform1f(program.scale, 1)
       @gl.lineWidth(5)
       @gl.uniform4f(program.color, 0,0,0,0.75)
       @gl.uniform1f(program.depthOffset, 0)
-      @gl.drawArrays(@gl.LINE_STRIP, 0, @vbos.centerline.count)
+      @gl.drawArrays(@gl.LINE_STRIP, 0, knot.centerline.count)
       @gl.lineWidth(2)
       @gl.uniform4f(program.color, 1,1,1,0.75)
       @gl.uniform1f(program.depthOffset, -0.01)
-      @gl.drawArrays(@gl.LINE_STRIP, 0, @vbos.centerline.count)
+      @gl.drawArrays(@gl.LINE_STRIP, 0, knot.centerline.count)
       @gl.disableVertexAttribArray(POSITION)
       @gl.viewport(0,0,@width,@height)
 
-    # Draw the wireframe
-    if true
+      # Draw the wireframe
       @gl.disable(@gl.DEPTH_TEST)
       @gl.enable(@gl.BLEND)
       @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
@@ -86,11 +86,11 @@ class Renderer
       @gl.uniform4f(program.color, 0.5,0.9,1,0.5)
       @gl.uniform1f(program.depthOffset, 0)
       @gl.uniform1f(program.scale, 1)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.tube)
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
       @gl.enableVertexAttribArray(POSITION)
       @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, @vbos.wireframe)
-      @gl.drawElements(@gl.LINES, @vbos.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
+      @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
       @gl.disableVertexAttribArray(POSITION)
 
     # Draw the Mobius tube
@@ -115,46 +115,52 @@ class Renderer
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
   genVertexBuffers: ->
-    # Create a line strip VBO for a knot centerline
-    # The first vertex is repeated for good uv hygiene
-    rawBuffer = @tubeGen.getLinkPaths(window.knot_data)[0]
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    @vbos.centerline = vbo
-    @vbos.centerline.count = rawBuffer.length / 3
 
-    # Create a positions buffer for a swept octagon
-    rawBuffer = @tubeGen.generateTube(rawBuffer)
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    console.log "Tube positions has #{rawBuffer.length/3} verts."
-    @vbos.tube = vbo
+    @knots = []
+    for knotData in @tubeGen.getLinkPaths(window.knot_data)
+      # Create a line strip VBO for a knot centerline
+      # The first vertex is repeated for good uv hygiene
+      vbo = @gl.createBuffer()
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
+      @gl.bufferData(@gl.ARRAY_BUFFER, knotData, @gl.STATIC_DRAW)
+      centerline = vbo
+      centerline.count = knotData.length / 3
 
-    # Create the index buffer for the tube wireframe
-    polygonCount = @vbos.centerline.count - 1
-    sides = @tubeGen.polygonSides
-    lineCount = polygonCount * sides * 2
-    rawBuffer = new Uint16Array(lineCount * 2)
-    [i, ptr] = [0, 0]
-    while i < polygonCount * (sides+1)
-      j = 0
-      while j < sides
-        polygonEdge = rawBuffer.subarray(ptr+0, ptr+2)
-        polygonEdge[0] = i+j
-        polygonEdge[1] = i+j+1
-        sweepEdge = rawBuffer.subarray(ptr+2, ptr+4)
-        sweepEdge[0] = i+j
-        sweepEdge[1] = i+j+sides+1
-        [ptr, j] = [ptr+4, j+1]
-      i += sides+1
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    @vbos.wireframe = vbo
-    @vbos.wireframe.count = rawBuffer.length
-    console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{@vbos.centerline.count-1} polygons."
+      # Create a positions buffer for a swept octagon
+      rawBuffer = @tubeGen.generateTube(knotData)
+      vbo = @gl.createBuffer()
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
+      @gl.bufferData(@gl.ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
+      console.log "Tube positions has #{rawBuffer.length/3} verts."
+      tube = vbo
+
+      # Create the index buffer for the tube wireframe
+      polygonCount = centerline.count - 1
+      sides = @tubeGen.polygonSides
+      lineCount = polygonCount * sides * 2
+      rawBuffer = new Uint16Array(lineCount * 2)
+      [i, ptr] = [0, 0]
+      while i < polygonCount * (sides+1)
+        j = 0
+        while j < sides
+          polygonEdge = rawBuffer.subarray(ptr+0, ptr+2)
+          polygonEdge[0] = i+j
+          polygonEdge[1] = i+j+1
+          sweepEdge = rawBuffer.subarray(ptr+2, ptr+4)
+          sweepEdge[0] = i+j
+          sweepEdge[1] = i+j+sides+1
+          [ptr, j] = [ptr+4, j+1]
+        i += sides+1
+      vbo = @gl.createBuffer()
+      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
+      @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
+      wireframe = vbo
+      wireframe.count = rawBuffer.length
+      console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{centerline.count-1} polygons."
+
+      # Append the knot to the list
+      knot = {centerline: centerline, tube: tube, wireframe: wireframe}
+      @knots.push knot
 
   genHugeTriangle: ->
     corners = [ -1, 3, -1, -1, 3, -1]
