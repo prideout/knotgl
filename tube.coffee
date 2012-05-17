@@ -7,8 +7,8 @@ class TubeGenerator
     @scale = 0.15
     @bézierSlices = 3
     @tangentSmoothness = 3
-    @polygonSides = 8
-    @radius = 0.1
+    @polygonSides = 9
+    @radius = 0.07
 
   # Returns a list of knot paths
   getLinkPaths: (links) ->

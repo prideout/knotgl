@@ -33,7 +33,12 @@ class Renderer
     mat4.rotateY(model, @theta)
     mat4.multiply(view, model, modelview)
     normalMatrix = mat4.toMat3(modelview)
-    @theta += 0.02
+
+    currentTime = new Date().getTime()
+    if @previousTime?
+      elapsed = currentTime - @previousTime
+      @theta += 0.002 * elapsed
+    @previousTime = currentTime
 
     # Draw the hot pink background (why is this so slow?)
     if false
@@ -51,7 +56,7 @@ class Renderer
 
     @knots[0].color = [1,1,1,0.75]
     @knots[1].color = [0.25,0.5,1,0.75]
-    @knots[2].color = [1,1,0.5,0.75]
+    @knots[2].color = [1,0.5,0.25,0.75]
 
     for knot in @knots
 
@@ -164,6 +169,7 @@ class Renderer
       tube = vbo
 
       # Create the index buffer for the tube wireframe
+      # TODO This can be sometimes be re-used from one knot to another
       polygonCount = centerline.count - 1
       sides = @tubeGen.polygonSides
       lineCount = polygonCount * sides * 2
@@ -188,23 +194,24 @@ class Renderer
       console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{centerline.count-1} polygons."
 
       # Create the index buffer for the solid tube
-      faceCount = (centerline.count - 1) * sides * 2
+      # TODO This can be sometimes be re-used from one knot to another
+      faceCount = centerline.count * sides * 2
       rawBuffer = new Uint16Array(faceCount * 3)
       [i, ptr, v] = [0, 0, 0]
-      while ++i < centerline.count - 1
+      while ++i < centerline.count
         j = -1
         while ++j < sides
           next = (j + 1) % sides
           tri = rawBuffer.subarray(ptr+0, ptr+3)
-          tri[0] = v+next+sides
+          tri[0] = v+next+sides+1
           tri[1] = v+next
           tri[2] = v+j
           tri = rawBuffer.subarray(ptr+3, ptr+6)
           tri[0] = v+j
-          tri[1] = v+j+sides
-          tri[2] = v+next+sides
+          tri[1] = v+j+sides+1
+          tri[2] = v+next+sides+1
           ptr += 6
-        v += sides
+        v += sides+1
       vbo = @gl.createBuffer()
       @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
       @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
