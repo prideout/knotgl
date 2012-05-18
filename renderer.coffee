@@ -97,52 +97,51 @@ class Renderer
       @gl.viewport(0,0,@width,@height)
 
       # Draw the solid knot
-      if true
-        program = @programs.solidmesh
-        @gl.enable(@gl.DEPTH_TEST)
-        @gl.useProgram(program)
-        setColor(@gl, program.color)
-        @gl.uniformMatrix4fv(program.projection, false, projection)
-        @gl.uniformMatrix4fv(program.modelview, false, modelview)
-        @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-        @gl.enableVertexAttribArray(POSITION)
-        @gl.enableVertexAttribArray(NORMAL)
-        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-        @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
-        if @style == Style.SILHOUETTE
-          @gl.enable(@gl.POLYGON_OFFSET_FILL)
-          @gl.polygonOffset(-4,16)
-        @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
-        @gl.disableVertexAttribArray(POSITION)
-        @gl.disableVertexAttribArray(NORMAL)
-        @gl.disable(@gl.POLYGON_OFFSET_FILL)
+      program = @programs.solidmesh
+      @gl.enable(@gl.DEPTH_TEST)
+      @gl.useProgram(program)
+      setColor(@gl, program.color)
+      @gl.uniformMatrix4fv(program.projection, false, projection)
+      @gl.uniformMatrix4fv(program.modelview, false, modelview)
+      @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+      @gl.enableVertexAttribArray(POSITION)
+      @gl.enableVertexAttribArray(NORMAL)
+      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+      @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
+      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
+      if @style == Style.SILHOUETTE
+        @gl.enable(@gl.POLYGON_OFFSET_FILL)
+        @gl.polygonOffset(-4,16)
+      @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
+      @gl.disableVertexAttribArray(POSITION)
+      @gl.disableVertexAttribArray(NORMAL)
+      @gl.disable(@gl.POLYGON_OFFSET_FILL)
 
       # Draw the wireframe
-      if true
-        @gl.enable(@gl.BLEND)
-        @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-        program = @programs.wireframe
-        @gl.useProgram(program)
-        @gl.uniformMatrix4fv(program.projection, false, projection)
-        @gl.uniformMatrix4fv(program.modelview, false, modelview)
-        @gl.uniform1f(program.scale, 1)
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-        @gl.enableVertexAttribArray(POSITION)
-        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
-        if @style == Style.WIREFRAME
-          @gl.lineWidth(1)
-          @gl.uniform1f(program.depthOffset, -0.01)
-          @gl.uniform4f(program.color, 0,0,0,0.75)
-          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-        else
-          @gl.lineWidth(5)
-          @gl.uniform1f(program.depthOffset, 0.01)
-          @gl.uniform4f(program.color, 0,0,0,1)
-          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0) #### TODO don't draw meridians
-        @gl.disableVertexAttribArray(POSITION)
+      @gl.enable(@gl.BLEND)
+      @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+      program = @programs.wireframe
+      @gl.useProgram(program)
+      @gl.uniformMatrix4fv(program.projection, false, projection)
+      @gl.uniformMatrix4fv(program.modelview, false, modelview)
+      @gl.uniform1f(program.scale, 1)
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+      @gl.enableVertexAttribArray(POSITION)
+      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
+      if @style == Style.WIREFRAME
+        @gl.lineWidth(1)
+        @gl.uniform1f(program.depthOffset, -0.01)
+        @gl.uniform4f(program.color, 0,0,0,0.75)
+        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+      else
+        # Draw only longitudinal lines (that's why we divide by 2)
+        @gl.lineWidth(5)
+        @gl.uniform1f(program.depthOffset, 0.01)
+        @gl.uniform4f(program.color, 0,0,0,1)
+        @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, 0)
+      @gl.disableVertexAttribArray(POSITION)
 
       # Draw the Mobius tube
     if false
@@ -196,13 +195,19 @@ class Renderer
       while i < polygonCount * (sides+1)
         j = 0
         while j < sides
-          polygonEdge = rawBuffer.subarray(ptr+0, ptr+2)
-          polygonEdge[0] = i+j
-          polygonEdge[1] = i+j+1
           sweepEdge = rawBuffer.subarray(ptr+2, ptr+4)
           sweepEdge[0] = i+j
           sweepEdge[1] = i+j+sides+1
-          [ptr, j] = [ptr+4, j+1]
+          [ptr, j] = [ptr+2, j+1]
+        i += sides+1
+      i = 0
+      while i < polygonCount * (sides+1)
+        j = 0
+        while j < sides
+          polygonEdge = rawBuffer.subarray(ptr+0, ptr+2)
+          polygonEdge[0] = i+j
+          polygonEdge[1] = i+j+1
+          [ptr, j] = [ptr+2, j+1]
         i += sides+1
       vbo = @gl.createBuffer()
       @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
@@ -213,6 +218,7 @@ class Renderer
 
       # Create the index buffer for the solid tube
       # TODO This can be sometimes be re-used from one knot to another
+      # In fact it could ALWAYS be re-used if we had the same # of control points....
       faceCount = centerline.count * sides * 2
       rawBuffer = new Uint16Array(faceCount * 3)
       [i, ptr, v] = [0, 0, 0]
