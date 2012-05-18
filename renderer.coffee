@@ -1,12 +1,21 @@
 root = exports ? this
 
+Style =
+  WIREFRAME: 0
+  SILHOUETTE: 1
+
 # All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
   constructor: (@gl, @width, @height) ->
+    @radiansPerSecond = 0.001
+    @spinning = true
+    #@style = Style.SILHOUETTE
+    @style = Style.WIREFRAME
     @theta = 0
     @vbos = {}
     @programs = {}
     @tubeGen = new root.TubeGenerator
+    @tubeGen.polygonSides = 16
     @genVertexBuffers()
     @genMobius()
     @compileShaders()
@@ -37,7 +46,7 @@ class Renderer
     currentTime = new Date().getTime()
     if @previousTime?
       elapsed = currentTime - @previousTime
-      @theta += 0.002 * elapsed
+      @theta += @radiansPerSecond * elapsed if @spinning
     @previousTime = currentTime
 
     # Draw the hot pink background (why is this so slow?)
@@ -102,31 +111,40 @@ class Renderer
         @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
         @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
+        if @style == Style.SILHOUETTE
+          @gl.enable(@gl.POLYGON_OFFSET_FILL)
+          @gl.polygonOffset(-4,16)
         @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
         @gl.disableVertexAttribArray(POSITION)
         @gl.disableVertexAttribArray(NORMAL)
+        @gl.disable(@gl.POLYGON_OFFSET_FILL)
 
       # Draw the wireframe
-      if false
-        @gl.disable(@gl.DEPTH_TEST)
+      if true
         @gl.enable(@gl.BLEND)
         @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-        @gl.lineWidth(1)
         program = @programs.wireframe
         @gl.useProgram(program)
         @gl.uniformMatrix4fv(program.projection, false, projection)
         @gl.uniformMatrix4fv(program.modelview, false, modelview)
-        @gl.uniform4f(program.color, 1,1,1,0.75)
-        @gl.uniform1f(program.depthOffset, 0)
         @gl.uniform1f(program.scale, 1)
         @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
         @gl.enableVertexAttribArray(POSITION)
         @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
-        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+        if @style == Style.WIREFRAME
+          @gl.lineWidth(1)
+          @gl.uniform1f(program.depthOffset, -0.01)
+          @gl.uniform4f(program.color, 0,0,0,0.75)
+          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+        else
+          @gl.lineWidth(5)
+          @gl.uniform1f(program.depthOffset, 0.01)
+          @gl.uniform4f(program.color, 0,0,0,1)
+          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0) #### TODO don't draw meridians
         @gl.disableVertexAttribArray(POSITION)
 
-    # Draw the Mobius tube
+      # Draw the Mobius tube
     if false
       program = @programs.solidmesh
       @gl.enable(@gl.DEPTH_TEST)
