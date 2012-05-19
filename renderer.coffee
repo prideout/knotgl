@@ -9,8 +9,8 @@ class Renderer
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.001
     @spinning = true
-    #@style = Style.SILHOUETTE
-    @style = Style.WIREFRAME
+    @style = Style.SILHOUETTE
+    #@style = Style.WIREFRAME
     @theta = 0
     @vbos = {}
     @programs = {}
@@ -23,13 +23,10 @@ class Renderer
     @genHugeTriangle()
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
-    #@downloadSpines()
-    toast("w,h = #{@width} #{@height}")
+    @downloadSpines()
     @render()
 
   downloadSpines: ->
-    #baseurl = "http://github.com/prideout/knot-data/raw/master/"
-    baseurl = 'http://localhost:8000/'
     worker = new Worker 'js/downloader.js'
     worker.gl = @gl
     worker.vbos = @vbos
@@ -42,7 +39,8 @@ class Renderer
       @gl.bufferData @gl.ARRAY_BUFFER, rawFloats, @gl.STATIC_DRAW
       lerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
       toast("downloaded #{rawFloats.length / 3} verts of centerline data")
-    worker.postMessage baseurl + 'data/centerlines.bin'
+    dataurl = document.URL + 'data/centerlines.bin'
+    worker.postMessage(dataurl)
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -81,7 +79,7 @@ class Renderer
       @gl.drawArrays(@gl.TRIANGLES, 0, 3)
       @gl.disableVertexAttribArray(VERTEXID)
 
-    @gl.clearColor(0,0,0,1)
+    @gl.clearColor(0,0,0,0)
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
 
     @knots[0].color = [1,1,1,0.75]

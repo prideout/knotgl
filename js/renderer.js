@@ -19,7 +19,7 @@
       this.height = height;
       this.radiansPerSecond = 0.001;
       this.spinning = true;
-      this.style = Style.WIREFRAME;
+      this.style = Style.SILHOUETTE;
       this.theta = 0;
       this.vbos = {};
       this.programs = {};
@@ -34,13 +34,12 @@
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         glerr("OpenGL error during init");
       }
-      toast("w,h = " + this.width + " " + this.height);
+      this.downloadSpines();
       this.render();
     }
 
     Renderer.prototype.downloadSpines = function() {
-      var baseurl, worker;
-      baseurl = 'http://localhost:8000/';
+      var dataurl, worker;
       worker = new Worker('js/downloader.js');
       worker.gl = this.gl;
       worker.vbos = this.vbos;
@@ -57,7 +56,8 @@
         }
         return toast("downloaded " + (rawFloats.length / 3) + " verts of centerline data");
       };
-      return worker.postMessage(baseurl + 'data/centerlines.bin');
+      dataurl = document.URL + 'data/centerlines.bin';
+      return worker.postMessage(dataurl);
     };
 
     Renderer.prototype.compileShaders = function() {
@@ -105,7 +105,7 @@
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
         this.gl.disableVertexAttribArray(VERTEXID);
       }
-      this.gl.clearColor(0, 0, 0, 1);
+      this.gl.clearColor(0, 0, 0, 0);
       this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
       this.knots[0].color = [1, 1, 1, 0.75];
       this.knots[1].color = [0.25, 0.5, 1, 0.75];
