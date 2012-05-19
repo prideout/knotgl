@@ -6,12 +6,11 @@ function download(url)
     var hasResponseType = "responseType" in xhr;
     if (hasResponseType) xhr.responseType = "arraybuffer";
     xhr.send(null);
-    if (xhr.status != 200) alert('Problem downloading ' + url);
+    if (xhr.status != 200) console.log('Problem downloading ' + url); /////////// can't call alert from a web worker!
     return hasResponseType ? xhr.response : xhr.mozResponseArrayBuffer;
 }
-self.onmessage = function(request) {
-    toast("downloading " + request + "...");
-    var centerlines = download("http://github.com/prideout/knot-data/raw/master/" + request);
+self.onmessage = function(url) {
+    var centerlines = download('http://localhost:8000/data/centerlines.bin');
     var response = {
         'centerlines' : centerlines,
     };

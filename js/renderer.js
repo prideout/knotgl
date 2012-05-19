@@ -34,29 +34,30 @@
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         glerr("OpenGL error during init");
       }
-      this.downloadSpines();
+      toast("w,h = " + this.width + " " + this.height);
+      this.render();
     }
 
     Renderer.prototype.downloadSpines = function() {
       var baseurl, worker;
-      baseurl = "http://github.com/prideout/knot-data/raw/master/";
-      worker = new Worker(baseurl + 'downloader.js');
+      baseurl = 'http://localhost:8000/';
+      worker = new Worker('js/downloader.js');
+      worker.gl = this.gl;
+      worker.vbos = this.vbos;
+      worker.render = this.render;
       worker.onmessage = function(response) {
-        var byteCount, rawFloats, rawVerts;
-        alert("ok...");
+        var rawFloats, rawVerts;
         rawVerts = response.data['centerlines'];
         rawFloats = new Float32Array(rawVerts);
         this.vbos.allLinks = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.allLinks);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, rawFloats, this.gl.STATIC_DRAW);
-        byteCount = rawFloats.length;
         if (this.gl.getError() !== this.gl.NO_ERROR) {
-          glerr("OpenGL when trying to create spine VBO");
+          lerr("Error when trying to create spine VBO");
         }
-        toast("downloaded " + byteCount + " bytes of centerline data");
-        return this.render();
+        return toast("downloaded " + (rawFloats.length / 3) + " verts of centerline data");
       };
-      return worker.postMessage("centerlines.bin");
+      return worker.postMessage(baseurl + 'data/centerlines.bin');
     };
 
     Renderer.prototype.compileShaders = function() {
@@ -104,6 +105,7 @@
         this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
         this.gl.disableVertexAttribArray(VERTEXID);
       }
+      this.gl.clearColor(0, 0, 0, 1);
       this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
       this.knots[0].color = [1, 1, 1, 0.75];
       this.knots[1].color = [0.25, 0.5, 1, 0.75];

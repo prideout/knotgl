@@ -23,23 +23,26 @@ class Renderer
     @genHugeTriangle()
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
-    @downloadSpines()
+    #@downloadSpines()
+    toast("w,h = #{@width} #{@height}")
+    @render()
 
   downloadSpines: ->
-    baseurl = "http://github.com/prideout/knot-data/raw/master/"
-    worker = new Worker(baseurl + 'downloader.js')
+    #baseurl = "http://github.com/prideout/knot-data/raw/master/"
+    baseurl = 'http://localhost:8000/'
+    worker = new Worker 'js/downloader.js'
+    worker.gl = @gl
+    worker.vbos = @vbos
+    worker.render = @render
     worker.onmessage = (response) ->
-      alert("ok...")
       rawVerts  = response.data['centerlines']
       rawFloats = new Float32Array(rawVerts)
       @vbos.allLinks = @gl.createBuffer()
       @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.allLinks
       @gl.bufferData @gl.ARRAY_BUFFER, rawFloats, @gl.STATIC_DRAW
-      byteCount = rawFloats.length
-      glerr("OpenGL when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
-      toast("downloaded #{byteCount} bytes of centerline data")
-      @render()
-    worker.postMessage "centerlines.bin"
+      lerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
+      toast("downloaded #{rawFloats.length / 3} verts of centerline data")
+    worker.postMessage baseurl + 'data/centerlines.bin'
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -78,6 +81,7 @@ class Renderer
       @gl.drawArrays(@gl.TRIANGLES, 0, 3)
       @gl.disableVertexAttribArray(VERTEXID)
 
+    @gl.clearColor(0,0,0,1)
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
 
     @knots[0].color = [1,1,1,0.75]
