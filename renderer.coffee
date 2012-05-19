@@ -16,13 +16,30 @@ class Renderer
     @programs = {}
     @tubeGen = new root.TubeGenerator
     @tubeGen.polygonSides = 16
+    @tubeGen.bézierSlices = 3
     @genVertexBuffers()
     @genMobius()
     @compileShaders()
     @genHugeTriangle()
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
-    @render()
+    @downloadSpines()
+
+  downloadSpines: ->
+    baseurl = "http://github.com/prideout/knot-data/raw/master/"
+    worker = new Worker(baseurl + 'downloader.js')
+    worker.onmessage = (response) ->
+      alert("ok...")
+      rawVerts  = response.data['centerlines']
+      rawFloats = new Float32Array(rawVerts)
+      @vbos.allLinks = @gl.createBuffer()
+      @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.allLinks
+      @gl.bufferData @gl.ARRAY_BUFFER, rawFloats, @gl.STATIC_DRAW
+      byteCount = rawFloats.length
+      glerr("OpenGL when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
+      toast("downloaded #{byteCount} bytes of centerline data")
+      @render()
+    worker.postMessage "centerlines.bin"
 
   compileShaders: ->
     for name, metadata of root.shaders

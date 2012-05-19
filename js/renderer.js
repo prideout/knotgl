@@ -25,6 +25,7 @@
       this.programs = {};
       this.tubeGen = new root.TubeGenerator;
       this.tubeGen.polygonSides = 16;
+      this.tubeGen.bézierSlices = 3;
       this.genVertexBuffers();
       this.genMobius();
       this.compileShaders();
@@ -33,8 +34,30 @@
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         glerr("OpenGL error during init");
       }
-      this.render();
+      this.downloadSpines();
     }
+
+    Renderer.prototype.downloadSpines = function() {
+      var baseurl, worker;
+      baseurl = "http://github.com/prideout/knot-data/raw/master/";
+      worker = new Worker(baseurl + 'downloader.js');
+      worker.onmessage = function(response) {
+        var byteCount, rawFloats, rawVerts;
+        alert("ok...");
+        rawVerts = response.data['centerlines'];
+        rawFloats = new Float32Array(rawVerts);
+        this.vbos.allLinks = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.allLinks);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, rawFloats, this.gl.STATIC_DRAW);
+        byteCount = rawFloats.length;
+        if (this.gl.getError() !== this.gl.NO_ERROR) {
+          glerr("OpenGL when trying to create spine VBO");
+        }
+        toast("downloaded " + byteCount + " bytes of centerline data");
+        return this.render();
+      };
+      return worker.postMessage("centerlines.bin");
+    };
 
     Renderer.prototype.compileShaders = function() {
       var fs, metadata, name, vs, _ref, _ref1, _results;
