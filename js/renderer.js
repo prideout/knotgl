@@ -6,7 +6,8 @@
 
   Style = {
     WIREFRAME: 0,
-    SILHOUETTE: 1
+    SILHOUETTE: 1,
+    RINGS: 2
   };
 
   Renderer = (function() {
@@ -19,12 +20,13 @@
       this.height = height;
       this.radiansPerSecond = 0.0003;
       this.spinning = true;
-      this.style = Style.WIREFRAME;
+      this.style = Style.SILHOUETTE;
+      this.sketchy = true;
       this.theta = 0;
       this.vbos = {};
       this.programs = {};
       this.tubeGen = new root.TubeGenerator;
-      this.tubeGen.polygonSides = 4;
+      this.tubeGen.polygonSides = 10;
       this.tubeGen.bézierSlices = 3;
       this.tubeGen.tangentSmoothness = 3;
       this.compileShaders();
@@ -124,7 +126,7 @@
         _ref1 = knot.centerline, startVertex = _ref1[0], vertexCount = _ref1[1];
         this.gl.disable(this.gl.BLEND);
         this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.lineWidth(3);
+        this.gl.lineWidth(2);
         for (x = _j = -1; _j <= 1; x = _j += 2) {
           for (y = _k = -1; _k <= 1; y = _k += 2) {
             this.gl.uniform2f(program.offset, x, y);
@@ -152,10 +154,8 @@
         this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
         this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 24, offset = 12);
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.triangles);
-        if (this.style === Style.SILHOUETTE) {
-          this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
-          this.gl.polygonOffset(-4, 16);
-        }
+        this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
+        this.gl.polygonOffset(-1, 12);
         this.gl.drawElements(this.gl.TRIANGLES, knot.triangles.count, this.gl.UNSIGNED_SHORT, 0);
         this.gl.disableVertexAttribArray(POSITION);
         this.gl.disableVertexAttribArray(NORMAL);
@@ -176,11 +176,21 @@
           this.gl.uniform1f(program.depthOffset, -0.01);
           this.gl.uniform4f(program.color, 0, 0, 0, 0.75);
           this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
+        } else if (this.style === Style.RINGS) {
+          this.gl.lineWidth(1);
+          this.gl.uniform1f(program.depthOffset, -0.01);
+          this.gl.uniform4f(program.color, 0, 0, 0, 0.75);
+          this.gl.drawElements(this.gl.LINES, knot.wireframe.count / 2, this.gl.UNSIGNED_SHORT, knot.wireframe.count);
         } else {
-          this.gl.lineWidth(5);
+          this.gl.lineWidth(2);
           this.gl.uniform1f(program.depthOffset, 0.01);
           this.gl.uniform4f(program.color, 0, 0, 0, 1);
-          this.gl.drawElements(this.gl.LINES, knot.wireframe.count / 2, this.gl.UNSIGNED_SHORT, 0);
+          this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
+          if (this.sketchy) {
+            this.gl.uniform1f(program.depthOffset, -0.01);
+            this.gl.uniform4f(program.color, 0, 0, 0, 0.75);
+            this.gl.drawElements(this.gl.LINES, knot.wireframe.count / 2, this.gl.UNSIGNED_SHORT, knot.wireframe.count);
+          }
         }
         this.gl.disableVertexAttribArray(POSITION);
       }
@@ -208,7 +218,7 @@
     Renderer.prototype.genVertexBuffers = function() {
       var byteOffset, centerline, component, components, faceCount, i, j, knot, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _i, _len, _ref, _ref1, _ref2, _ref3, _results;
       this.knots = [];
-      components = this.getLink("5.2.1");
+      components = this.getLink("8.3.2");
       toast(components);
       _results = [];
       for (_i = 0, _len = components.length; _i < _len; _i++) {

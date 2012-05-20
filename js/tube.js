@@ -191,8 +191,8 @@
       vec3.set(s0, frameS.subarray(0, 3));
       _ref2 = [0, 1], i = _ref2[0], j = _ref2[1];
       _ref3 = [r0, s0, t0], ri = _ref3[0], si = _ref3[1], ti = _ref3[2];
-      while (i < count) {
-        j = (i + 1) % count;
+      while (i < count - 1) {
+        j = i + 1;
         xi = centerline.subarray(i * 3, i * 3 + 3);
         xj = centerline.subarray(j * 3, j * 3 + 3);
         ti = frameT.subarray(i * 3, i * 3 + 3);

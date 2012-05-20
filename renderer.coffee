@@ -3,19 +3,22 @@ root = exports ? this
 Style =
   WIREFRAME: 0
   SILHOUETTE: 1
+  RINGS: 2
 
 # All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.0003
     @spinning = true
-    #@style = Style.SILHOUETTE
-    @style = Style.WIREFRAME
+    @style = Style.SILHOUETTE
+    #@style = Style.WIREFRAME
+    #@style = Style.RINGS
+    @sketchy = true
     @theta = 0
     @vbos = {}
     @programs = {}
     @tubeGen = new root.TubeGenerator
-    @tubeGen.polygonSides = 4
+    @tubeGen.polygonSides = 10
     @tubeGen.bézierSlices = 3
     @tubeGen.tangentSmoothness = 3
     @compileShaders()
@@ -95,7 +98,7 @@ class Renderer
       [startVertex, vertexCount] = knot.centerline
       @gl.disable(@gl.BLEND)
       @gl.enable(@gl.DEPTH_TEST)
-      @gl.lineWidth(3)
+      @gl.lineWidth(2)
 
       # Draw the thick black outer line.
       # Large values of lineWidth causes ugly fin gaps.
@@ -129,9 +132,8 @@ class Renderer
       @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
       @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
       @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
-      if @style == Style.SILHOUETTE
-        @gl.enable(@gl.POLYGON_OFFSET_FILL)
-        @gl.polygonOffset(-4,16)
+      @gl.enable(@gl.POLYGON_OFFSET_FILL)
+      @gl.polygonOffset(-1,12)
       @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
       @gl.disableVertexAttribArray(POSITION)
       @gl.disableVertexAttribArray(NORMAL)
@@ -154,12 +156,21 @@ class Renderer
         @gl.uniform1f(program.depthOffset, -0.01)
         @gl.uniform4f(program.color, 0,0,0,0.75)
         @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+      else if @style == Style.RINGS
+        @gl.lineWidth(1)
+        @gl.uniform1f(program.depthOffset, -0.01)
+        @gl.uniform4f(program.color, 0,0,0,0.75)
+        @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
       else
-        # Draw only longitudinal lines (that's why we divide by 2)
-        @gl.lineWidth(5)
+        @gl.lineWidth(2)
         @gl.uniform1f(program.depthOffset, 0.01)
         @gl.uniform4f(program.color, 0,0,0,1)
-        @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, 0)
+        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+        if @sketchy
+          @gl.uniform1f(program.depthOffset, -0.01)
+          @gl.uniform4f(program.color, 0,0,0,0.75)
+          @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
+
       @gl.disableVertexAttribArray(POSITION)
 
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
@@ -171,9 +182,9 @@ class Renderer
   genVertexBuffers: ->
 
     @knots = []
-    #components = @getLink("8.3.2")
+    components = @getLink("8.3.2")
     #components = @getLink("8.1")
-    components = @getLink("5.2.1") # 255.html
+    #components = @getLink("5.2.1") # 255.html
     toast(components)
 
     for component in components

@@ -134,8 +134,8 @@ class TubeGenerator
     # Use parallel transport to sweep the frame
     [i,j] = [0,1]
     [ri, si, ti] = [r0, s0, t0]
-    while i < count
-      j = (i+1) % count
+    while i < count-1
+      j = i + 1
       xi = centerline.subarray(i*3, i*3+3)
       xj = centerline.subarray(j*3, j*3+3)
       ti = frameT.subarray(i*3, i*3+3)
