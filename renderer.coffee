@@ -9,6 +9,7 @@ Style =
 class Renderer
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.0003
+    @transitionMilliseconds = 1000
     @spinning = true
     @style = Style.SILHOUETTE
     #@style = Style.WIREFRAME
@@ -41,10 +42,16 @@ class Renderer
     for position in [0...@links.length]
       iconified = @links[position].iconified
       next = position + increment
-      continue if next >= @links.length || next < 0
+      continue if next >= @links.length or next < 0
       if iconified is 0
-        @links[position].iconified = 1
-        @links[position+increment].iconified = 0
+        incoming = new TWEEN.Tween(@links[position])
+          .to({iconified: 1}, @transitionMilliseconds)
+          .easing(TWEEN.Easing.Elastic.InOut)
+        outgoing = new TWEEN.Tween(@links[position+increment])
+          .to({iconified: 0}, @transitionMilliseconds)
+          .easing(TWEEN.Easing.Elastic.InOut)
+        incoming.start()
+        outgoing.start()
         return
 
   downloadSpines: ->
@@ -61,6 +68,7 @@ class Renderer
 
   render: ->
     window.requestAnimFrame(staticRender, $("canvas").get(0))
+    TWEEN.update()
 
     # Adjust the camera and compute various transforms
     @projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)

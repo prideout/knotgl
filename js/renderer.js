@@ -19,6 +19,7 @@
       this.width = width;
       this.height = height;
       this.radiansPerSecond = 0.0003;
+      this.transitionMilliseconds = 1000;
       this.spinning = true;
       this.style = Style.SILHOUETTE;
       this.sketchy = true;
@@ -53,7 +54,7 @@
     };
 
     Renderer.prototype.changeSelection = function(increment) {
-      var iconified, next, position, _i, _ref;
+      var iconified, incoming, next, outgoing, position, _i, _ref;
       for (position = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; position = 0 <= _ref ? ++_i : --_i) {
         iconified = this.links[position].iconified;
         next = position + increment;
@@ -61,8 +62,14 @@
           continue;
         }
         if (iconified === 0) {
-          this.links[position].iconified = 1;
-          this.links[position + increment].iconified = 0;
+          incoming = new TWEEN.Tween(this.links[position]).to({
+            iconified: 1
+          }, this.transitionMilliseconds).easing(TWEEN.Easing.Elastic.InOut);
+          outgoing = new TWEEN.Tween(this.links[position + increment]).to({
+            iconified: 0
+          }, this.transitionMilliseconds).easing(TWEEN.Easing.Elastic.InOut);
+          incoming.start();
+          outgoing.start();
           return;
         }
       }
@@ -96,6 +103,7 @@
     Renderer.prototype.render = function() {
       var aspect, currentTime, elapsed, eye, far, fov, knot, model, near, position, target, up, view, _i, _j, _len, _ref, _ref1;
       window.requestAnimFrame(staticRender, $("canvas").get(0));
+      TWEEN.update();
       this.projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
       model = mat4.create();
