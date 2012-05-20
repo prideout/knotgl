@@ -53,15 +53,15 @@ class Renderer
     window.requestAnimFrame(staticRender, $("canvas").get(0))
 
     # Adjust the camera and compute various transforms
-    projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)
+    @projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)
     view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
     model = mat4.create()
-    modelview = mat4.create()
+    @modelview = mat4.create()
     mat4.identity(model)
     mat4.rotateX(model, 3.14/4)
     mat4.rotateY(model, @theta)
-    mat4.multiply(view, model, modelview)
-    normalMatrix = mat4.toMat3(modelview)
+    mat4.multiply(view, model, @modelview)
+    @normalMatrix = mat4.toMat3(@modelview)
 
     currentTime = new Date().getTime()
     if @previousTime?
@@ -71,106 +71,106 @@ class Renderer
 
     @gl.clearColor(0,0,0,0)
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
-
-    for knot in @links[0]
-
-      # Would monkey patching be better?
-      setColor = (gl, color) -> gl.uniform4fv(color, knot.color)
-
-      # Draw the centerline
-      @gl.viewport(0,0,@width/12,@height/12)
-      @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-      program = @programs.wireframe
-      @gl.useProgram(program)
-      setColor(@gl, program.color)
-      @gl.uniformMatrix4fv(program.projection, false, projection)
-      @gl.uniformMatrix4fv(program.modelview, false, modelview)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-      @gl.uniform1f(program.scale, @tubeGen.scale)
-      @gl.uniform4f(program.color,0,0,0,1)
-      [startVertex, vertexCount] = knot.centerline
-      @gl.disable(@gl.BLEND)
-      @gl.enable(@gl.DEPTH_TEST)
-      @gl.lineWidth(2)
-
-      # Draw the thick black outer line.
-      # Large values of lineWidth causes ugly fin gaps.
-      # Redraw with screen-space offsets to achieve extra thickness.
-      for x in [-1..1] by 2
-        for y in [-1..1] by 2
-          @gl.uniform2f(program.offset, x,y)
-          @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
-
-      # Draw a thinner center line down the spine for added depth.
-      @gl.enable(@gl.BLEND)
-      @gl.lineWidth(2)
-      setColor(@gl, program.color)
-      @gl.uniform2f(program.offset, 0,0)
-      @gl.uniform1f(program.depthOffset, -0.5)
-      @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
-      @gl.disableVertexAttribArray(POSITION)
-      @gl.viewport(0,0,@width,@height)
-
-      # Draw the solid knot
-      program = @programs.solidmesh
-      @gl.enable(@gl.DEPTH_TEST)
-      @gl.useProgram(program)
-      setColor(@gl, program.color)
-      @gl.uniformMatrix4fv(program.projection, false, projection)
-      @gl.uniformMatrix4fv(program.modelview, false, modelview)
-      @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.enableVertexAttribArray(NORMAL)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-      @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
-      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
-      if @style != Style.WIREFRAME
-        @gl.enable(@gl.POLYGON_OFFSET_FILL)
-        @gl.polygonOffset(-1,12)
-      @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
-      @gl.disableVertexAttribArray(POSITION)
-      @gl.disableVertexAttribArray(NORMAL)
-      @gl.disable(@gl.POLYGON_OFFSET_FILL)
-
-      # Draw the wireframe
-      @gl.enable(@gl.BLEND)
-      @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-      program = @programs.wireframe
-      @gl.useProgram(program)
-      @gl.uniformMatrix4fv(program.projection, false, projection)
-      @gl.uniformMatrix4fv(program.modelview, false, modelview)
-      @gl.uniform1f(program.scale, 1)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
-      if @style == Style.WIREFRAME
-        @gl.lineWidth(1)
-        @gl.uniform1f(program.depthOffset, -0.01)
-        @gl.uniform4f(program.color, 0,0,0,0.75)
-        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-      else if @style == Style.RINGS
-        @gl.lineWidth(1)
-        @gl.uniform1f(program.depthOffset, -0.01)
-        @gl.uniform4f(program.color, 0,0,0,0.75)
-        @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
-      else
-        @gl.lineWidth(2)
-        @gl.uniform1f(program.depthOffset, 0.01)
-        @gl.uniform4f(program.color, 0,0,0,1)
-        @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-        if @sketchy
-          @gl.lineWidth(1)
-          @gl.uniform4f(program.color, 0.1,0.1,0.1,1)
-          @gl.uniform1f(program.depthOffset, -0.01)
-          @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
-
-      @gl.disableVertexAttribArray(POSITION)
-
+    @renderKnot(knot) for knot in @links[0]
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
+
+  renderKnot: (knot) ->
+
+    # Would monkey patching be better?
+    setColor = (gl, color) -> gl.uniform4fv(color, knot.color)
+
+    # Draw the centerline
+    @gl.viewport(0,0,@width/12,@height/12)
+    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+    program = @programs.wireframe
+    @gl.useProgram(program)
+    setColor(@gl, program.color)
+    @gl.uniformMatrix4fv(program.projection, false, @projection)
+    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
+    @gl.enableVertexAttribArray(POSITION)
+    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+    @gl.uniform1f(program.scale, @tubeGen.scale)
+    @gl.uniform4f(program.color,0,0,0,1)
+    [startVertex, vertexCount] = knot.centerline
+    @gl.disable(@gl.BLEND)
+    @gl.enable(@gl.DEPTH_TEST)
+    @gl.lineWidth(2)
+
+    # Draw the thick black outer line.
+    # Large values of lineWidth causes ugly fin gaps.
+    # Redraw with screen-space offsets to achieve extra thickness.
+    for x in [-1..1] by 2
+      for y in [-1..1] by 2
+        @gl.uniform2f(program.offset, x,y)
+        @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+
+    # Draw a thinner center line down the spine for added depth.
+    @gl.enable(@gl.BLEND)
+    @gl.lineWidth(2)
+    setColor(@gl, program.color)
+    @gl.uniform2f(program.offset, 0,0)
+    @gl.uniform1f(program.depthOffset, -0.5)
+    @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+    @gl.disableVertexAttribArray(POSITION)
+    @gl.viewport(0,0,@width,@height)
+
+    # Draw the solid knot
+    program = @programs.solidmesh
+    @gl.enable(@gl.DEPTH_TEST)
+    @gl.useProgram(program)
+    setColor(@gl, program.color)
+    @gl.uniformMatrix4fv(program.projection, false, @projection)
+    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+    @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+    @gl.enableVertexAttribArray(POSITION)
+    @gl.enableVertexAttribArray(NORMAL)
+    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+    @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
+    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
+    if @style != Style.WIREFRAME
+      @gl.enable(@gl.POLYGON_OFFSET_FILL)
+      @gl.polygonOffset(-1,12)
+    @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
+    @gl.disableVertexAttribArray(POSITION)
+    @gl.disableVertexAttribArray(NORMAL)
+    @gl.disable(@gl.POLYGON_OFFSET_FILL)
+
+    # Draw the wireframe
+    @gl.enable(@gl.BLEND)
+    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+    program = @programs.wireframe
+    @gl.useProgram(program)
+    @gl.uniformMatrix4fv(program.projection, false, @projection)
+    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+    @gl.uniform1f(program.scale, 1)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+    @gl.enableVertexAttribArray(POSITION)
+    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
+    if @style == Style.WIREFRAME
+      @gl.lineWidth(1)
+      @gl.uniform1f(program.depthOffset, -0.01)
+      @gl.uniform4f(program.color, 0,0,0,0.75)
+      @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+    else if @style == Style.RINGS
+      @gl.lineWidth(1)
+      @gl.uniform1f(program.depthOffset, -0.01)
+      @gl.uniform4f(program.color, 0,0,0,0.75)
+      @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
+    else
+      @gl.lineWidth(2)
+      @gl.uniform1f(program.depthOffset, 0.01)
+      @gl.uniform4f(program.color, 0,0,0,1)
+      @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+      if @sketchy
+        @gl.lineWidth(1)
+        @gl.uniform4f(program.color, 0.1,0.1,0.1,1)
+        @gl.uniform1f(program.depthOffset, -0.01)
+        @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
+
+    @gl.disableVertexAttribArray(POSITION)
 
   # Returns a list of 'ranges' where each range is an [index, count] pair
   # The required [0] at the end seems like a coffeescript bug but I'm not sure.
