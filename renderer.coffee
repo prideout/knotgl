@@ -9,7 +9,7 @@ Style =
 class Renderer
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.0003
-    @transitionMilliseconds = 1000
+    @transitionMilliseconds = 750
     @spinning = true
     @style = Style.SILHOUETTE
     #@style = Style.WIREFRAME
@@ -46,7 +46,7 @@ class Renderer
       if iconified is 0
         incoming = new TWEEN.Tween(@links[position])
           .to({iconified: 1}, @transitionMilliseconds)
-          .easing(TWEEN.Easing.Bounce.Out)
+          .easing(TWEEN.Easing.Quartic.Out)
         outgoing = new TWEEN.Tween(@links[position+increment])
           .to({iconified: 0}, @transitionMilliseconds)
           .easing(TWEEN.Easing.Bounce.Out)
@@ -96,15 +96,16 @@ class Renderer
   renderKnot: (knot, position) ->
 
     # Would monkey patching be better?
-    setColor = (gl, color) -> gl.uniform4fv(color, knot.color)
+    @gl.setColor = (color) -> @uniform4fv(color, knot.color)
 
-    [tileWidth, tileHeight] = [@width/8, @height/8]
-    iconPosition = 0
-    for p in [0...position]
-      iconPosition += tileWidth * @links[p].iconified
+    [tileWidth, tileHeight] = [@width/9, @height/9]
+    iconPosition = tileWidth * position
+    #iconPosition = 0
+    #for p in [0...position]
+    #  iconPosition += tileWidth * @links[p].iconified
 
     iconified = @links[position].iconified
-    if iconified > 0
+    if true # iconified is 1
 
       # Draw the centerline
       @gl.viewport(
@@ -116,7 +117,6 @@ class Renderer
       @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
       program = @programs.wireframe
       @gl.useProgram(program)
-      setColor(@gl, program.color)
       @gl.uniformMatrix4fv(program.projection, false, @projection)
       @gl.uniformMatrix4fv(program.modelview, false, @modelview)
       @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
@@ -141,20 +141,26 @@ class Renderer
       # Draw a thinner center line down the spine for added depth.
       @gl.enable(@gl.BLEND)
       @gl.lineWidth(2)
-      setColor(@gl, program.color)
+      @gl.setColor(program.color)
       @gl.uniform2f(program.offset, 0,0)
       @gl.uniform1f(program.depthOffset, -0.5)
       @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
       @gl.disableVertexAttribArray(POSITION)
       @gl.viewport(0,0,@width,@height)
+      program.color[3] = 1
 
-    return if iconified is 1
+    t = 1-iconified
+    w = t*@width + (1-t)*tileWidth
+    h = t*@height + (1-t)*tileHeight
+    left = (1-t) * iconPosition
+    top = (1-t) * (@height-tileHeight)
+    @gl.viewport(left,top,w,h)
 
     # Draw the solid knot
     program = @programs.solidmesh
     @gl.enable(@gl.DEPTH_TEST)
     @gl.useProgram(program)
-    setColor(@gl, program.color)
+    @gl.setColor(program.color)
     @gl.uniformMatrix4fv(program.projection, false, @projection)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)

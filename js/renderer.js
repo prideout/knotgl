@@ -19,7 +19,7 @@
       this.width = width;
       this.height = height;
       this.radiansPerSecond = 0.0003;
-      this.transitionMilliseconds = 1000;
+      this.transitionMilliseconds = 750;
       this.spinning = true;
       this.style = Style.SILHOUETTE;
       this.sketchy = true;
@@ -64,7 +64,7 @@
         if (iconified === 0) {
           incoming = new TWEEN.Tween(this.links[position]).to({
             iconified: 1
-          }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
+          }, this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
           outgoing = new TWEEN.Tween(this.links[position + increment]).to({
             iconified: 0
           }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
@@ -136,22 +136,18 @@
     };
 
     Renderer.prototype.renderKnot = function(knot, position) {
-      var iconPosition, iconified, offset, p, program, setColor, startVertex, stride, tileHeight, tileWidth, vertexCount, x, y, _i, _j, _k, _ref, _ref1;
-      setColor = function(gl, color) {
-        return gl.uniform4fv(color, knot.color);
+      var h, iconPosition, iconified, left, offset, program, startVertex, stride, t, tileHeight, tileWidth, top, vertexCount, w, x, y, _i, _j, _ref, _ref1;
+      this.gl.setColor = function(color) {
+        return this.uniform4fv(color, knot.color);
       };
-      _ref = [this.width / 8, this.height / 8], tileWidth = _ref[0], tileHeight = _ref[1];
-      iconPosition = 0;
-      for (p = _i = 0; 0 <= position ? _i < position : _i > position; p = 0 <= position ? ++_i : --_i) {
-        iconPosition += tileWidth * this.links[p].iconified;
-      }
+      _ref = [this.width / 9, this.height / 9], tileWidth = _ref[0], tileHeight = _ref[1];
+      iconPosition = tileWidth * position;
       iconified = this.links[position].iconified;
-      if (iconified > 0) {
+      if (true) {
         this.gl.viewport(iconPosition, this.height - tileHeight, tileWidth, tileHeight);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         program = this.programs.wireframe;
         this.gl.useProgram(program);
-        setColor(this.gl, program.color);
         this.gl.uniformMatrix4fv(program.projection, false, this.projection);
         this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
@@ -163,8 +159,8 @@
         this.gl.disable(this.gl.BLEND);
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.lineWidth(2);
-        for (x = _j = -1; _j <= 1; x = _j += 2) {
-          for (y = _k = -1; _k <= 1; y = _k += 2) {
+        for (x = _i = -1; _i <= 1; x = _i += 2) {
+          for (y = _j = -1; _j <= 1; y = _j += 2) {
             this.gl.uniform2f(program.offset, x, y);
             this.gl.uniform1f(program.depthOffset, 0);
             this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
@@ -172,20 +168,24 @@
         }
         this.gl.enable(this.gl.BLEND);
         this.gl.lineWidth(2);
-        setColor(this.gl, program.color);
+        this.gl.setColor(program.color);
         this.gl.uniform2f(program.offset, 0, 0);
         this.gl.uniform1f(program.depthOffset, -0.5);
         this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
         this.gl.disableVertexAttribArray(POSITION);
         this.gl.viewport(0, 0, this.width, this.height);
+        program.color[3] = 1;
       }
-      if (iconified === 1) {
-        return;
-      }
+      t = 1 - iconified;
+      w = t * this.width + (1 - t) * tileWidth;
+      h = t * this.height + (1 - t) * tileHeight;
+      left = (1 - t) * iconPosition;
+      top = (1 - t) * (this.height - tileHeight);
+      this.gl.viewport(left, top, w, h);
       program = this.programs.solidmesh;
       this.gl.enable(this.gl.DEPTH_TEST);
       this.gl.useProgram(program);
-      setColor(this.gl, program.color);
+      this.gl.setColor(program.color);
       this.gl.uniformMatrix4fv(program.projection, false, this.projection);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniformMatrix3fv(program.normalmatrix, false, this.normalMatrix);
