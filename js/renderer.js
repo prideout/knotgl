@@ -85,7 +85,9 @@
       model = mat4.create();
       modelview = mat4.create();
       mat4.identity(model);
-      mat4.rotateY(model, this.theta);
+      mat4.rotateX(model, 3.14 / 2);
+      mat4.rotateZ(model, 3.14 / 2);
+      mat4.rotateY(model, 3.14 / 4);
       mat4.multiply(view, model, modelview);
       normalMatrix = mat4.toMat3(modelview);
       currentTime = new Date().getTime();
@@ -187,7 +189,8 @@
           this.gl.uniform4f(program.color, 0, 0, 0, 1);
           this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
           if (this.sketchy) {
-            this.gl.uniform4f(program.color, 0.1, 0.1, 0.1, 0.1);
+            this.gl.lineWidth(1);
+            this.gl.uniform4f(program.color, 0.1, 0.1, 0.1, 1);
             this.gl.uniform1f(program.depthOffset, -0.01);
             this.gl.drawElements(this.gl.LINES, knot.wireframe.count / 2, this.gl.UNSIGNED_SHORT, knot.wireframe.count);
           }
@@ -218,8 +221,7 @@
     Renderer.prototype.genVertexBuffers = function() {
       var byteOffset, centerline, component, components, faceCount, i, j, knot, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _i, _len, _ref, _ref1, _ref2, _ref3, _results;
       this.knots = [];
-      components = this.getLink("8.3.2");
-      toast(components);
+      components = this.getLink("7.2.3");
       _results = [];
       for (_i = 0, _len = components.length; _i < _len; _i++) {
         component = components[_i];

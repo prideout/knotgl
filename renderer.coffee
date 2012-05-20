@@ -58,7 +58,12 @@ class Renderer
     model = mat4.create()
     modelview = mat4.create()
     mat4.identity(model)
-    mat4.rotateY(model, @theta)
+
+    mat4.rotateX(model, 3.14/2)
+    mat4.rotateZ(model, 3.14/2)
+    mat4.rotateY(model, 3.14/4)
+
+    #mat4.rotateY(model, @theta)
     mat4.multiply(view, model, modelview)
     normalMatrix = mat4.toMat3(modelview)
 
@@ -167,7 +172,8 @@ class Renderer
         @gl.uniform4f(program.color, 0,0,0,1)
         @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
         if @sketchy
-          @gl.uniform4f(program.color, 0.1,0.1,0.1,0.5)
+          @gl.lineWidth(1)
+          @gl.uniform4f(program.color, 0.1,0.1,0.1,1)
           @gl.uniform1f(program.depthOffset, -0.01)
           @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
 
@@ -182,10 +188,9 @@ class Renderer
   genVertexBuffers: ->
 
     @knots = []
-    components = @getLink("8.3.2")
+    components = @getLink("7.2.3")
     #components = @getLink("8.1")
     #components = @getLink("5.2.1") # 255.html
-    toast(components)
 
     for component in components
 
