@@ -7,7 +7,7 @@ Style =
 # All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
   constructor: (@gl, @width, @height) ->
-    @radiansPerSecond = 0.001
+    @radiansPerSecond = 0.0001
     @spinning = true
     #@style = Style.SILHOUETTE
     @style = Style.WIREFRAME
@@ -15,36 +15,30 @@ class Renderer
     @vbos = {}
     @programs = {}
     @tubeGen = new root.TubeGenerator
-    @tubeGen.polygonSides = 16
+    @tubeGen.polygonSides = 4
     @tubeGen.bézierSlices = 3
-    @genMobius()
+    @tubeGen.tangentSmoothness = 3
     @compileShaders()
-    @genHugeTriangle()
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
     @downloadSpines()
 
+  onDownloadComplete: (data) ->
+    rawVerts = data['centerlines']
+    @spines = new Float32Array(rawVerts)
+    @vbos.spines = @gl.createBuffer()
+    @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.spines
+    @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
+    glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
+    toast("downloaded #{@spines.length / 3} verts of spine data")
+    @genVertexBuffers()
+    @render()
+
   downloadSpines: ->
     worker = new Worker 'js/downloader.js'
-
-    # TODO make this a class member, I think it would be cleaner
-    worker.gl = @gl
-    worker.vbos = @vbos
-    worker.render = @render
     worker.renderer = this
-
-    worker.onmessage = (response) ->
-      rawVerts = response.data['centerlines']
-      @renderer.spines = new Float32Array(rawVerts)
-      @vbos.spines = @gl.createBuffer()
-      @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.spines
-      @gl.bufferData @gl.ARRAY_BUFFER, @renderer.spines, @gl.STATIC_DRAW
-      lerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
-      toast("downloaded #{@renderer.spines.length / 3} verts of spine data")
-      @renderer.genVertexBuffers()
-      @renderer.render()
-    dataurl = document.URL + 'data/centerlines.bin'
-    worker.postMessage(dataurl)
+    worker.onmessage = (response) -> @renderer.onDownloadComplete(response.data)
+    worker.postMessage(document.URL + 'data/centerlines.bin')
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -70,18 +64,6 @@ class Renderer
       elapsed = currentTime - @previousTime
       @theta += @radiansPerSecond * elapsed if @spinning
     @previousTime = currentTime
-
-    # Draw the hot pink background (why is this so slow?)
-    if false
-      program = @programs.vignette
-      @gl.disable(@gl.DEPTH_TEST)
-      @gl.useProgram(program)
-      @gl.uniform2f(program.viewport, @width, @height)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.bigtri)
-      @gl.enableVertexAttribArray(VERTEXID)
-      @gl.vertexAttribPointer(VERTEXID, 2, @gl.FLOAT, false, stride = 8, 0)
-      @gl.drawArrays(@gl.TRIANGLES, 0, 3)
-      @gl.disableVertexAttribArray(VERTEXID)
 
     @gl.clearColor(0,0,0,0)
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
@@ -179,35 +161,17 @@ class Renderer
         @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, 0)
       @gl.disableVertexAttribArray(POSITION)
 
-      # Draw the Mobius tube
-    if false
-      program = @programs.solidmesh
-      @gl.enable(@gl.DEPTH_TEST)
-      @gl.useProgram(program)
-      @gl.uniformMatrix4fv(program.projection, false, projection)
-      @gl.uniformMatrix4fv(program.modelview, false, modelview)
-      @gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix)
-      @gl.uniform4f program.color, 1, 1, 1, 1
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.mesh)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.enableVertexAttribArray(NORMAL)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 32, 0)
-      @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 32, offset = 12)
-      @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, @vbos.faces)
-      @gl.drawElements(@gl.TRIANGLES, @vbos.faces.count, @gl.UNSIGNED_SHORT, 0)
-      @gl.disableVertexAttribArray(POSITION)
-      @gl.disableVertexAttribArray(NORMAL)
-
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
   # Returns a list of 'ranges' where each range is an [index, count] pair
-  getLink: (id) -> x[1..] for x in root.links when x[0] is id
+  # The required [0] at the end seems like a coffeescript bug but I'm not sure.
+  getLink: (id) -> (x[1..] for x in root.links when x[0] is id)[0]
 
   genVertexBuffers: ->
 
     @knots = []
-    components = @getLink("8.3.2")[0] ## Why the [0] ?
-    #components = @getLink("3.1")[0] ## Why the [0] ?
+    #components = @getLink("8.3.2")
+    components = @getLink("8.1")
 
     for component in components
 
@@ -289,75 +253,6 @@ class Renderer
         triangles: triangles
 
       @knots.push knot
-
-  genHugeTriangle: ->
-    corners = [ -1, 3, -1, -1, 3, -1]
-    rawBuffer = new Float32Array(corners)
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    @vbos.bigtri = vbo
-
-  genMobius: ->
-    # Create positions/normals/texcoords for the mobius tube verts
-    [Slices, Stacks] = [128, 64]
-    rawBuffer = new Float32Array(Slices * Stacks * 8)
-    [slice, i] = [-1, 0]
-    BmA = CmA = n = N = vec3.create()
-    EPSILON = 0.00001
-    while ++slice < Slices
-      [v, stack] = [slice * TWOPI / (Slices-1), -1]
-      while ++stack < Stacks
-        u = stack * TWOPI / (Stacks-1)
-        A = p = @evalMobius(u, v)
-        B = @evalMobius(u + EPSILON, v)
-        C = @evalMobius(u, v + EPSILON)
-        BmA = vec3.subtract(B,A)
-        CmA = vec3.subtract(C,A)
-        n = vec3.cross(BmA,CmA)
-        n = vec3.normalize(n)
-        rawBuffer.set(p, i)
-        rawBuffer.set(n, i+3)
-        rawBuffer.set([u,v], i+6)
-        i += 8
-    msg = "#{i} floats generated from #{Slices} slices and #{Stacks} stacks."
-    console.log msg
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    @vbos.mesh = vbo
-
-    # Create the index buffer for the mobius tube faces
-    faceCount = (Slices - 1) * Stacks * 2
-    rawBuffer = new Uint16Array(faceCount * 3)
-    [i, ptr, v] = [0, 0, 0]
-    while ++i < Slices
-      j = -1
-      while ++j < Stacks
-        next = (j + 1) % Stacks
-        tri = rawBuffer.subarray(ptr+0, ptr+3)
-        tri[2] = v+next+Stacks
-        tri[1] = v+next
-        tri[0] = v+j
-        tri = rawBuffer.subarray(ptr+3, ptr+6)
-        tri[2] = v+j
-        tri[1] = v+j+Stacks
-        tri[0] = v+next+Stacks
-        ptr += 6
-      v += Stacks
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    @vbos.faces = vbo
-    @vbos.faces.count = rawBuffer.length
-
-  # Parametric Function for the Mobius Tube Surface
-  evalMobius: (u, v) ->
-    [R, n] = [1.5, 3]
-    x = (1.0*R + 0.125*sin(u/2)*pow(abs(sin(v)), 2/n)*sgn(sin(v)) + 0.5*cos(u/2)*pow(abs(cos(v)), 2/n)*sgn(cos(v)))*cos(u)
-    y = (1.0*R + 0.125*sin(u/2)*pow(abs(sin(v)), 2/n)*sgn(sin(v)) + 0.5*cos(u/2)*pow(abs(cos(v)), 2/n)*sgn(cos(v)))*sin(u)
-    z = -0.5*sin(u/2)*pow(abs(cos(v)), 2/n)*sgn(cos(v)) + 0.125*cos(u/2)*pow(abs(sin(v)), 2/n)*sgn(sin(v))
-    [x, y, z]
 
   # Compile and link the given shader strings and metadata
   compileProgram: (vName, fName, attribs, uniforms) ->

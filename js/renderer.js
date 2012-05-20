@@ -17,18 +17,17 @@
       this.gl = gl;
       this.width = width;
       this.height = height;
-      this.radiansPerSecond = 0.001;
+      this.radiansPerSecond = 0.0001;
       this.spinning = true;
       this.style = Style.WIREFRAME;
       this.theta = 0;
       this.vbos = {};
       this.programs = {};
       this.tubeGen = new root.TubeGenerator;
-      this.tubeGen.polygonSides = 16;
+      this.tubeGen.polygonSides = 4;
       this.tubeGen.bézierSlices = 3;
-      this.genMobius();
+      this.tubeGen.tangentSmoothness = 3;
       this.compileShaders();
-      this.genHugeTriangle();
       this.gl.disable(this.gl.CULL_FACE);
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         glerr("OpenGL error during init");
@@ -36,29 +35,29 @@
       this.downloadSpines();
     }
 
+    Renderer.prototype.onDownloadComplete = function(data) {
+      var rawVerts;
+      rawVerts = data['centerlines'];
+      this.spines = new Float32Array(rawVerts);
+      this.vbos.spines = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, this.spines, this.gl.STATIC_DRAW);
+      if (this.gl.getError() !== this.gl.NO_ERROR) {
+        glerr("Error when trying to create spine VBO");
+      }
+      toast("downloaded " + (this.spines.length / 3) + " verts of spine data");
+      this.genVertexBuffers();
+      return this.render();
+    };
+
     Renderer.prototype.downloadSpines = function() {
-      var dataurl, worker;
+      var worker;
       worker = new Worker('js/downloader.js');
-      worker.gl = this.gl;
-      worker.vbos = this.vbos;
-      worker.render = this.render;
       worker.renderer = this;
       worker.onmessage = function(response) {
-        var rawVerts;
-        rawVerts = response.data['centerlines'];
-        this.renderer.spines = new Float32Array(rawVerts);
-        this.vbos.spines = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.renderer.spines, this.gl.STATIC_DRAW);
-        if (this.gl.getError() !== this.gl.NO_ERROR) {
-          lerr("Error when trying to create spine VBO");
-        }
-        toast("downloaded " + (this.renderer.spines.length / 3) + " verts of spine data");
-        this.renderer.genVertexBuffers();
-        return this.renderer.render();
+        return this.renderer.onDownloadComplete(response.data);
       };
-      dataurl = document.URL + 'data/centerlines.bin';
-      return worker.postMessage(dataurl);
+      return worker.postMessage(document.URL + 'data/centerlines.bin');
     };
 
     Renderer.prototype.compileShaders = function() {
@@ -95,17 +94,6 @@
         }
       }
       this.previousTime = currentTime;
-      if (false) {
-        program = this.programs.vignette;
-        this.gl.disable(this.gl.DEPTH_TEST);
-        this.gl.useProgram(program);
-        this.gl.uniform2f(program.viewport, this.width, this.height);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.bigtri);
-        this.gl.enableVertexAttribArray(VERTEXID);
-        this.gl.vertexAttribPointer(VERTEXID, 2, this.gl.FLOAT, false, stride = 8, 0);
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
-        this.gl.disableVertexAttribArray(VERTEXID);
-      }
       this.gl.clearColor(0, 0, 0, 0);
       this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
       this.knots[0].color = [1, 1, 1, 0.75];
@@ -194,46 +182,31 @@
         }
         this.gl.disableVertexAttribArray(POSITION);
       }
-      if (false) {
-        program = this.programs.solidmesh;
-        this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.useProgram(program);
-        this.gl.uniformMatrix4fv(program.projection, false, projection);
-        this.gl.uniformMatrix4fv(program.modelview, false, modelview);
-        this.gl.uniformMatrix3fv(program.normalmatrix, false, normalMatrix);
-        this.gl.uniform4f(program.color, 1, 1, 1, 1);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.mesh);
-        this.gl.enableVertexAttribArray(POSITION);
-        this.gl.enableVertexAttribArray(NORMAL);
-        this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 32, 0);
-        this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 32, offset = 12);
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.vbos.faces);
-        this.gl.drawElements(this.gl.TRIANGLES, this.vbos.faces.count, this.gl.UNSIGNED_SHORT, 0);
-        this.gl.disableVertexAttribArray(POSITION);
-        this.gl.disableVertexAttribArray(NORMAL);
-      }
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         return glerr("Render");
       }
     };
 
     Renderer.prototype.getLink = function(id) {
-      var x, _i, _len, _ref, _results;
-      _ref = root.links;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        x = _ref[_i];
-        if (x[0] === id) {
-          _results.push(x.slice(1));
+      var x;
+      return ((function() {
+        var _i, _len, _ref, _results;
+        _ref = root.links;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          x = _ref[_i];
+          if (x[0] === id) {
+            _results.push(x.slice(1));
+          }
         }
-      }
-      return _results;
+        return _results;
+      })())[0];
     };
 
     Renderer.prototype.genVertexBuffers = function() {
       var byteOffset, centerline, component, components, faceCount, i, j, knot, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _i, _len, _ref, _ref1, _ref2, _ref3, _results;
       this.knots = [];
-      components = this.getLink("8.3.2")[0];
+      components = this.getLink("8.1");
       _results = [];
       for (_i = 0, _len = components.length; _i < _len; _i++) {
         component = components[_i];
@@ -312,81 +285,6 @@
         _results.push(this.knots.push(knot));
       }
       return _results;
-    };
-
-    Renderer.prototype.genHugeTriangle = function() {
-      var corners, rawBuffer, vbo;
-      corners = [-1, 3, -1, -1, 3, -1];
-      rawBuffer = new Float32Array(corners);
-      vbo = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-      return this.vbos.bigtri = vbo;
-    };
-
-    Renderer.prototype.genMobius = function() {
-      var A, B, BmA, C, CmA, EPSILON, N, Slices, Stacks, faceCount, i, j, msg, n, next, p, ptr, rawBuffer, slice, stack, tri, u, v, vbo, _ref, _ref1, _ref2, _ref3;
-      _ref = [128, 64], Slices = _ref[0], Stacks = _ref[1];
-      rawBuffer = new Float32Array(Slices * Stacks * 8);
-      _ref1 = [-1, 0], slice = _ref1[0], i = _ref1[1];
-      BmA = CmA = n = N = vec3.create();
-      EPSILON = 0.00001;
-      while (++slice < Slices) {
-        _ref2 = [slice * TWOPI / (Slices - 1), -1], v = _ref2[0], stack = _ref2[1];
-        while (++stack < Stacks) {
-          u = stack * TWOPI / (Stacks - 1);
-          A = p = this.evalMobius(u, v);
-          B = this.evalMobius(u + EPSILON, v);
-          C = this.evalMobius(u, v + EPSILON);
-          BmA = vec3.subtract(B, A);
-          CmA = vec3.subtract(C, A);
-          n = vec3.cross(BmA, CmA);
-          n = vec3.normalize(n);
-          rawBuffer.set(p, i);
-          rawBuffer.set(n, i + 3);
-          rawBuffer.set([u, v], i + 6);
-          i += 8;
-        }
-      }
-      msg = "" + i + " floats generated from " + Slices + " slices and " + Stacks + " stacks.";
-      console.log(msg);
-      vbo = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-      this.vbos.mesh = vbo;
-      faceCount = (Slices - 1) * Stacks * 2;
-      rawBuffer = new Uint16Array(faceCount * 3);
-      _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
-      while (++i < Slices) {
-        j = -1;
-        while (++j < Stacks) {
-          next = (j + 1) % Stacks;
-          tri = rawBuffer.subarray(ptr + 0, ptr + 3);
-          tri[2] = v + next + Stacks;
-          tri[1] = v + next;
-          tri[0] = v + j;
-          tri = rawBuffer.subarray(ptr + 3, ptr + 6);
-          tri[2] = v + j;
-          tri[1] = v + j + Stacks;
-          tri[0] = v + next + Stacks;
-          ptr += 6;
-        }
-        v += Stacks;
-      }
-      vbo = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-      this.vbos.faces = vbo;
-      return this.vbos.faces.count = rawBuffer.length;
-    };
-
-    Renderer.prototype.evalMobius = function(u, v) {
-      var R, n, x, y, z, _ref;
-      _ref = [1.5, 3], R = _ref[0], n = _ref[1];
-      x = (1.0 * R + 0.125 * sin(u / 2) * pow(abs(sin(v)), 2 / n) * sgn(sin(v)) + 0.5 * cos(u / 2) * pow(abs(cos(v)), 2 / n) * sgn(cos(v))) * cos(u);
-      y = (1.0 * R + 0.125 * sin(u / 2) * pow(abs(sin(v)), 2 / n) * sgn(sin(v)) + 0.5 * cos(u / 2) * pow(abs(cos(v)), 2 / n) * sgn(cos(v))) * sin(u);
-      z = -0.5 * sin(u / 2) * pow(abs(cos(v)), 2 / n) * sgn(cos(v)) + 0.125 * cos(u / 2) * pow(abs(sin(v)), 2 / n) * sgn(sin(v));
-      return [x, y, z];
     };
 
     Renderer.prototype.compileProgram = function(vName, fName, attribs, uniforms) {
