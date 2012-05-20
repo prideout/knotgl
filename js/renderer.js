@@ -17,7 +17,7 @@
       this.gl = gl;
       this.width = width;
       this.height = height;
-      this.radiansPerSecond = 0.0001;
+      this.radiansPerSecond = 0.0003;
       this.spinning = true;
       this.style = Style.WIREFRAME;
       this.theta = 0;
@@ -97,8 +97,10 @@
       this.gl.clearColor(0, 0, 0, 0);
       this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
       this.knots[0].color = [1, 1, 1, 0.75];
-      if (this.knots.length > 2) {
+      if (this.knots.length > 1) {
         this.knots[1].color = [0.25, 0.5, 1, 0.75];
+      }
+      if (this.knots.length > 2) {
         this.knots[2].color = [1, 0.5, 0.25, 0.75];
       }
       _ref = this.knots;
@@ -206,7 +208,8 @@
     Renderer.prototype.genVertexBuffers = function() {
       var byteOffset, centerline, component, components, faceCount, i, j, knot, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _i, _len, _ref, _ref1, _ref2, _ref3, _results;
       this.knots = [];
-      components = this.getLink("8.1");
+      components = this.getLink("5.2.1");
+      toast(components);
       _results = [];
       for (_i = 0, _len = components.length; _i < _len; _i++) {
         component = components[_i];

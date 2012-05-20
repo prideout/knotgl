@@ -202,6 +202,7 @@
         vec3.cross(sj, tj, rj);
         vec3.set(rj, frameR.subarray(j * 3, j * 3 + 3));
         vec3.set(sj, frameS.subarray(j * 3, j * 3 + 3));
+        vec3.set(rj, ri);
         ++i;
       }
       return [frameR, frameS, frameT];

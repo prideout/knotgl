@@ -7,7 +7,7 @@ Style =
 # All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
   constructor: (@gl, @width, @height) ->
-    @radiansPerSecond = 0.0001
+    @radiansPerSecond = 0.0003
     @spinning = true
     #@style = Style.SILHOUETTE
     @style = Style.WIREFRAME
@@ -69,8 +69,9 @@ class Renderer
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
 
     @knots[0].color = [1,1,1,0.75]
-    if @knots.length > 2
+    if @knots.length > 1
       @knots[1].color = [0.25,0.5,1,0.75]
+    if @knots.length > 2
       @knots[2].color = [1,0.5,0.25,0.75]
 
     for knot in @knots
@@ -171,7 +172,9 @@ class Renderer
 
     @knots = []
     #components = @getLink("8.3.2")
-    components = @getLink("8.1")
+    #components = @getLink("8.1")
+    components = @getLink("5.2.1") # 255.html
+    toast(components)
 
     for component in components
 

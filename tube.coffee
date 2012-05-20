@@ -119,8 +119,8 @@ class TubeGenerator
       vec3.direction(xi, xj, ti)
 
     # Allocate some temporaries for vector math
-    [r0,  s0,  t0]  = (vec3.create() for n in [0..2])
-    [rj,  sj,  tj]  = (vec3.create() for n in [0..2])
+    [r0, s0, t0]  = (vec3.create() for n in [0..2])
+    [rj, sj, tj]  = (vec3.create() for n in [0..2])
 
     # Create a somewhat-arbitrary initial frame (r0, s0, t0)
     vec3.set(frameT.subarray(0, 3), t0)
@@ -145,6 +145,7 @@ class TubeGenerator
       vec3.cross(sj, tj, rj)
       vec3.set(rj, frameR.subarray(j*3, j*3+3))
       vec3.set(sj, frameS.subarray(j*3, j*3+3))
+      vec3.set(rj, ri)
       ++i
 
     # Return the basis columns
