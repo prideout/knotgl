@@ -9,36 +9,40 @@ class Renderer
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.001
     @spinning = true
-    @style = Style.SILHOUETTE
-    #@style = Style.WIREFRAME
+    #@style = Style.SILHOUETTE
+    @style = Style.WIREFRAME
     @theta = 0
     @vbos = {}
     @programs = {}
     @tubeGen = new root.TubeGenerator
     @tubeGen.polygonSides = 16
     @tubeGen.bézierSlices = 3
-    @genVertexBuffers()
     @genMobius()
     @compileShaders()
     @genHugeTriangle()
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
     @downloadSpines()
-    @render()
 
   downloadSpines: ->
     worker = new Worker 'js/downloader.js'
+
+    # TODO make this a class member, I think it would be cleaner
     worker.gl = @gl
     worker.vbos = @vbos
     worker.render = @render
+    worker.renderer = this
+
     worker.onmessage = (response) ->
-      rawVerts  = response.data['centerlines']
-      rawFloats = new Float32Array(rawVerts)
-      @vbos.allLinks = @gl.createBuffer()
-      @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.allLinks
-      @gl.bufferData @gl.ARRAY_BUFFER, rawFloats, @gl.STATIC_DRAW
+      rawVerts = response.data['centerlines']
+      @renderer.spines = new Float32Array(rawVerts)
+      @vbos.spines = @gl.createBuffer()
+      @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.spines
+      @gl.bufferData @gl.ARRAY_BUFFER, @renderer.spines, @gl.STATIC_DRAW
       lerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
-      toast("downloaded #{rawFloats.length / 3} verts of centerline data")
+      toast("downloaded #{@renderer.spines.length / 3} verts of spine data")
+      @renderer.genVertexBuffers()
+      @renderer.render()
     dataurl = document.URL + 'data/centerlines.bin'
     worker.postMessage(dataurl)
 
@@ -83,15 +87,17 @@ class Renderer
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
 
     @knots[0].color = [1,1,1,0.75]
-    @knots[1].color = [0.25,0.5,1,0.75]
-    @knots[2].color = [1,0.5,0.25,0.75]
+    if @knots.length > 2
+      @knots[1].color = [0.25,0.5,1,0.75]
+      @knots[2].color = [1,0.5,0.25,0.75]
 
     for knot in @knots
 
+      # Would monkey patching be better?
       setColor = (gl, color) -> gl.uniform4fv(color, knot.color)
 
       # Draw the centerline
-      @gl.viewport(0,0,@width/8,@height/8)
+      @gl.viewport(0,0,@width/12,@height/12)
       @gl.enable(@gl.DEPTH_TEST)
       @gl.enable(@gl.BLEND)
       @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
@@ -100,18 +106,19 @@ class Renderer
       setColor(@gl, program.color)
       @gl.uniformMatrix4fv(program.projection, false, projection)
       @gl.uniformMatrix4fv(program.modelview, false, modelview)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.centerline)
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
       @gl.enableVertexAttribArray(POSITION)
       @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-      @gl.uniform1f(program.scale, 1)
-      @gl.lineWidth(5)
+      @gl.uniform1f(program.scale, @tubeGen.scale)
+      @gl.lineWidth(6)
       @gl.uniform4f(program.color,0,0,0,0.75)
       @gl.uniform1f(program.depthOffset, 0)
-      @gl.drawArrays(@gl.LINE_STRIP, 0, knot.centerline.count)
+      [startVertex, vertexCount] = knot.centerline
+      @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
       @gl.lineWidth(2)
       setColor(@gl, program.color)
       @gl.uniform1f(program.depthOffset, -0.01)
-      @gl.drawArrays(@gl.LINE_STRIP, 0, knot.centerline.count)
+      @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
       @gl.disableVertexAttribArray(POSITION)
       @gl.viewport(0,0,@width,@height)
 
@@ -183,21 +190,25 @@ class Renderer
 
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
+  # Returns a list of 'ranges' where each range is an [index, count] pair
+  getLink: (id) -> x[1..] for x in root.links when x[0] is id
+
   genVertexBuffers: ->
 
     @knots = []
-    for knotData in @tubeGen.getLinkPaths(window.knot_data)
+    components = @getLink("8.3.2")[0] ## Why the [0] ?
+    #components = @getLink("3.1")[0] ## Why the [0] ?
 
-      # Create a line strip VBO for a knot centerline
-      # The first vertex is repeated for good uv hygiene
-      vbo = @gl.createBuffer()
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
-      @gl.bufferData(@gl.ARRAY_BUFFER, knotData, @gl.STATIC_DRAW)
-      centerline = vbo
-      centerline.count = knotData.length / 3
+    for component in components
+
+      # Perform Bézier interpolation
+      byteOffset = component[0] * 3 * 4
+      numFloats = component[1] * 3
+      segmentData = @spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3)
+      centerline = @tubeGen.getKnotPath(segmentData)
 
       # Create a positions buffer for a swept octagon
-      rawBuffer = @tubeGen.generateTube(knotData)
+      rawBuffer = @tubeGen.generateTube(centerline)
       vbo = @gl.createBuffer()
       @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
       @gl.bufferData(@gl.ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
@@ -205,8 +216,8 @@ class Renderer
       tube = vbo
 
       # Create the index buffer for the tube wireframe
-      # TODO This can be sometimes be re-used from one knot to another
-      polygonCount = centerline.count - 1
+      # TODO This can be re-used from one knot to another
+      polygonCount = centerline.length / 3 - 1
       sides = @tubeGen.polygonSides
       lineCount = polygonCount * sides * 2
       rawBuffer = new Uint16Array(lineCount * 2)
@@ -233,15 +244,14 @@ class Renderer
       @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
       wireframe = vbo
       wireframe.count = rawBuffer.length
-      console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{centerline.count-1} polygons."
+      console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{centerline.length/3-1} polygons."
 
       # Create the index buffer for the solid tube
-      # TODO This can be sometimes be re-used from one knot to another
-      # In fact it could ALWAYS be re-used if we had the same # of control points....
-      faceCount = centerline.count * sides * 2
+      # TODO This can be be re-used from one knot to another
+      faceCount = centerline.length/3 * sides * 2
       rawBuffer = new Uint16Array(faceCount * 3)
       [i, ptr, v] = [0, 0, 0]
-      while ++i < centerline.count
+      while ++i < centerline.length/3
         j = -1
         while ++j < sides
           next = (j + 1) % sides
@@ -262,7 +272,12 @@ class Renderer
       triangles.count = rawBuffer.length
 
       # Append the knot to the list
-      knot = {centerline: centerline, tube: tube, wireframe: wireframe, triangles: triangles}
+      knot =
+        centerline: component
+        tube: tube
+        wireframe: wireframe
+        triangles: triangles
+
       @knots.push knot
 
   genHugeTriangle: ->

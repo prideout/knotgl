@@ -10,10 +10,6 @@ class TubeGenerator
     @polygonSides = 9
     @radius = 0.07
 
-  # Returns a list of knot paths
-  getLinkPaths: (links) ->
-    @getKnotPath(link) for link in links
-
   # Evaluate a Bézier function for smooth interpolation.
   # Return a Float32Array
   getKnotPath: (data) ->
@@ -22,9 +18,9 @@ class TubeGenerator
     [i,j] = [0,0]
     while i < data.length+3
       r = ((i+n)%data.length for n in [0,2,3,5,6,8])
-      a = data[r[0]..r[1]]
-      b = data[r[2]..r[3]]
-      c = data[r[4]..r[5]]
+      a = data.subarray(r[0],r[1]+1)
+      b = data.subarray(r[2],r[3]+1)
+      c = data.subarray(r[4],r[5]+1)
       v1 = vec3.create a
       v4 = vec3.create b
       vec3.lerp v1, b, 0.5

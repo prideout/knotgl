@@ -16,16 +16,6 @@
       this.radius = 0.07;
     }
 
-    TubeGenerator.prototype.getLinkPaths = function(links) {
-      var link, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = links.length; _i < _len; _i++) {
-        link = links[_i];
-        _results.push(this.getKnotPath(link));
-      }
-      return _results;
-    };
-
     TubeGenerator.prototype.getKnotPath = function(data) {
       var a, b, c, dt, i, ii, j, n, p, r, rawBuffer, slice, slices, t, tt, v, v1, v2, v3, v4, _i, _j, _ref;
       slices = this.bézierSlices;
@@ -42,9 +32,9 @@
           }
           return _results;
         })();
-        a = data.slice(r[0], r[1] + 1 || 9e9);
-        b = data.slice(r[2], r[3] + 1 || 9e9);
-        c = data.slice(r[4], r[5] + 1 || 9e9);
+        a = data.subarray(r[0], r[1] + 1);
+        b = data.subarray(r[2], r[3] + 1);
+        c = data.subarray(r[4], r[5] + 1);
         v1 = vec3.create(a);
         v4 = vec3.create(b);
         vec3.lerp(v1, b, 0.5);
