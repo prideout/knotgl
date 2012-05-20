@@ -39,20 +39,44 @@ class Renderer
     @render()
 
   changeSelection: (increment) ->
+    toast("interupt")
+
     for position in [0...@links.length]
       iconified = @links[position].iconified
       next = position + increment
       continue if next >= @links.length or next < 0
-      if iconified is 0
-        incoming = new TWEEN.Tween(@links[position])
-          .to({iconified: 1}, @transitionMilliseconds)
-          .easing(TWEEN.Easing.Quartic.Out)
-        outgoing = new TWEEN.Tween(@links[position+increment])
-          .to({iconified: 0}, @transitionMilliseconds)
-          .easing(TWEEN.Easing.Bounce.Out)
-        incoming.start()
-        outgoing.start()
-        return
+      continue if iconified isnt 0
+
+      root.outgoing = new TWEEN.Tween(@links[position])
+        .to({iconified: 1}, 0.5 * @transitionMilliseconds)
+        .easing(TWEEN.Easing.Quartic.Out)
+      root.outgoing.position = position
+      root.outgoing.target = @links[position]
+
+      root.incoming = new TWEEN.Tween(@links[next])
+        .to({iconified: 0}, @transitionMilliseconds)
+        .easing(TWEEN.Easing.Bounce.Out)
+      root.incoming.position = next
+      root.incoming.target = @links[next]
+
+      # Just to let other pieces of code know that we're transitioning:
+      # DOESNT SEEM TO HELP
+      #root.incoming.target.iconified -= 0.0001 if root.incoming.target.iconified > 0
+      #root.outgoing.target.iconified += 0.0001 if root.incoming.target.iconified < 1
+
+      incoming.start()
+      outgoing.start()
+      return
+
+    # If we reached this point, we're interupting a transition.
+    position = root.incoming.position
+    next = position + increment
+    return if next >= @links.length or next < 0
+    previous = root.incoming.target.iconified
+    return if previous is 0 or previous is 1
+    @links[next].iconified = previous
+    root.incoming.target.iconified = 1
+    root.incoming.replace(@links[next])
 
   downloadSpines: ->
     worker = new Worker 'js/downloader.js'
@@ -70,6 +94,13 @@ class Renderer
     window.requestAnimFrame(staticRender, $("canvas").get(0))
     TWEEN.update()
 
+    # Update the spinning animation
+    currentTime = new Date().getTime()
+    if @previousTime?
+      elapsed = currentTime - @previousTime
+      @theta += @radiansPerSecond * elapsed if @spinning
+    @previousTime = currentTime
+
     # Adjust the camera and compute various transforms
     @projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)
     view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
@@ -81,82 +112,75 @@ class Renderer
     mat4.multiply(view, model, @modelview)
     @normalMatrix = mat4.toMat3(@modelview)
 
-    currentTime = new Date().getTime()
-    if @previousTime?
-      elapsed = currentTime - @previousTime
-      @theta += @radiansPerSecond * elapsed if @spinning
-    @previousTime = currentTime
+    # This is where I'd normally do a glClear, doesn't seem necessary in WebGL (?)
 
-    @gl.clearColor(0,0,0,0)
-    @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
-    for position in [0...@links.length]
-      @renderKnot(knot, position) for knot in @links[position]
+    # Draw each knot in succession
+    (@renderKnot(k, p) for k in @links[p]) for p in [0...@links.length]
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
   renderKnot: (knot, position) ->
 
-    # Would monkey patching be better?
-    @gl.setColor = (color) -> @uniform4fv(color, knot.color)
+    @gl.setColor = (colorLocation, alpha) ->
+      @uniform4f(colorLocation,
+        knot.color[0],
+        knot.color[1],
+        knot.color[2],
+        alpha)
 
     [tileWidth, tileHeight] = [@width/9, @height/9]
     iconPosition = tileWidth * position
-    #iconPosition = 0
-    #for p in [0...position]
-    #  iconPosition += tileWidth * @links[p].iconified
 
     iconified = @links[position].iconified
-    if true # iconified is 1
+    alpha = 0.25 + 0.75 * iconified
 
-      # Draw the centerline
-      @gl.viewport(
-        iconPosition,
-        @height-tileHeight,
-        tileWidth,
-        tileHeight)
+    # Draw the icon (TODO refactor into its own method)
+    @gl.viewport(
+      iconPosition,
+      @height-tileHeight,
+      tileWidth,
+      tileHeight)
+    @gl.enable(@gl.BLEND)
+    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+    program = @programs.wireframe
+    @gl.useProgram(program)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
+    @gl.enableVertexAttribArray(POSITION)
+    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+    @gl.uniformMatrix4fv(program.projection, false, @projection)
+    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+    @gl.uniform1f(program.scale, @tubeGen.scale)
+    @gl.uniform4f(program.color,0,0,0,alpha)
+    [startVertex, vertexCount] = knot.centerline
+    @gl.enable(@gl.DEPTH_TEST)
+    @gl.lineWidth(2)
 
-      @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-      program = @programs.wireframe
-      @gl.useProgram(program)
-      @gl.uniformMatrix4fv(program.projection, false, @projection)
-      @gl.uniformMatrix4fv(program.modelview, false, @modelview)
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
-      @gl.enableVertexAttribArray(POSITION)
-      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-      @gl.uniform1f(program.scale, @tubeGen.scale)
-      @gl.uniform4f(program.color,0,0,0,1)
-      [startVertex, vertexCount] = knot.centerline
-      @gl.disable(@gl.BLEND)
-      @gl.enable(@gl.DEPTH_TEST)
-      @gl.lineWidth(2)
+    # Draw the thick black outer line.
+    # Large values of lineWidth causes ugly fin gaps.
+    # Redraw with screen-space offsets to achieve extra thickness.
+    for x in [-1..1] by 2
+      for y in [-1..1] by 2
+        @gl.uniform2f(program.offset, x,y)
+        @gl.uniform1f(program.depthOffset, 0)
+        @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
 
-      # Draw the thick black outer line.
-      # Large values of lineWidth causes ugly fin gaps.
-      # Redraw with screen-space offsets to achieve extra thickness.
-      for x in [-1..1] by 2
-        for y in [-1..1] by 2
-          @gl.uniform2f(program.offset, x,y)
-          @gl.uniform1f(program.depthOffset, 0)
-          @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+    # Draw a thinner center line down the spine for added depth.
+    @gl.enable(@gl.BLEND)
+    @gl.lineWidth(2)
+    @gl.setColor(program.color, alpha)
+    @gl.uniform2f(program.offset, 0,0)
+    @gl.uniform1f(program.depthOffset, -0.5)
+    @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+    @gl.disableVertexAttribArray(POSITION)
+    @gl.viewport(0,0,@width,@height)
+    program.color[3] = 1
 
-      # Draw a thinner center line down the spine for added depth.
-      @gl.enable(@gl.BLEND)
-      @gl.lineWidth(2)
-      @gl.setColor(program.color)
-      @gl.uniform2f(program.offset, 0,0)
-      @gl.uniform1f(program.depthOffset, -0.5)
-      @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
-      @gl.disableVertexAttribArray(POSITION)
-      @gl.viewport(0,0,@width,@height)
-      program.color[3] = 1
-
+    # Draw the solid knot
     t = 1-iconified
     w = t*@width + (1-t)*tileWidth
     h = t*@height + (1-t)*tileHeight
     left = (1-t) * iconPosition
     top = (1-t) * (@height-tileHeight)
     @gl.viewport(left,top,w,h)
-
-    # Draw the solid knot
     program = @programs.solidmesh
     @gl.enable(@gl.DEPTH_TEST)
     @gl.useProgram(program)

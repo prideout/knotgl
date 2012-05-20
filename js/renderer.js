@@ -54,25 +54,43 @@
     };
 
     Renderer.prototype.changeSelection = function(increment) {
-      var iconified, incoming, next, outgoing, position, _i, _ref;
+      var iconified, next, position, previous, _i, _ref;
+      toast("interupt");
       for (position = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; position = 0 <= _ref ? ++_i : --_i) {
         iconified = this.links[position].iconified;
         next = position + increment;
         if (next >= this.links.length || next < 0) {
           continue;
         }
-        if (iconified === 0) {
-          incoming = new TWEEN.Tween(this.links[position]).to({
-            iconified: 1
-          }, this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
-          outgoing = new TWEEN.Tween(this.links[position + increment]).to({
-            iconified: 0
-          }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
-          incoming.start();
-          outgoing.start();
-          return;
+        if (iconified !== 0) {
+          continue;
         }
+        root.outgoing = new TWEEN.Tween(this.links[position]).to({
+          iconified: 1
+        }, 0.5 * this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
+        root.outgoing.position = position;
+        root.outgoing.target = this.links[position];
+        root.incoming = new TWEEN.Tween(this.links[next]).to({
+          iconified: 0
+        }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
+        root.incoming.position = next;
+        root.incoming.target = this.links[next];
+        incoming.start();
+        outgoing.start();
+        return;
       }
+      position = root.incoming.position;
+      next = position + increment;
+      if (next >= this.links.length || next < 0) {
+        return;
+      }
+      previous = root.incoming.target.iconified;
+      if (previous === 0 || previous === 1) {
+        return;
+      }
+      this.links[next].iconified = previous;
+      root.incoming.target.iconified = 1;
+      return root.incoming.replace(this.links[next]);
     };
 
     Renderer.prototype.downloadSpines = function() {
@@ -101,9 +119,17 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, elapsed, eye, far, fov, knot, model, near, position, target, up, view, _i, _j, _len, _ref, _ref1;
+      var aspect, currentTime, elapsed, eye, far, fov, k, model, near, p, target, up, view, _i, _j, _len, _ref, _ref1;
       window.requestAnimFrame(staticRender, $("canvas").get(0));
       TWEEN.update();
+      currentTime = new Date().getTime();
+      if (this.previousTime != null) {
+        elapsed = currentTime - this.previousTime;
+        if (this.spinning) {
+          this.theta += this.radiansPerSecond * elapsed;
+        }
+      }
+      this.previousTime = currentTime;
       this.projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
       model = mat4.create();
@@ -113,21 +139,11 @@
       mat4.rotateY(model, this.theta);
       mat4.multiply(view, model, this.modelview);
       this.normalMatrix = mat4.toMat3(this.modelview);
-      currentTime = new Date().getTime();
-      if (this.previousTime != null) {
-        elapsed = currentTime - this.previousTime;
-        if (this.spinning) {
-          this.theta += this.radiansPerSecond * elapsed;
-        }
-      }
-      this.previousTime = currentTime;
-      this.gl.clearColor(0, 0, 0, 0);
-      this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
-      for (position = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; position = 0 <= _ref ? ++_i : --_i) {
-        _ref1 = this.links[position];
+      for (p = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; p = 0 <= _ref ? ++_i : --_i) {
+        _ref1 = this.links[p];
         for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
-          knot = _ref1[_j];
-          this.renderKnot(knot, position);
+          k = _ref1[_j];
+          this.renderKnot(k, p);
         }
       }
       if (this.gl.getError() !== this.gl.NO_ERROR) {
@@ -136,46 +152,45 @@
     };
 
     Renderer.prototype.renderKnot = function(knot, position) {
-      var h, iconPosition, iconified, left, offset, program, startVertex, stride, t, tileHeight, tileWidth, top, vertexCount, w, x, y, _i, _j, _ref, _ref1;
-      this.gl.setColor = function(color) {
-        return this.uniform4fv(color, knot.color);
+      var alpha, h, iconPosition, iconified, left, offset, program, startVertex, stride, t, tileHeight, tileWidth, top, vertexCount, w, x, y, _i, _j, _ref, _ref1;
+      this.gl.setColor = function(colorLocation, alpha) {
+        return this.uniform4f(colorLocation, knot.color[0], knot.color[1], knot.color[2], alpha);
       };
       _ref = [this.width / 9, this.height / 9], tileWidth = _ref[0], tileHeight = _ref[1];
       iconPosition = tileWidth * position;
       iconified = this.links[position].iconified;
-      if (true) {
-        this.gl.viewport(iconPosition, this.height - tileHeight, tileWidth, tileHeight);
-        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-        program = this.programs.wireframe;
-        this.gl.useProgram(program);
-        this.gl.uniformMatrix4fv(program.projection, false, this.projection);
-        this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
-        this.gl.enableVertexAttribArray(POSITION);
-        this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
-        this.gl.uniform1f(program.scale, this.tubeGen.scale);
-        this.gl.uniform4f(program.color, 0, 0, 0, 1);
-        _ref1 = knot.centerline, startVertex = _ref1[0], vertexCount = _ref1[1];
-        this.gl.disable(this.gl.BLEND);
-        this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.lineWidth(2);
-        for (x = _i = -1; _i <= 1; x = _i += 2) {
-          for (y = _j = -1; _j <= 1; y = _j += 2) {
-            this.gl.uniform2f(program.offset, x, y);
-            this.gl.uniform1f(program.depthOffset, 0);
-            this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
-          }
+      alpha = 0.25 + 0.75 * iconified;
+      this.gl.viewport(iconPosition, this.height - tileHeight, tileWidth, tileHeight);
+      this.gl.enable(this.gl.BLEND);
+      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+      program = this.programs.wireframe;
+      this.gl.useProgram(program);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+      this.gl.enableVertexAttribArray(POSITION);
+      this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
+      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
+      this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
+      this.gl.uniform1f(program.scale, this.tubeGen.scale);
+      this.gl.uniform4f(program.color, 0, 0, 0, alpha);
+      _ref1 = knot.centerline, startVertex = _ref1[0], vertexCount = _ref1[1];
+      this.gl.enable(this.gl.DEPTH_TEST);
+      this.gl.lineWidth(2);
+      for (x = _i = -1; _i <= 1; x = _i += 2) {
+        for (y = _j = -1; _j <= 1; y = _j += 2) {
+          this.gl.uniform2f(program.offset, x, y);
+          this.gl.uniform1f(program.depthOffset, 0);
+          this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
         }
-        this.gl.enable(this.gl.BLEND);
-        this.gl.lineWidth(2);
-        this.gl.setColor(program.color);
-        this.gl.uniform2f(program.offset, 0, 0);
-        this.gl.uniform1f(program.depthOffset, -0.5);
-        this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
-        this.gl.disableVertexAttribArray(POSITION);
-        this.gl.viewport(0, 0, this.width, this.height);
-        program.color[3] = 1;
       }
+      this.gl.enable(this.gl.BLEND);
+      this.gl.lineWidth(2);
+      this.gl.setColor(program.color, alpha);
+      this.gl.uniform2f(program.offset, 0, 0);
+      this.gl.uniform1f(program.depthOffset, -0.5);
+      this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
+      this.gl.disableVertexAttribArray(POSITION);
+      this.gl.viewport(0, 0, this.width, this.height);
+      program.color[3] = 1;
       t = 1 - iconified;
       w = t * this.width + (1 - t) * tileWidth;
       h = t * this.height + (1 - t) * tileHeight;
