@@ -187,8 +187,8 @@
           this.gl.uniform4f(program.color, 0, 0, 0, 1);
           this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
           if (this.sketchy) {
+            this.gl.uniform4f(program.color, 0.1, 0.1, 0.1, 0.1);
             this.gl.uniform1f(program.depthOffset, -0.01);
-            this.gl.uniform4f(program.color, 0, 0, 0, 0.75);
             this.gl.drawElements(this.gl.LINES, knot.wireframe.count / 2, this.gl.UNSIGNED_SHORT, knot.wireframe.count);
           }
         }

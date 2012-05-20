@@ -167,8 +167,8 @@ class Renderer
         @gl.uniform4f(program.color, 0,0,0,1)
         @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
         if @sketchy
+          @gl.uniform4f(program.color, 0.1,0.1,0.1,0.5)
           @gl.uniform1f(program.depthOffset, -0.01)
-          @gl.uniform4f(program.color, 0,0,0,0.75)
           @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
 
       @gl.disableVertexAttribArray(POSITION)
