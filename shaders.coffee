@@ -20,6 +20,7 @@ root.shaders =
       Projection: 'projection'
       Modelview: 'modelview'
       DepthOffset: 'depthOffset'
+      Offset: 'offset'
       Color: 'color'
       Scale: 'scale'
 
@@ -55,12 +56,14 @@ uniform mat4 Modelview;
 uniform mat4 Projection;
 uniform float DepthOffset;
 uniform float Scale;
+uniform vec2 Offset;
 void main(void)
 {
     vec4 p = Position;
     p.xyz *= Scale;
     gl_Position = Projection * Modelview * p;
     gl_Position.z += DepthOffset;
+    gl_Position.xy += Offset * 0.15;
 }
 """
 

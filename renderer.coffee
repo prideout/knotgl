@@ -98,8 +98,6 @@ class Renderer
 
       # Draw the centerline
       @gl.viewport(0,0,@width/12,@height/12)
-      @gl.enable(@gl.DEPTH_TEST)
-      @gl.enable(@gl.BLEND)
       @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
       program = @programs.wireframe
       @gl.useProgram(program)
@@ -110,14 +108,26 @@ class Renderer
       @gl.enableVertexAttribArray(POSITION)
       @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
       @gl.uniform1f(program.scale, @tubeGen.scale)
-      @gl.lineWidth(6)
-      @gl.uniform4f(program.color,0,0,0,0.75)
-      @gl.uniform1f(program.depthOffset, 0)
+      @gl.uniform4f(program.color,0,0,0,1)
       [startVertex, vertexCount] = knot.centerline
-      @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+      @gl.disable(@gl.BLEND)
+      @gl.enable(@gl.DEPTH_TEST)
+      @gl.lineWidth(3)
+
+      # Draw the thick black outer line.
+      # Large values of lineWidth causes ugly fin gaps.
+      # Redraw with screen-space offsets to achieve extra thickness.
+      for x in [-1..1] by 2
+        for y in [-1..1] by 2
+          @gl.uniform2f(program.offset, x,y)
+          @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+
+      # Draw a thinner center line down the spine for added depth.
+      @gl.enable(@gl.BLEND)
       @gl.lineWidth(2)
       setColor(@gl, program.color)
-      @gl.uniform1f(program.depthOffset, -0.01)
+      @gl.uniform2f(program.offset, 0,0)
+      @gl.uniform1f(program.depthOffset, -0.5)
       @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
       @gl.disableVertexAttribArray(POSITION)
       @gl.viewport(0,0,@width,@height)

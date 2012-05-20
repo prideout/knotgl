@@ -19,7 +19,7 @@
       this.height = height;
       this.radiansPerSecond = 0.001;
       this.spinning = true;
-      this.style = Style.SILHOUETTE;
+      this.style = Style.WIREFRAME;
       this.theta = 0;
       this.vbos = {};
       this.programs = {};
@@ -77,7 +77,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, elapsed, eye, far, fov, knot, model, modelview, near, normalMatrix, offset, program, projection, setColor, startVertex, stride, target, up, vertexCount, view, _i, _len, _ref, _ref1;
+      var aspect, currentTime, elapsed, eye, far, fov, knot, model, modelview, near, normalMatrix, offset, program, projection, setColor, startVertex, stride, target, up, vertexCount, view, x, y, _i, _j, _k, _len, _ref, _ref1;
       window.requestAnimFrame(staticRender, $("canvas").get(0));
       projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
@@ -120,8 +120,6 @@
           return gl.uniform4fv(color, knot.color);
         };
         this.gl.viewport(0, 0, this.width / 12, this.height / 12);
-        this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.enable(this.gl.BLEND);
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         program = this.programs.wireframe;
         this.gl.useProgram(program);
@@ -132,14 +130,22 @@
         this.gl.enableVertexAttribArray(POSITION);
         this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
         this.gl.uniform1f(program.scale, this.tubeGen.scale);
-        this.gl.lineWidth(6);
-        this.gl.uniform4f(program.color, 0, 0, 0, 0.75);
-        this.gl.uniform1f(program.depthOffset, 0);
+        this.gl.uniform4f(program.color, 0, 0, 0, 1);
         _ref1 = knot.centerline, startVertex = _ref1[0], vertexCount = _ref1[1];
-        this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
+        this.gl.disable(this.gl.BLEND);
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.lineWidth(3);
+        for (x = _j = -1; _j <= 1; x = _j += 2) {
+          for (y = _k = -1; _k <= 1; y = _k += 2) {
+            this.gl.uniform2f(program.offset, x, y);
+            this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
+          }
+        }
+        this.gl.enable(this.gl.BLEND);
         this.gl.lineWidth(2);
         setColor(this.gl, program.color);
-        this.gl.uniform1f(program.depthOffset, -0.01);
+        this.gl.uniform2f(program.offset, 0, 0);
+        this.gl.uniform1f(program.depthOffset, -0.5);
         this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
         this.gl.disableVertexAttribArray(POSITION);
         this.gl.viewport(0, 0, this.width, this.height);
