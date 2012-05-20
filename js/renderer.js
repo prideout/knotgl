@@ -20,7 +20,7 @@
       this.height = height;
       this.radiansPerSecond = 0.0003;
       this.spinning = true;
-      this.style = Style.SILHOUETTE;
+      this.style = Style.WIREFRAME;
       this.sketchy = true;
       this.theta = 0;
       this.vbos = {};
@@ -85,9 +85,8 @@
       model = mat4.create();
       modelview = mat4.create();
       mat4.identity(model);
-      mat4.rotateX(model, 3.14 / 2);
-      mat4.rotateZ(model, 3.14 / 2);
-      mat4.rotateY(model, 3.14 / 4);
+      mat4.rotateX(model, 3.14 / 4);
+      mat4.rotateY(model, this.theta);
       mat4.multiply(view, model, modelview);
       normalMatrix = mat4.toMat3(modelview);
       currentTime = new Date().getTime();
@@ -100,14 +99,7 @@
       this.previousTime = currentTime;
       this.gl.clearColor(0, 0, 0, 0);
       this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
-      this.knots[0].color = [1, 1, 1, 0.75];
-      if (this.knots.length > 1) {
-        this.knots[1].color = [0.25, 0.5, 1, 0.75];
-      }
-      if (this.knots.length > 2) {
-        this.knots[2].color = [1, 0.5, 0.25, 0.75];
-      }
-      _ref = this.knots;
+      _ref = this.links[0];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         knot = _ref[_i];
         setColor = function(gl, color) {
@@ -156,8 +148,10 @@
         this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
         this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 24, offset = 12);
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.triangles);
-        this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
-        this.gl.polygonOffset(-1, 12);
+        if (this.style !== Style.WIREFRAME) {
+          this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
+          this.gl.polygonOffset(-1, 12);
+        }
         this.gl.drawElements(this.gl.TRIANGLES, knot.triangles.count, this.gl.UNSIGNED_SHORT, 0);
         this.gl.disableVertexAttribArray(POSITION);
         this.gl.disableVertexAttribArray(NORMAL);
@@ -219,87 +213,108 @@
     };
 
     Renderer.prototype.genVertexBuffers = function() {
-      var byteOffset, centerline, component, components, faceCount, i, j, knot, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _i, _len, _ref, _ref1, _ref2, _ref3, _results;
-      this.knots = [];
-      components = this.getLink("7.2.3");
+      var component, id, knots, selectedLinks, _i, _len, _results;
+      selectedLinks = ["7.2.3", "7.2.4", "7.2.5", "7.2.6", "7.2.7", "7.2.8", "8.2.1", "8.2.2", "8.2.3"];
+      this.links = [];
       _results = [];
-      for (_i = 0, _len = components.length; _i < _len; _i++) {
-        component = components[_i];
-        byteOffset = component[0] * 3 * 4;
-        numFloats = component[1] * 3;
-        segmentData = this.spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3);
-        centerline = this.tubeGen.getKnotPath(segmentData);
-        rawBuffer = this.tubeGen.generateTube(centerline);
-        vbo = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-        console.log("Tube positions has " + (rawBuffer.length / 3) + " verts.");
-        tube = vbo;
-        polygonCount = centerline.length / 3 - 1;
-        sides = this.tubeGen.polygonSides;
-        lineCount = polygonCount * sides * 2;
-        rawBuffer = new Uint16Array(lineCount * 2);
-        _ref = [0, 0], i = _ref[0], ptr = _ref[1];
-        while (i < polygonCount * (sides + 1)) {
-          j = 0;
-          while (j < sides) {
-            sweepEdge = rawBuffer.subarray(ptr + 2, ptr + 4);
-            sweepEdge[0] = i + j;
-            sweepEdge[1] = i + j + sides + 1;
-            _ref1 = [ptr + 2, j + 1], ptr = _ref1[0], j = _ref1[1];
+      for (_i = 0, _len = selectedLinks.length; _i < _len; _i++) {
+        id = selectedLinks[_i];
+        knots = (function() {
+          var _j, _len1, _ref, _results1;
+          _ref = this.getLink(id);
+          _results1 = [];
+          for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+            component = _ref[_j];
+            _results1.push(this.tessKnot(component));
           }
-          i += sides + 1;
+          return _results1;
+        }).call(this);
+        knots[0].color = [1, 1, 1, 0.75];
+        if (knots.length > 1) {
+          knots[1].color = [0.25, 0.5, 1, 0.75];
         }
-        i = 0;
-        while (i < polygonCount * (sides + 1)) {
-          j = 0;
-          while (j < sides) {
-            polygonEdge = rawBuffer.subarray(ptr + 0, ptr + 2);
-            polygonEdge[0] = i + j;
-            polygonEdge[1] = i + j + 1;
-            _ref2 = [ptr + 2, j + 1], ptr = _ref2[0], j = _ref2[1];
-          }
-          i += sides + 1;
+        if (knots.length > 2) {
+          knots[2].color = [1, 0.5, 0.25, 0.75];
         }
-        vbo = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-        wireframe = vbo;
-        wireframe.count = rawBuffer.length;
-        console.log("Tube wireframe has " + rawBuffer.length + " indices for " + sides + " sides and " + (centerline.length / 3 - 1) + " polygons.");
-        faceCount = centerline.length / 3 * sides * 2;
-        rawBuffer = new Uint16Array(faceCount * 3);
-        _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
-        while (++i < centerline.length / 3) {
-          j = -1;
-          while (++j < sides) {
-            next = (j + 1) % sides;
-            tri = rawBuffer.subarray(ptr + 0, ptr + 3);
-            tri[0] = v + next + sides + 1;
-            tri[1] = v + next;
-            tri[2] = v + j;
-            tri = rawBuffer.subarray(ptr + 3, ptr + 6);
-            tri[0] = v + j;
-            tri[1] = v + j + sides + 1;
-            tri[2] = v + next + sides + 1;
-            ptr += 6;
-          }
-          v += sides + 1;
-        }
-        vbo = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-        triangles = vbo;
-        triangles.count = rawBuffer.length;
-        knot = {
-          centerline: component,
-          tube: tube,
-          wireframe: wireframe,
-          triangles: triangles
-        };
-        _results.push(this.knots.push(knot));
+        _results.push(this.links.push(knots));
       }
       return _results;
+    };
+
+    Renderer.prototype.tessKnot = function(component) {
+      var byteOffset, centerline, faceCount, i, j, knot, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _ref, _ref1, _ref2, _ref3;
+      byteOffset = component[0] * 3 * 4;
+      numFloats = component[1] * 3;
+      segmentData = this.spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3);
+      centerline = this.tubeGen.getKnotPath(segmentData);
+      rawBuffer = this.tubeGen.generateTube(centerline);
+      vbo = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
+      console.log("Tube positions has " + (rawBuffer.length / 3) + " verts.");
+      tube = vbo;
+      polygonCount = centerline.length / 3 - 1;
+      sides = this.tubeGen.polygonSides;
+      lineCount = polygonCount * sides * 2;
+      rawBuffer = new Uint16Array(lineCount * 2);
+      _ref = [0, 0], i = _ref[0], ptr = _ref[1];
+      while (i < polygonCount * (sides + 1)) {
+        j = 0;
+        while (j < sides) {
+          sweepEdge = rawBuffer.subarray(ptr + 2, ptr + 4);
+          sweepEdge[0] = i + j;
+          sweepEdge[1] = i + j + sides + 1;
+          _ref1 = [ptr + 2, j + 1], ptr = _ref1[0], j = _ref1[1];
+        }
+        i += sides + 1;
+      }
+      i = 0;
+      while (i < polygonCount * (sides + 1)) {
+        j = 0;
+        while (j < sides) {
+          polygonEdge = rawBuffer.subarray(ptr + 0, ptr + 2);
+          polygonEdge[0] = i + j;
+          polygonEdge[1] = i + j + 1;
+          _ref2 = [ptr + 2, j + 1], ptr = _ref2[0], j = _ref2[1];
+        }
+        i += sides + 1;
+      }
+      vbo = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
+      wireframe = vbo;
+      wireframe.count = rawBuffer.length;
+      console.log("Tube wireframe has " + rawBuffer.length + " indices for " + sides + " sides and " + (centerline.length / 3 - 1) + " polygons.");
+      faceCount = centerline.length / 3 * sides * 2;
+      rawBuffer = new Uint16Array(faceCount * 3);
+      _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
+      while (++i < centerline.length / 3) {
+        j = -1;
+        while (++j < sides) {
+          next = (j + 1) % sides;
+          tri = rawBuffer.subarray(ptr + 0, ptr + 3);
+          tri[0] = v + next + sides + 1;
+          tri[1] = v + next;
+          tri[2] = v + j;
+          tri = rawBuffer.subarray(ptr + 3, ptr + 6);
+          tri[0] = v + j;
+          tri[1] = v + j + sides + 1;
+          tri[2] = v + next + sides + 1;
+          ptr += 6;
+        }
+        v += sides + 1;
+      }
+      vbo = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
+      triangles = vbo;
+      triangles.count = rawBuffer.length;
+      return knot = {
+        centerline: component,
+        tube: tube,
+        wireframe: wireframe,
+        triangles: triangles
+      };
     };
 
     Renderer.prototype.compileProgram = function(vName, fName, attribs, uniforms) {
