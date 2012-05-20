@@ -64,10 +64,10 @@
         if (iconified === 0) {
           incoming = new TWEEN.Tween(this.links[position]).to({
             iconified: 1
-          }, this.transitionMilliseconds).easing(TWEEN.Easing.Elastic.InOut);
+          }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
           outgoing = new TWEEN.Tween(this.links[position + increment]).to({
             iconified: 0
-          }, this.transitionMilliseconds).easing(TWEEN.Easing.Elastic.InOut);
+          }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
           incoming.start();
           outgoing.start();
           return;

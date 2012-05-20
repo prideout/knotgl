@@ -46,10 +46,10 @@ class Renderer
       if iconified is 0
         incoming = new TWEEN.Tween(@links[position])
           .to({iconified: 1}, @transitionMilliseconds)
-          .easing(TWEEN.Easing.Elastic.InOut)
+          .easing(TWEEN.Easing.Bounce.Out)
         outgoing = new TWEEN.Tween(@links[position+increment])
           .to({iconified: 0}, @transitionMilliseconds)
-          .easing(TWEEN.Easing.Elastic.InOut)
+          .easing(TWEEN.Easing.Bounce.Out)
         incoming.start()
         outgoing.start()
         return
