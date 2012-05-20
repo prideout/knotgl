@@ -35,6 +35,16 @@ function init()
     })();
     window.AppInit();
 }
+
+// Key Handler
+$(document).keydown(function(e){
+    if (e.keyCode == 37) { 
+       window.OnKeyDown('left');
+    }
+    if (e.keyCode == 39) { 
+       window.OnKeyDown('right');
+    }
+});
 </script>
 <script type="text/javascript" src="js/tube.js"></script>
 <script type="text/javascript" src="js/application.js"></script>
@@ -43,7 +53,7 @@ function init()
 </head>
 <body onload="init()">
   <!--canvas width="1600" height="1200" style="width: 1600px; height: 1200px;"-->
-  <canvas width="1200" height="900" style="width: 1200px; height: 900px;">
+  <canvas width="900" height="900" style="width: 900px; height: 900px;">
   <!--canvas width="800" height="600" style="width: 800px; height: 600px;"-->
   </canvas>
 </body>

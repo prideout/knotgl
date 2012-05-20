@@ -19,3 +19,7 @@ root.AppInit = ->
   glerr("Your browser does not support floating-point textures.") unless gl.getExtension("OES_texture_float")
   glerr("Your browser does not support GLSL derivatives.") unless gl.getExtension("OES_standard_derivatives")
   root.renderer = new root.Renderer gl, width, height
+
+root.OnKeyDown = (keyname) ->
+  root.renderer.changeSelection(-1) if keyname is 'left'
+  root.renderer.changeSelection(+1) if keyname is 'right'

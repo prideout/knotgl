@@ -10,8 +10,8 @@ class Renderer
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.0003
     @spinning = true
-    #@style = Style.SILHOUETTE
-    @style = Style.WIREFRAME
+    @style = Style.SILHOUETTE
+    #@style = Style.WIREFRAME
     #@style = Style.RINGS
     @sketchy = true
     @theta = 0
@@ -36,6 +36,16 @@ class Renderer
     toast("downloaded #{@spines.length / 3} verts of spine data")
     @genVertexBuffers()
     @render()
+
+  changeSelection: (increment) ->
+    for position in [0...@links.length]
+      iconified = @links[position].iconified
+      next = position + increment
+      continue if next >= @links.length || next < 0
+      if iconified is 0
+        @links[position].iconified = 1
+        @links[position+increment].iconified = 0
+        return
 
   downloadSpines: ->
     worker = new Worker 'js/downloader.js'
@@ -71,49 +81,66 @@ class Renderer
 
     @gl.clearColor(0,0,0,0)
     @gl.clear(@gl.DEPTH_BUFFER_BIT | @gl.COLOR_BUFFER_BIT)
-    @renderKnot(knot) for knot in @links[0]
+    for position in [0...@links.length]
+      @renderKnot(knot, position) for knot in @links[position]
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
-  renderKnot: (knot) ->
+  renderKnot: (knot, position) ->
 
     # Would monkey patching be better?
     setColor = (gl, color) -> gl.uniform4fv(color, knot.color)
 
-    # Draw the centerline
-    @gl.viewport(0,0,@width/12,@height/12)
-    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-    program = @programs.wireframe
-    @gl.useProgram(program)
-    setColor(@gl, program.color)
-    @gl.uniformMatrix4fv(program.projection, false, @projection)
-    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
-    @gl.enableVertexAttribArray(POSITION)
-    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-    @gl.uniform1f(program.scale, @tubeGen.scale)
-    @gl.uniform4f(program.color,0,0,0,1)
-    [startVertex, vertexCount] = knot.centerline
-    @gl.disable(@gl.BLEND)
-    @gl.enable(@gl.DEPTH_TEST)
-    @gl.lineWidth(2)
+    [tileWidth, tileHeight] = [@width/8, @height/8]
+    iconPosition = 0
+    for p in [0...position]
+      iconPosition += tileWidth * @links[p].iconified
 
-    # Draw the thick black outer line.
-    # Large values of lineWidth causes ugly fin gaps.
-    # Redraw with screen-space offsets to achieve extra thickness.
-    for x in [-1..1] by 2
-      for y in [-1..1] by 2
-        @gl.uniform2f(program.offset, x,y)
-        @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+    iconified = @links[position].iconified
+    if iconified > 0
 
-    # Draw a thinner center line down the spine for added depth.
-    @gl.enable(@gl.BLEND)
-    @gl.lineWidth(2)
-    setColor(@gl, program.color)
-    @gl.uniform2f(program.offset, 0,0)
-    @gl.uniform1f(program.depthOffset, -0.5)
-    @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
-    @gl.disableVertexAttribArray(POSITION)
-    @gl.viewport(0,0,@width,@height)
+      # Draw the centerline
+      @gl.viewport(
+        iconPosition,
+        @height-tileHeight,
+        tileWidth,
+        tileHeight)
+
+      @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+      program = @programs.wireframe
+      @gl.useProgram(program)
+      setColor(@gl, program.color)
+      @gl.uniformMatrix4fv(program.projection, false, @projection)
+      @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
+      @gl.enableVertexAttribArray(POSITION)
+      @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+      @gl.uniform1f(program.scale, @tubeGen.scale)
+      @gl.uniform4f(program.color,0,0,0,1)
+      [startVertex, vertexCount] = knot.centerline
+      @gl.disable(@gl.BLEND)
+      @gl.enable(@gl.DEPTH_TEST)
+      @gl.lineWidth(2)
+
+      # Draw the thick black outer line.
+      # Large values of lineWidth causes ugly fin gaps.
+      # Redraw with screen-space offsets to achieve extra thickness.
+      for x in [-1..1] by 2
+        for y in [-1..1] by 2
+          @gl.uniform2f(program.offset, x,y)
+          @gl.uniform1f(program.depthOffset, 0)
+          @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+
+      # Draw a thinner center line down the spine for added depth.
+      @gl.enable(@gl.BLEND)
+      @gl.lineWidth(2)
+      setColor(@gl, program.color)
+      @gl.uniform2f(program.offset, 0,0)
+      @gl.uniform1f(program.depthOffset, -0.5)
+      @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+      @gl.disableVertexAttribArray(POSITION)
+      @gl.viewport(0,0,@width,@height)
+
+    return if iconified is 1
 
     # Draw the solid knot
     program = @programs.solidmesh
@@ -129,7 +156,7 @@ class Renderer
     @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
     @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
     @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
-    if @style != Style.WIREFRAME
+    if @style == Style.SILHOUETTE
       @gl.enable(@gl.POLYGON_OFFSET_FILL)
       @gl.polygonOffset(-1,12)
     @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
@@ -177,24 +204,16 @@ class Renderer
   getLink: (id) -> (x[1..] for x in root.links when x[0] is id)[0]
 
   genVertexBuffers: ->
-    selectedLinks = [
-      "7.2.3"
-      "7.2.4"
-      "7.2.5"
-      "7.2.6"
-      "7.2.7"
-      "7.2.8"
-      "8.2.1"
-      "8.2.2"
-      "8.2.3"
-    ]
+    tableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
     @links = []
-    for id in selectedLinks
+    for id in tableRow.split(' ')
       knots = (@tessKnot(component) for component in @getLink(id))
       knots[0].color = [1,1,1,0.75]
       knots[1].color = [0.25,0.5,1,0.75] if knots.length > 1
       knots[2].color = [1,0.5,0.25,0.75] if knots.length > 2
+      knots.iconified = 1
       @links.push(knots)
+    @links[0].iconified = 0
 
   # Tessellate the given knot
   tessKnot: (component) ->

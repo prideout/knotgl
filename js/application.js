@@ -27,4 +27,13 @@
     return root.renderer = new root.Renderer(gl, width, height);
   };
 
+  root.OnKeyDown = function(keyname) {
+    if (keyname === 'left') {
+      root.renderer.changeSelection(-1);
+    }
+    if (keyname === 'right') {
+      return root.renderer.changeSelection(+1);
+    }
+  };
+
 }).call(this);

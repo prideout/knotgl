@@ -20,7 +20,7 @@
       this.height = height;
       this.radiansPerSecond = 0.0003;
       this.spinning = true;
-      this.style = Style.WIREFRAME;
+      this.style = Style.SILHOUETTE;
       this.sketchy = true;
       this.theta = 0;
       this.vbos = {};
@@ -52,6 +52,22 @@
       return this.render();
     };
 
+    Renderer.prototype.changeSelection = function(increment) {
+      var iconified, next, position, _i, _ref;
+      for (position = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; position = 0 <= _ref ? ++_i : --_i) {
+        iconified = this.links[position].iconified;
+        next = position + increment;
+        if (next >= this.links.length || next < 0) {
+          continue;
+        }
+        if (iconified === 0) {
+          this.links[position].iconified = 1;
+          this.links[position + increment].iconified = 0;
+          return;
+        }
+      }
+    };
+
     Renderer.prototype.downloadSpines = function() {
       var worker;
       worker = new Worker('js/downloader.js');
@@ -78,7 +94,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, elapsed, eye, far, fov, knot, model, near, target, up, view, _i, _len, _ref;
+      var aspect, currentTime, elapsed, eye, far, fov, knot, model, near, position, target, up, view, _i, _j, _len, _ref, _ref1;
       window.requestAnimFrame(staticRender, $("canvas").get(0));
       this.projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
@@ -99,51 +115,65 @@
       this.previousTime = currentTime;
       this.gl.clearColor(0, 0, 0, 0);
       this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
-      _ref = this.links[0];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        knot = _ref[_i];
-        this.renderKnot(knot);
+      for (position = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; position = 0 <= _ref ? ++_i : --_i) {
+        _ref1 = this.links[position];
+        for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
+          knot = _ref1[_j];
+          this.renderKnot(knot, position);
+        }
       }
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         return glerr("Render");
       }
     };
 
-    Renderer.prototype.renderKnot = function(knot) {
-      var offset, program, setColor, startVertex, stride, vertexCount, x, y, _i, _j, _ref;
+    Renderer.prototype.renderKnot = function(knot, position) {
+      var iconPosition, iconified, offset, p, program, setColor, startVertex, stride, tileHeight, tileWidth, vertexCount, x, y, _i, _j, _k, _ref, _ref1;
       setColor = function(gl, color) {
         return gl.uniform4fv(color, knot.color);
       };
-      this.gl.viewport(0, 0, this.width / 12, this.height / 12);
-      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-      program = this.programs.wireframe;
-      this.gl.useProgram(program);
-      setColor(this.gl, program.color);
-      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
-      this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
-      this.gl.enableVertexAttribArray(POSITION);
-      this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
-      this.gl.uniform1f(program.scale, this.tubeGen.scale);
-      this.gl.uniform4f(program.color, 0, 0, 0, 1);
-      _ref = knot.centerline, startVertex = _ref[0], vertexCount = _ref[1];
-      this.gl.disable(this.gl.BLEND);
-      this.gl.enable(this.gl.DEPTH_TEST);
-      this.gl.lineWidth(2);
-      for (x = _i = -1; _i <= 1; x = _i += 2) {
-        for (y = _j = -1; _j <= 1; y = _j += 2) {
-          this.gl.uniform2f(program.offset, x, y);
-          this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
-        }
+      _ref = [this.width / 8, this.height / 8], tileWidth = _ref[0], tileHeight = _ref[1];
+      iconPosition = 0;
+      for (p = _i = 0; 0 <= position ? _i < position : _i > position; p = 0 <= position ? ++_i : --_i) {
+        iconPosition += tileWidth * this.links[p].iconified;
       }
-      this.gl.enable(this.gl.BLEND);
-      this.gl.lineWidth(2);
-      setColor(this.gl, program.color);
-      this.gl.uniform2f(program.offset, 0, 0);
-      this.gl.uniform1f(program.depthOffset, -0.5);
-      this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
-      this.gl.disableVertexAttribArray(POSITION);
-      this.gl.viewport(0, 0, this.width, this.height);
+      iconified = this.links[position].iconified;
+      if (iconified > 0) {
+        this.gl.viewport(iconPosition, this.height - tileHeight, tileWidth, tileHeight);
+        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+        program = this.programs.wireframe;
+        this.gl.useProgram(program);
+        setColor(this.gl, program.color);
+        this.gl.uniformMatrix4fv(program.projection, false, this.projection);
+        this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+        this.gl.enableVertexAttribArray(POSITION);
+        this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
+        this.gl.uniform1f(program.scale, this.tubeGen.scale);
+        this.gl.uniform4f(program.color, 0, 0, 0, 1);
+        _ref1 = knot.centerline, startVertex = _ref1[0], vertexCount = _ref1[1];
+        this.gl.disable(this.gl.BLEND);
+        this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.lineWidth(2);
+        for (x = _j = -1; _j <= 1; x = _j += 2) {
+          for (y = _k = -1; _k <= 1; y = _k += 2) {
+            this.gl.uniform2f(program.offset, x, y);
+            this.gl.uniform1f(program.depthOffset, 0);
+            this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
+          }
+        }
+        this.gl.enable(this.gl.BLEND);
+        this.gl.lineWidth(2);
+        setColor(this.gl, program.color);
+        this.gl.uniform2f(program.offset, 0, 0);
+        this.gl.uniform1f(program.depthOffset, -0.5);
+        this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
+        this.gl.disableVertexAttribArray(POSITION);
+        this.gl.viewport(0, 0, this.width, this.height);
+      }
+      if (iconified === 1) {
+        return;
+      }
       program = this.programs.solidmesh;
       this.gl.enable(this.gl.DEPTH_TEST);
       this.gl.useProgram(program);
@@ -157,7 +187,7 @@
       this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
       this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 24, offset = 12);
       this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.triangles);
-      if (this.style !== Style.WIREFRAME) {
+      if (this.style === Style.SILHOUETTE) {
         this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
         this.gl.polygonOffset(-1, 12);
       }
@@ -218,21 +248,21 @@
     };
 
     Renderer.prototype.genVertexBuffers = function() {
-      var component, id, knots, selectedLinks, _i, _len, _results;
-      selectedLinks = ["7.2.3", "7.2.4", "7.2.5", "7.2.6", "7.2.7", "7.2.8", "8.2.1", "8.2.2", "8.2.3"];
+      var component, id, knots, tableRow, _i, _len, _ref;
+      tableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3";
       this.links = [];
-      _results = [];
-      for (_i = 0, _len = selectedLinks.length; _i < _len; _i++) {
-        id = selectedLinks[_i];
+      _ref = tableRow.split(' ');
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        id = _ref[_i];
         knots = (function() {
-          var _j, _len1, _ref, _results1;
-          _ref = this.getLink(id);
-          _results1 = [];
-          for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-            component = _ref[_j];
-            _results1.push(this.tessKnot(component));
+          var _j, _len1, _ref1, _results;
+          _ref1 = this.getLink(id);
+          _results = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            component = _ref1[_j];
+            _results.push(this.tessKnot(component));
           }
-          return _results1;
+          return _results;
         }).call(this);
         knots[0].color = [1, 1, 1, 0.75];
         if (knots.length > 1) {
@@ -241,9 +271,10 @@
         if (knots.length > 2) {
           knots[2].color = [1, 0.5, 0.25, 0.75];
         }
-        _results.push(this.links.push(knots));
+        knots.iconified = 1;
+        this.links.push(knots);
       }
-      return _results;
+      return this.links[0].iconified = 0;
     };
 
     Renderer.prototype.tessKnot = function(component) {
