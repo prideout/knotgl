@@ -26,6 +26,7 @@
       this.theta = 0;
       this.vbos = {};
       this.programs = {};
+      this.selectionIndex = 0;
       this.tubeGen = new root.TubeGenerator;
       this.tubeGen.polygonSides = 10;
       this.tubeGen.bézierSlices = 3;
@@ -54,43 +55,29 @@
     };
 
     Renderer.prototype.changeSelection = function(increment) {
-      var iconified, next, position, previous, _i, _ref;
-      toast("interupt");
-      for (position = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; position = 0 <= _ref ? ++_i : --_i) {
-        iconified = this.links[position].iconified;
-        next = position + increment;
-        if (next >= this.links.length || next < 0) {
-          continue;
-        }
-        if (iconified !== 0) {
-          continue;
-        }
-        root.outgoing = new TWEEN.Tween(this.links[position]).to({
+      var currentSelection, iconified, nextSelection;
+      currentSelection = this.selectionIndex;
+      nextSelection = currentSelection + increment;
+      if (nextSelection >= this.links.length || nextSelection < 0) {
+        return;
+      }
+      iconified = this.links[currentSelection].iconified;
+      if (iconified === 0) {
+        this.selectionIndex = nextSelection;
+        root.outgoing = new TWEEN.Tween(this.links[currentSelection]).to({
           iconified: 1
         }, 0.5 * this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
-        root.outgoing.position = position;
-        root.outgoing.target = this.links[position];
-        root.incoming = new TWEEN.Tween(this.links[next]).to({
+        root.incoming = new TWEEN.Tween(this.links[nextSelection]).to({
           iconified: 0
         }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
-        root.incoming.position = next;
-        root.incoming.target = this.links[next];
-        incoming.start();
-        outgoing.start();
+        root.incoming.start();
+        root.outgoing.start();
         return;
       }
-      position = root.incoming.position;
-      next = position + increment;
-      if (next >= this.links.length || next < 0) {
-        return;
-      }
-      previous = root.incoming.target.iconified;
-      if (previous === 0 || previous === 1) {
-        return;
-      }
-      this.links[next].iconified = previous;
-      root.incoming.target.iconified = 1;
-      return root.incoming.replace(this.links[next]);
+      this.selectionIndex = nextSelection;
+      this.links[currentSelection].iconified = 1;
+      this.links[nextSelection].iconified = iconified;
+      return root.incoming.replace(this.links[nextSelection]);
     };
 
     Renderer.prototype.downloadSpines = function() {

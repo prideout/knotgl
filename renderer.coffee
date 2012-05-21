@@ -18,6 +18,7 @@ class Renderer
     @theta = 0
     @vbos = {}
     @programs = {}
+    @selectionIndex = 0
     @tubeGen = new root.TubeGenerator
     @tubeGen.polygonSides = 10
     @tubeGen.bézierSlices = 3
@@ -39,44 +40,34 @@ class Renderer
     @render()
 
   changeSelection: (increment) ->
-    toast("interupt")
 
-    for position in [0...@links.length]
-      iconified = @links[position].iconified
-      next = position + increment
-      continue if next >= @links.length or next < 0
-      continue if iconified isnt 0
+    # Leave early if the current selection is already leftmost or rightmost.
+    currentSelection = @selectionIndex
+    nextSelection = currentSelection + increment
+    return if nextSelection >= @links.length or nextSelection < 0
 
-      root.outgoing = new TWEEN.Tween(@links[position])
+    # Note that "iconified" is an animation percentange in [0,1]
+    # If the current selection has animation = 0, then start a new transition.
+    iconified = @links[currentSelection].iconified
+    if iconified is 0
+      @selectionIndex = nextSelection
+      root.outgoing = new TWEEN.Tween(@links[currentSelection])
         .to({iconified: 1}, 0.5 * @transitionMilliseconds)
         .easing(TWEEN.Easing.Quartic.Out)
-      root.outgoing.position = position
-      root.outgoing.target = @links[position]
-
-      root.incoming = new TWEEN.Tween(@links[next])
+      root.incoming = new TWEEN.Tween(@links[nextSelection])
         .to({iconified: 0}, @transitionMilliseconds)
         .easing(TWEEN.Easing.Bounce.Out)
-      root.incoming.position = next
-      root.incoming.target = @links[next]
-
-      # Just to let other pieces of code know that we're transitioning:
-      # DOESNT SEEM TO HELP
-      #root.incoming.target.iconified -= 0.0001 if root.incoming.target.iconified > 0
-      #root.outgoing.target.iconified += 0.0001 if root.incoming.target.iconified < 1
-
-      incoming.start()
-      outgoing.start()
+      root.incoming.start()
+      root.outgoing.start()
       return
 
-    # If we reached this point, we're interupting a transition.
-    position = root.incoming.position
-    next = position + increment
-    return if next >= @links.length or next < 0
-    previous = root.incoming.target.iconified
-    return if previous is 0 or previous is 1
-    @links[next].iconified = previous
-    root.incoming.target.iconified = 1
-    root.incoming.replace(@links[next])
+    # If we reached this point, we're interupting an in-progress transition.
+    # We instantly snap the currently-incoming element back to the toolbar
+    # by forcibly setting its percentage to 1.
+    @selectionIndex = nextSelection
+    @links[currentSelection].iconified = 1
+    @links[nextSelection].iconified = iconified
+    root.incoming.replace(@links[nextSelection])
 
   downloadSpines: ->
     worker = new Worker 'js/downloader.js'
