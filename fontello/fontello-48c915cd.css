@@ -1,0 +1,58 @@
+@charset "UTF-8";
+
+@font-face {
+  font-family: 'fontello-48c915cd';
+  src: url('fontello-48c915cd.eot');
+  src: url('fontello-48c915cd.eot?#iefix') format('embedded-opentype'),
+       url('fontello-48c915cd.woff') format('woff'),
+       url('fontello-48c915cd.ttf') format('truetype'),
+       url('fontello-48c915cd.svg#fontello-48c915cd') format('svg');
+  font-weight: normal; font-style: normal;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  font-family: fontello-48c915cd;
+  font-style: normal;
+
+  /* font-size: 14px; */
+
+  display: inline-block;
+  width: 1.1em;
+  margin-right: .1em;
+  text-align: center;
+}
+
+.the-icons li {
+  font-size: 14px;
+  line-height: 24px;
+  height: 24px;
+}
+
+.icon-left-1:before { content: ""; } /* '\e801' */
+.icon-left:before { content: "←"; } /* '\2190' */
+.icon-up-1:before { content: ""; } /* '\e803' */
+.icon-up:before { content: "↑"; } /* '\2191' */
+.icon-right-1:before { content: ""; } /* '\e802' */
+.icon-right:before { content: "→"; } /* '\2192' */
+.icon-down-1:before { content: ""; } /* '\e800' */
+.icon-down:before { content: "↓"; } /* '\2193' */
+.icon-home-1:before { content: ""; } /* '\e805' */
+.icon-home:before { content: "⌂"; } /* '\2302' */
+.icon-cog:before { content: "⚙"; } /* '\2699' */
+.icon-ok:before { content: "✓"; } /* '\2713' */
+.icon-ok-circle:before { content: "✔"; } /* '\2714' */
+.icon-asterisk:before { content: "✱"; } /* '\2731' */
+.icon-left-circle:before { content: ""; } /* '\e4a1' */
+.icon-right-circle:before { content: ""; } /* '\e4a2' */
+.icon-up-circle:before { content: ""; } /* '\e4a3' */
+.icon-down-circle:before { content: ""; } /* '\e4a4' */
+.icon-info-circle:before { content: ""; } /* '\e705' */
+.icon-info-circle-1:before { content: ""; } /* '\e804' */
+.icon-down-open:before { content: ""; } /* '\e75c' */
+.icon-left-open:before { content: ""; } /* '\e75d' */
+.icon-up-open:before { content: ""; } /* '\e75f' */
+.icon-github-1:before { content: ""; } /* '\f300' */
+.icon-github:before { content: ""; } /* '\f308' */
+.icon-link:before { content: "🔗"; } /* '\1f517' */
+.icon-link-1:before { content: ""; } /* '\e806' */
+.icon-link-2:before { content: ""; } /* '\e807' */
