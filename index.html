@@ -5,6 +5,7 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <link rel="stylesheet" type="text/css" href="css/style.css" />
 <link rel="stylesheet" type="text/css" href="css/jquery.gritter.css" />
+<link rel="stylesheet" href="fontello/fontello-48c915cd.css" />
 <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
 <script type="text/javascript" src="js/jquery.gritter.js"></script>
 <script type="text/javascript" src="js/gl-matrix-min.js"></script>
@@ -48,10 +49,23 @@ $(document).keydown(function(e){
 <script type="text/javascript" src="js/shaders.js"></script>
 <script type="text/javascript" src="js/renderer.js"></script>
 </head>
-<body onload="init()">
-  <!--canvas width="1600" height="1200" style="width: 1600px; height: 1200px;"-->
-  <canvas width="900" height="900" style="width: 900px; height: 900px;">
-  <!--canvas width="800" height="600" style="width: 800px; height: 600px;"-->
+<body onload="init()" style="margin:0px;" >
+  <canvas width="900" height="900"
+          style="width: 75%; min-width:500px; max-width: 900px;
+                 height: 75%; min-height:500px; max-height: 900px;">
   </canvas>
+  <div id="overlay"
+       style="width: 75%; min-width:500px; max-width: 900px;
+              height: 75%; min-height:500px; max-height: 900px;">
+    <div style="position:relative; height: 100%">
+      <div style="position:absolute;
+                  left: 10px;
+                  bottom: 10px">
+        <i class="icon-left-open"></i>
+        <i class="icon-github"></i>
+        <i class="icon-link"></i>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

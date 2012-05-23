@@ -93,7 +93,7 @@ class Renderer
     @previousTime = currentTime
 
     # Adjust the camera and compute various transforms
-    @projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90)
+    @projection = mat4.perspective(fov = 45, aspect = @width/@height, near = 5, far = 90)
     view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
     model = mat4.create()
     @modelview = mat4.create()
@@ -104,6 +104,8 @@ class Renderer
     @normalMatrix = mat4.toMat3(@modelview)
 
     # This is where I'd normally do a glClear, doesn't seem necessary in WebGL (?)
+    #@gl.clearColor(1,0,0,1)
+    #@gl.clear(@gl.COLOR_BUFFER_BIT)
 
     # Draw each knot in succession
     (@renderKnot(k, p) for k in @links[p]) for p in [0...@links.length]
@@ -118,9 +120,14 @@ class Renderer
         knot.color[2],
         alpha)
 
-    [tileWidth, tileHeight] = [@width/9, @height/9]
-    iconPosition = tileWidth * position
-
+    tileWidth = @width / 9
+    tileWidth = 64 if tileWidth < 64
+    tileWidth = 128 if tileWidth > 128
+    overlap = (tileWidth * 9 - @width) / 4
+    overlap = 0 if overlap < 0
+    leftMargin = 0.5 * (@width - (tileWidth - overlap) * 9)
+    tileHeight = tileWidth * @height / @width
+    iconPosition = leftMargin + (tileWidth - overlap) * position
     iconified = @links[position].iconified
     alpha = 0.25 + 0.75 * iconified
 

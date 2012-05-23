@@ -117,7 +117,7 @@
         }
       }
       this.previousTime = currentTime;
-      this.projection = mat4.perspective(fov = 45, aspect = 1, near = 5, far = 90);
+      this.projection = mat4.perspective(fov = 45, aspect = this.width / this.height, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
       model = mat4.create();
       this.modelview = mat4.create();
@@ -139,12 +139,24 @@
     };
 
     Renderer.prototype.renderKnot = function(knot, position) {
-      var alpha, h, iconPosition, iconified, left, offset, program, startVertex, stride, t, tileHeight, tileWidth, top, vertexCount, w, x, y, _i, _j, _ref, _ref1;
+      var alpha, h, iconPosition, iconified, left, leftMargin, offset, overlap, program, startVertex, stride, t, tileHeight, tileWidth, top, vertexCount, w, x, y, _i, _j, _ref;
       this.gl.setColor = function(colorLocation, alpha) {
         return this.uniform4f(colorLocation, knot.color[0], knot.color[1], knot.color[2], alpha);
       };
-      _ref = [this.width / 9, this.height / 9], tileWidth = _ref[0], tileHeight = _ref[1];
-      iconPosition = tileWidth * position;
+      tileWidth = this.width / 9;
+      if (tileWidth < 64) {
+        tileWidth = 64;
+      }
+      if (tileWidth > 128) {
+        tileWidth = 128;
+      }
+      overlap = (tileWidth * 9 - this.width) / 4;
+      if (overlap < 0) {
+        overlap = 0;
+      }
+      leftMargin = 0.5 * (this.width - (tileWidth - overlap) * 9);
+      tileHeight = tileWidth * this.height / this.width;
+      iconPosition = leftMargin + (tileWidth - overlap) * position;
       iconified = this.links[position].iconified;
       alpha = 0.25 + 0.75 * iconified;
       this.gl.viewport(iconPosition, this.height - tileHeight, tileWidth, tileHeight);
@@ -159,7 +171,7 @@
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniform1f(program.scale, this.tubeGen.scale);
       this.gl.uniform4f(program.color, 0, 0, 0, alpha);
-      _ref1 = knot.centerline, startVertex = _ref1[0], vertexCount = _ref1[1];
+      _ref = knot.centerline, startVertex = _ref[0], vertexCount = _ref[1];
       this.gl.enable(this.gl.DEPTH_TEST);
       this.gl.lineWidth(2);
       for (x = _i = -1; _i <= 1; x = _i += 2) {

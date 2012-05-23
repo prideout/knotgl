@@ -7,15 +7,27 @@
   DevTips = "In Chrome, use Ctrl+Shift+J to see console, Alt+Cmd+J on a Mac.\nTo experiment with coffescript, try this from the console:\n> coffee --require './js/gl-matrix-min.js'";
 
   root.AppInit = function() {
-    var canvas, gl, height, width;
-    canvas = $("canvas");
-    width = parseInt(canvas.css('width'));
-    height = parseInt(canvas.css('height'));
-    canvas.css('margin-left', -width / 2);
-    canvas.css('margin-top', -height / 2);
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-    gl = canvas.get(0).getContext("experimental-webgl", {
+    var c, gl, height, width;
+    window.onresize = function() {
+      var c, height, width;
+      width = parseInt($("#overlay").css('width'));
+      height = parseInt($("#overlay").css('height'));
+      $("canvas").css('margin-top', -height / 2);
+      $("#overlay").css('margin-top', -height / 2);
+      c = $("canvas").get(0);
+      c.clientWidth = width;
+      c.width = c.clientWidth;
+      if (root.renderer != null) {
+        root.renderer.width = width;
+      }
+      c.clientHeight = height;
+      c.height = c.clientHeight;
+      if (root.renderer != null) {
+        return root.renderer.height = height;
+      }
+    };
+    c = $("canvas").get(0);
+    gl = c.getContext("experimental-webgl", {
       antialias: true
     });
     if (!gl.getExtension("OES_texture_float")) {
@@ -24,7 +36,10 @@
     if (!gl.getExtension("OES_standard_derivatives")) {
       glerr("Your browser does not support GLSL derivatives.");
     }
-    return root.renderer = new root.Renderer(gl, width, height);
+    width = parseInt($("#overlay").css('width'));
+    height = parseInt($("#overlay").css('height'));
+    root.renderer = new root.Renderer(gl, width, height);
+    return window.onresize();
   };
 
   root.OnKeyDown = function(keyname) {

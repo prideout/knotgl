@@ -3,10 +3,16 @@ body {
 }
 
 canvas {
-/*  background-color: #555; */
     position: fixed;
     top: 50%;
-    left: 50%;
     color:#fff;
     background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854)
+}
+
+#overlay {
+    position: fixed;
+    top: 50%;
+    color:#000;
+    /*opacity:0.5;
+    background: #ff0;*/
 }
