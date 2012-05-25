@@ -29,6 +29,12 @@ p {
     font-size:14px;
 }
 
+.numeral {
+    font-family: 'Nobile', sans-serif;
+    font-weight:700;
+    font-size:36px;
+}
+
 .scrollpage {
     position:absolute;
     height:100%;
