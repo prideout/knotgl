@@ -14,24 +14,114 @@
 <script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
 <script type="text/javascript" src="js/globals.js"></script>
 <script type="text/javascript" src="js/knotgl-min.js"></script>
+<script type="text/javascript">
+var pan;
+var tween;
+function init()
+{
+    pan = {x: 0};
+    window.AppInit();
+    layout();
+}
+function layout()
+{
+    height = parseInt($("#wideband").css('height'));
+    width = height*768/1024;
+    $("#wideband").css("width", width);
+
+    bodyWidth = parseInt($("body").css('width'));
+    $("#wideband").css("left", bodyWidth / 2 - width / 2);
+
+    width = parseInt($("#canvaspage").css('width'));
+    height = parseInt($("#canvaspage").css('height'));
+    c = $("canvas").get(0);
+    c.clientWidth = width;
+    c.width = c.clientWidth;
+    c.clientHeight = height;
+    c.height = c.clientHeight;
+    this.renderer.width = width;
+    this.renderer.height = height;
+
+    updateTween();
+}
+function inArrow(element)
+{
+    q = $("#" + element.id)
+    q.css('color', '#cdf');
+    //q.css('font-weight', '600');
+    q.css('cursor', 'pointer');
+}
+function outArrow(element)
+{
+    q = $("#" + element.id)
+    q.css({'color' : ''});
+    //q.css({'font-weight' : ''});
+    q.css({'cursor' : ''});
+}
+function clickArrow(element)
+{
+    width = parseInt($("#canvaspage").css('width'));
+    panTarget = element.id == "leftarrow" ? width : 0
+    tween = new TWEEN.Tween(pan)
+        .to({x: panTarget}, 1000)
+        .easing(TWEEN.Easing.Bounce.Out)
+        .onUpdate(updateTween);
+    tween.start()
+}
+function updateTween()
+{
+    w = parseInt($("#canvaspage").css('width'));
+    h = parseInt($("#canvaspage").css('height'));
+    $("#leftpage").css("left", -w + pan.x);
+    $("#leftpage").css("width", w - 40);
+    $("#rightpage").css("left", 0 + pan.x);
+    $("#rightpage").css("width", w - 40);
+}
+</script>
 </head>
-<body onload="window.AppInit()" style="margin:0px;" >
-  <canvas width="900" height="900"
-          style="width: 75%; min-width:500px; max-width: 900px;
-                 height: 75%; min-height:500px; max-height: 900px;">
-  </canvas>
-  <div id="overlay"
-       style="width: 75%; min-width:500px; max-width: 900px;
-              height: 75%; min-height:500px; max-height: 900px;">
-    <div style="position:relative; height: 100%">
-      <div style="position:absolute;
-                  left: 10px;
-                  bottom: 10px">
-        <span class="icon-left-open"></span>
-        <i class="icon-github"></i>
-        <i class="icon-link"></i>
+
+<body style="margin:0;background-color:#ccc" onresize="layout()" onload="init()">
+  <div id="wideband">
+
+    <!-- CANVAS PAGE -->
+    <div id="canvaspage">
+      <canvas>
+      </canvas>
+    </div>
+
+    <!-- LEFT PAGE -->
+    <div id="leftpage" class="scrollpage">
+      <h1>Left page.</h1>
+      <p>
+        Call me Ishmael.  Some years ago - never mind how long precisely - having little or no money in my purse, and nothing particular to interest me on shore...
+      </p>
+      <div style="right: -10px"
+           id="rightarrow"
+           onmouseover="inArrow(this)"
+           onmouseout="outArrow(this)"
+           onclick="clickArrow(this)"
+           class="arrow">
+          <span class="icon-right"></span>
       </div>
     </div>
+
+    <!-- RIGHT PAGE -->
+    <div id="rightpage" class="scrollpage">
+      <h1>Right page.</h1>
+      <p>
+        One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin. He lay on his armour-like back, and if he lifted his head a little he could see his brown belly, slightly domed and divided by arches into stiff sections. The bedding was hardly able to cover it and seemed ready to slide off any moment. His many legs, pitifully thin compared with the size of the rest of him, waved about helplessly as he looked. 
+      </p>
+      <div style="left: -10px"
+           id="leftarrow"
+           onmouseover="inArrow(this)"
+           onmouseout="outArrow(this)"
+           onclick="clickArrow(this)"
+           class="arrow">
+          <span class="icon-left"></span>
+          <span class="icon-github"></span>
+          <span class="icon-link"></span>
+      </div>
+    </div>
+
   </div>
 </body>
-</html>
