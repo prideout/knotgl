@@ -16,3 +16,50 @@ canvas {
     /*opacity:0.5;
     background: #ff0;*/
 }
+
+h1 {
+    font-family: 'Yanone Kaffeesatz', sans-serif;
+    font-weight:400;
+    font-size:36px;
+}
+
+p {
+    font-family: 'Questrial', sans-serif;
+    line-height:1.25;
+    font-size:14px;
+}
+
+.scrollpage {
+    position:absolute;
+    height:100%;
+    top:0;
+    margin-left:20px;
+}
+
+#canvaspage {
+    position:absolute;
+    left:0px;
+    height:100%;
+    margin:0px;
+    width:100%;
+}
+
+#wideband {
+    display:inline;
+    position:absolute;
+    top:5%;
+    bottom:5%;
+    width:100px;
+    margin:0;
+    color:#222;
+    background-color:#eee;
+    overflow-x:hidden;
+}
+
+.arrow {
+    font-family: 'Yanone Kaffeesatz', sans-serif;
+    font-weight:400;
+    font-size:36px;
+    position:absolute;
+    bottom: 0px
+}

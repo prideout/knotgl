@@ -82,7 +82,8 @@ class Renderer
       @programs[name] = @compileProgram vs, fs, metadata.attribs, metadata.uniforms
 
   render: ->
-    window.requestAnimFrame(staticRender, $("canvas").get(0))
+    r = -> root.renderer.render()
+    window.requestAnimationFrame(r, $("canvas").get(0))
     TWEEN.update()
 
     # Update the spinning animation
@@ -367,4 +368,3 @@ root.Renderer = Renderer
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 TWOPI = 2 * Math.PI
-staticRender = -> root.renderer.render()

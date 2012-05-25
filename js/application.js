@@ -17,12 +17,10 @@
       c = $("canvas").get(0);
       c.clientWidth = width;
       c.width = c.clientWidth;
-      if (root.renderer != null) {
-        root.renderer.width = width;
-      }
       c.clientHeight = height;
       c.height = c.clientHeight;
       if (root.renderer != null) {
+        root.renderer.width = width;
         return root.renderer.height = height;
       }
     };

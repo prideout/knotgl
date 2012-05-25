@@ -10,46 +10,15 @@
 <script type="text/javascript" src="js/jquery.gritter.js"></script>
 <script type="text/javascript" src="js/gl-matrix-min.js"></script>
 <script type="text/javascript" src="js/Tween.js"></script>
+<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
 <script type="text/javascript" src="js/knots.js"></script>
-<script type="text/javascript">
-// Vertex Attribute Semantics
-VERTEXID = 0;
-POSITION = 0;
-NORMAL   = 1;
-TEXCOORD = 2;
-
-// Global Utilities
-function glerr(msg) { $.gritter.add({ title: 'WebGL Error', text: msg }); }
-function toast(msg) { $.gritter.add({ title: 'Notice', text: msg }); }
-
-// Entry Point
-function init()
-{
-    window.requestAnimFrame = (function() {
-    return window.requestAnimationFrame ||
-        window.webkitRequestAnimationFrame ||
-         window.mozRequestAnimationFrame ||
-         window.oRequestAnimationFrame ||
-         window.msRequestAnimationFrame ||
-         function(/* function FrameRequestCallback */ callback, /* DOMElement Element */ element) {
-           window.setTimeout(callback, 1000/60);
-         };
-    })();
-    window.AppInit();
-}
-
-// Key Handler
-$(document).keydown(function(e){
-    if (e.keyCode == 37) window.OnKeyDown('left');
-    if (e.keyCode == 39) window.OnKeyDown('right');
-});
-</script>
+<script type="text/javascript" src="js/globals.js"></script>
 <script type="text/javascript" src="js/tube.js"></script>
 <script type="text/javascript" src="js/application.js"></script>
 <script type="text/javascript" src="js/shaders.js"></script>
 <script type="text/javascript" src="js/renderer.js"></script>
 </head>
-<body onload="init()" style="margin:0px;" >
+<body onload="window.AppInit()" style="margin:0px;" >
   <canvas width="900" height="900"
           style="width: 75%; min-width:500px; max-width: 900px;
                  height: 75%; min-height:500px; max-height: 900px;">
