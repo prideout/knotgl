@@ -1,40 +1,1001 @@
-(function(){var w,t,u,H,x,y,p,z,A,B,I,C,D,E,v,J,g,F;g="undefined"!==typeof exports&&null!==exports?exports:this;g.utility={};p=g.utility;p.clone=function(c){var a,e;if(null==c||"object"!==typeof c)return c;e=new c.constructor;for(a in c)e[a]=C(c[a]);return e};p.aabb=function(){function c(){}c.name="aabb";c.prototype.create=function(a,e,b,h){this.left=a;this.top=e;this.right=b;this.bottom=h};c.prototype.createFromCorner=function(a,e){var b;this.left=a[0];this.top=a[1];return b=[this.left+e[0],this.top+
-e[1]],this.right=b[0],this.bottom=b[1],b};c.prototype.createFromCenter=function(a,e){var b,h,n,d;b=[e[0]/2,e[1]/2];h=b[0];b=b[1];n=[a[0]-h,a[1]-b];this.left=n[0];this.top=n[1];return d=[a[0]+h,a[1]+b],this.right=d[0],this.bottom=d[1],d};c.prototype.contains=function(a,e){return a>=this.left&&a<this.right&&e>=this.top&&e<this.bottom};c.prototype.width=function(){return this.right-this.left};c.prototype.height=function(){return this.bottom-this.top};c.prototype.size=function(){return[this.width(),this.height()]};
-c.prototype.inflate=function(a){this.left-=a;this.top-=a;this.right+=a;return this.bottom+=a};c.prototype.deflate=function(a){this.left+=a;this.top+=a;this.right-=a;return this.bottom-=a};return c}();g="undefined"!==typeof exports&&null!==exports?exports:this;C=g.utility.clone;g.AppInit=function(){var c,a,e;c=$("canvas").get(0).getContext("experimental-webgl",{antialias:!0});c.getExtension("OES_texture_float")||glerr("Your browser does not support floating-point textures.");c.getExtension("OES_standard_derivatives")||
-glerr("Your browser does not support GLSL derivatives.");e=parseInt($("#overlay").css("width"));a=parseInt($("#overlay").css("height"));return g.renderer=new g.Renderer(c,e,a)};g.UpdateLabels=function(){y();return B()};g.OnKeyDown=function(c){var a;"left"===c&&g.renderer.changeSelection(-1);"right"===c&&g.renderer.changeSelection(1);y();a=0.25*g.renderer.transitionMilliseconds;c=(new TWEEN.Tween(t)).to(H,a).easing(TWEEN.Easing.Quintic.In).onUpdate(A);a=(new TWEEN.Tween(t)).to(x,a).easing(TWEEN.Easing.Quintic.In).onUpdate(I);
-c.chain(a);return c.start()};H={crossings:2,numComponents:1,index:1};x={crossings:100,numComponents:50,index:50};t=C(x);u={};y=function(){var c,a,e;a=g.renderer.getCurrentLink();e=[];for(c in a)e.push(u[c]=a[c]);return e};A=function(){$("#crossings").css("font-size",t.crossings);$("#superscript").css("font-size",t.numComponents);return $("#subscript").css("font-size",t.index)};I=function(){A();return B()};B=function(){$("#crossings").text(u.crossings);$("#subscript").text(u.index);return $("#superscript").text(u.numComponents)};
-g="undefined"!==typeof exports&&null!==exports?exports:this;g.links=[["0.1"],["3.1",[3042,47]],["4.1",[1375,69]],["5.1",[7357,69]],["5.2",[1849,81]],["6.1",[1534,96]],["6.2",[0,82]],["6.3",[10652,85]],["7.1",[7845,94]],["7.2",[5595,86]],["7.3",[190,122]],["7.4",[3640,102]],["7.5",[1751,98]],["7.6",[5020,102]],["7.7",[9660,91]],["8.1",[1279,96]],["8.2",[9751,108]],["8.3",[2817,112]],["8.4",[3938,105]],["8.5",[4043,105]],["8.6",[4623,90]],["8.7",[1191,88]],["8.8",[5681,100]],["8.9",[1930,98]],["8.10",
-[9031,85]],["8.11",[1444,90]],["8.12",[4828,94]],["8.13",[6231,90]],["8.14",[885,98]],["8.15",[9574,86]],["8.16",[4148,85]],["8.17",[312,81]],["8.18",[2243,97]],["8.19",[6321,86]],["8.20",[7529,88]],["8.21",[686,89]],["9.1",[7013,102]],["9.2",[10544,108]],["9.3",[4922,98]],["9.4",[3322,89]],["9.5",[3411,114]],["9.6",[8182,98]],["9.7",[592,94]],["9.8",[10353,91]],["9.9",[2140,103]],["9.10",[8392,112]],["9.11",[9349,120]],["9.12",[2929,113]],["9.13",[9116,123]],["9.14",[3089,102]],["9.15",[7939,116]],
-["9.16",[5462,133]],["9.17",[10242,111]],["9.18",[82,108]],["9.19",[5122,118]],["9.20",[7725,120]],["9.21",[486,106]],["9.22",[1630,121]],["9.23",[2436,113]],["9.24",[775,110]],["9.25",[6601,102]],["9.26",[3525,115]],["9.27",[6407,89]],["9.28",[7426,103]],["9.29",[8280,112]],["9.30",[5781,111]],["9.31",[6703,120]],["9.32",[8055,127]],["9.33",[7227,130]],["9.34",[4713,115]],["9.35",[3191,131]],["9.36",[5240,119]],["0.2.1"],["2.2.1",[2648,36],[2684,36]],["4.2.1",[10161,39],[10200,42]],["5.2.1",[8728,
-38],[8766,39]],["6.2.1",[8931,49],[8980,51]],["6.2.2",[2340,47],[2387,49]],["6.2.3",[3742,41],[3783,54]],["7.2.1",[9859,44],[9903,55]],["7.2.2",[393,45],[438,48]],["7.2.3",[6928,39],[6967,46]],["7.2.4",[6496,77],[6573,28]],["7.2.5",[5892,45],[5937,68]],["7.2.6",[6823,27],[6850,78]],["7.2.7",[10057,78],[10135,26]],["7.2.8",[9239,43],[9282,67]],["8.2.1",[7115,58],[7173,54]],["8.2.2",[6005,53],[6058,59]],["8.2.3",[8504,42],[8546,63]],["8.2.4",[4357,50],[4407,57]],["8.2.5",[9958,51],[10009,48]],["8.2.6",
-[10444,46],[10490,54]],["8.2.7",[5359,47],[5406,56]],["8.2.8",[1097,50],[1147,44]],["8.2.9",[2028,42],[2070,70]],["8.2.10",[4233,96],[4329,28]],["8.2.11",[6117,93],[6210,21]],["0.3.1"],["6.3.1",[3837,37],[3874,31],[3905,33]],["6.3.2",[9469,38],[9507,34],[9541,33]],["6.3.3",[2720,35],[2755,30],[2785,32]],["7.3.1",[7617,44],[7661,33],[7694,31]],["8.3.1",[8805,45],[8850,49],[8899,32]],["8.3.2",[8609,45],[8654,48],[8702,26]],["8.3.3",[983,43],[1026,36],[1062,35]],["8.3.4",[4464,28],[4492,29],[4521,102]],
-["8.3.5",[2549,26],[2575,29],[2604,44]]];g="undefined"!==typeof exports&&null!==exports?exports:this;w=1;p=function(){function c(a,e,b){this.gl=a;this.width=e;this.height=b;this.radiansPerSecond=3.0E-4;this.transitionMilliseconds=750;this.spinning=!0;this.style=w;this.sketchy=!0;this.theta=0;this.vbos={};this.programs={};this.selectionIndex=0;this.tubeGen=new g.TubeGenerator;this.tubeGen.polygonSides=10;this.tubeGen.b\u00e9zierSlices=3;this.tubeGen.tangentSmoothness=3;this.compileShaders();this.gl.disable(this.gl.CULL_FACE);
-this.gl.getError()!==this.gl.NO_ERROR&&glerr("OpenGL error during init");this.downloadSpines()}c.name="Renderer";c.prototype.onDownloadComplete=function(a){this.spines=new Float32Array(a.centerlines);this.vbos.spines=this.gl.createBuffer();this.gl.bindBuffer(this.gl.ARRAY_BUFFER,this.vbos.spines);this.gl.bufferData(this.gl.ARRAY_BUFFER,this.spines,this.gl.STATIC_DRAW);this.gl.getError()!==this.gl.NO_ERROR&&glerr("Error when trying to create spine VBO");toast("downloaded "+this.spines.length/3+" verts of spine data");
-this.genVertexBuffers();return this.render()};c.prototype.getCurrentLink=function(){var a;a=this.links[this.selectionIndex].id.split(".");a={crossings:a[0],numComponents:a[1],index:a[2]};1===a.numComponents&&(a.numComponents="");return a};c.prototype.changeSelection=function(a){var e,b;e=this.selectionIndex;b=e+a;if(!(b>=this.links.length||0>b))if(a=this.links[e].iconified,0===a)this.selectionIndex=b,g.outgoing=(new TWEEN.Tween(this.links[e])).to({iconified:1},0.5*this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out),
-g.incoming=(new TWEEN.Tween(this.links[b])).to({iconified:0},this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out),g.incoming.start(),g.outgoing.start();else return this.selectionIndex=b,this.links[e].iconified=1,this.links[b].iconified=a,g.incoming.replace(this.links[b])};c.prototype.downloadSpines=function(){var a;a=new Worker("js/downloader.js");a.renderer=this;a.onmessage=function(a){return this.renderer.onDownloadComplete(a.data)};return a.postMessage(document.URL+"data/centerlines.bin")};
-c.prototype.compileShaders=function(){var a,e,b,h,n,d;n=g.shaders;d=[];for(b in n)e=n[b],"source"!==b&&(a=e.keys,h=a[0],a=a[1],d.push(this.programs[b]=this.compileProgram(h,a,e.attribs,e.uniforms)));return d};c.prototype.render=function(){var a,e,b,h,n,d,c;window.requestAnimationFrame(function(){return g.renderer.render()},$("canvas").get(0));TWEEN.update();a=(new Date).getTime();null!=this.previousTime&&(e=a-this.previousTime,this.spinning&&(this.theta+=this.radiansPerSecond*e));this.previousTime=
-a;this.projection=mat4.perspective(45,this.width/this.height,5,90);e=mat4.lookAt([0,-5,5],[0,0,0],[0,1,0]);a=mat4.create();this.modelview=mat4.create();mat4.identity(a);mat4.rotateX(a,0.785);mat4.rotateY(a,this.theta);mat4.multiply(e,a,this.modelview);this.normalMatrix=mat4.toMat3(this.modelview);e=b=0;for(d=this.links.length;0<=d?b<d:b>d;e=0<=d?++b:--b){c=this.links[e];h=0;for(n=c.length;h<n;h++)a=c[h],this.renderKnot(a,e)}if(this.gl.getError()!==this.gl.NO_ERROR)return glerr("Render")};c.prototype.renderKnot=
-function(a,e){var b,h,c,d,i,j,f,m,g,l,k,q;this.gl.setColor=function(b,d){return this.uniform4f(b,a.color[0],a.color[1],a.color[2],d)};f=this.width/9;64>f&&(f=64);128<f&&(f=128);b=(9*f-this.width)/4;0>b&&(b=0);h=0.5*(this.width-9*(f-b))-f/2;0>h&&(h=0);j=f*this.height/this.width;h+=(f-b)*e;c=this.links[e].iconified;b=0.25+0.75*c;this.gl.viewport(h,this.height-j,f,j);this.gl.enable(this.gl.BLEND);this.gl.blendFunc(this.gl.SRC_ALPHA,this.gl.ONE_MINUS_SRC_ALPHA);d=this.programs.wireframe;this.gl.useProgram(d);
-this.gl.bindBuffer(this.gl.ARRAY_BUFFER,this.vbos.spines);this.gl.enableVertexAttribArray(POSITION);this.gl.vertexAttribPointer(POSITION,3,this.gl.FLOAT,!1,12,0);this.gl.uniformMatrix4fv(d.projection,!1,this.projection);this.gl.uniformMatrix4fv(d.modelview,!1,this.modelview);this.gl.uniform1f(d.scale,this.tubeGen.scale);this.gl.uniform4f(d.color,0,0,0,b);m=a.centerline;i=m[0];m=m[1];this.gl.enable(this.gl.DEPTH_TEST);this.gl.lineWidth(2);for(g=k=-1;1>=k;g=k+=2)for(l=q=-1;1>=q;l=q+=2)this.gl.uniform2f(d.offset,
-g,l),this.gl.uniform1f(d.depthOffset,0),this.gl.drawArrays(this.gl.LINE_LOOP,i,m);this.gl.enable(this.gl.BLEND);this.gl.lineWidth(2);this.gl.setColor(d.color,b);this.gl.uniform2f(d.offset,0,0);this.gl.uniform1f(d.depthOffset,-0.5);this.gl.drawArrays(this.gl.LINE_LOOP,i,m);this.gl.disableVertexAttribArray(POSITION);this.gl.viewport(0,0,this.width,this.height);d.color[3]=1;b=1-c;this.gl.viewport((1-b)*h,(1-b)*(this.height-j),b*this.width+(1-b)*f,b*this.height+(1-b)*j);d=this.programs.solidmesh;this.gl.enable(this.gl.DEPTH_TEST);
-this.gl.useProgram(d);this.gl.setColor(d.color);this.gl.uniformMatrix4fv(d.projection,!1,this.projection);this.gl.uniformMatrix4fv(d.modelview,!1,this.modelview);this.gl.uniformMatrix3fv(d.normalmatrix,!1,this.normalMatrix);this.gl.bindBuffer(this.gl.ARRAY_BUFFER,a.tube);this.gl.enableVertexAttribArray(POSITION);this.gl.enableVertexAttribArray(NORMAL);this.gl.vertexAttribPointer(POSITION,3,this.gl.FLOAT,!1,24,0);this.gl.vertexAttribPointer(NORMAL,3,this.gl.FLOAT,!1,24,12);this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER,
-a.triangles);this.style===w&&(this.gl.enable(this.gl.POLYGON_OFFSET_FILL),this.gl.polygonOffset(-1,12));this.gl.drawElements(this.gl.TRIANGLES,a.triangles.count,this.gl.UNSIGNED_SHORT,0);this.gl.disableVertexAttribArray(POSITION);this.gl.disableVertexAttribArray(NORMAL);this.gl.disable(this.gl.POLYGON_OFFSET_FILL);this.gl.enable(this.gl.BLEND);this.gl.blendFunc(this.gl.SRC_ALPHA,this.gl.ONE_MINUS_SRC_ALPHA);d=this.programs.wireframe;this.gl.useProgram(d);this.gl.uniformMatrix4fv(d.projection,!1,this.projection);
-this.gl.uniformMatrix4fv(d.modelview,!1,this.modelview);this.gl.uniform1f(d.scale,1);this.gl.bindBuffer(this.gl.ARRAY_BUFFER,a.tube);this.gl.enableVertexAttribArray(POSITION);this.gl.vertexAttribPointer(POSITION,3,this.gl.FLOAT,!1,24,0);this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER,a.wireframe);0===this.style?(this.gl.lineWidth(1),this.gl.uniform1f(d.depthOffset,-0.01),this.gl.uniform4f(d.color,0,0,0,0.75),this.gl.drawElements(this.gl.LINES,a.wireframe.count,this.gl.UNSIGNED_SHORT,0)):2===this.style?
-(this.gl.lineWidth(1),this.gl.uniform1f(d.depthOffset,-0.01),this.gl.uniform4f(d.color,0,0,0,0.75),this.gl.drawElements(this.gl.LINES,a.wireframe.count/2,this.gl.UNSIGNED_SHORT,a.wireframe.count)):(this.gl.lineWidth(2),this.gl.uniform1f(d.depthOffset,0.01),this.gl.uniform4f(d.color,0,0,0,1),this.gl.drawElements(this.gl.LINES,a.wireframe.count,this.gl.UNSIGNED_SHORT,0),this.sketchy&&(this.gl.lineWidth(1),this.gl.uniform4f(d.color,0.1,0.1,0.1,1),this.gl.uniform1f(d.depthOffset,-0.01),this.gl.drawElements(this.gl.LINES,
-a.wireframe.count/2,this.gl.UNSIGNED_SHORT,a.wireframe.count)));return this.gl.disableVertexAttribArray(POSITION)};c.prototype.getLink=function(a){var e,b,h,c,d;c=g.links;d=[];b=0;for(h=c.length;b<h;b++)e=c[b],e[0]===a&&d.push(e.slice(1));return d[0]};c.prototype.genVertexBuffers=function(){var a,e,b,h,c;this.links=[];c="7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3".split(" ");b=0;for(h=c.length;b<h;b++){e=c[b];for(var d=void 0,i=void 0,j=void 0,f=void 0,j=this.getLink(e),f=[],d=0,i=j.length;d<
-i;d++)a=j[d],f.push(this.tessKnot(a));a=f;a[0].color=[1,1,1,0.75];1<a.length&&(a[1].color=[0.25,0.5,1,0.75]);2<a.length&&(a[2].color=[1,0.5,0.25,0.75]);a.iconified=1;a.id=e;this.links.push(a)}this.links[0].iconified=0;return g.UpdateLabels()};c.prototype.tessKnot=function(a){var e,b,h,c,d,i,j,f,g,o,l;e=this.tubeGen.getKnotPath(this.spines.subarray(3*a[0],3*a[0]+3*a[1]));j=this.tubeGen.generateTube(e);b=this.gl.createBuffer();this.gl.bindBuffer(this.gl.ARRAY_BUFFER,b);this.gl.bufferData(this.gl.ARRAY_BUFFER,
-j,this.gl.STATIC_DRAW);console.log("Tube positions has "+j.length/3+" verts.");o=b;d=e.length/3-1;f=this.tubeGen.polygonSides;j=new Uint16Array(4*d*f);i=[0,0];b=i[0];for(i=i[1];b<d*(f+1);){for(h=0;h<f;)c=j.subarray(i+2,i+4),c[0]=b+h,c[1]=b+h+f+1,h=[i+2,h+1],i=h[0],h=h[1];b+=f+1}for(b=0;b<d*(f+1);){for(h=0;h<f;)c=j.subarray(i+0,i+2),c[0]=b+h,c[1]=b+h+1,h=[i+2,h+1],i=h[0],h=h[1];b+=f+1}b=this.gl.createBuffer();this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER,b);this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER,
-j,this.gl.STATIC_DRAW);d=b;d.count=j.length;console.log("Tube wireframe has "+j.length+" indices for "+f+" sides and "+(e.length/3-1)+" polygons.");j=new Uint16Array(6*e.length/3*f);h=[0,0,0];b=h[0];i=h[1];for(l=h[2];++b<e.length/3;){for(h=-1;++h<f;)c=(h+1)%f,g=j.subarray(i+0,i+3),g[0]=l+c+f+1,g[1]=l+c,g[2]=l+h,g=j.subarray(i+3,i+6),g[0]=l+h,g[1]=l+h+f+1,g[2]=l+c+f+1,i+=6;l+=f+1}b=this.gl.createBuffer();this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER,b);this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER,
-j,this.gl.STATIC_DRAW);e=b;e.count=j.length;return{centerline:a,tube:o,wireframe:d,triangles:e}};c.prototype.compileProgram=function(a,e,b,c){var n,d,i,j,f;n=function(a,b,d){a.compileShader(d);if(!a.getShaderParameter(d,a.COMPILE_STATUS))return $.gritter.add({title:"GLSL Error: "+b,text:a.getShaderInfoLog(d)})};d=g.shaders.source[a];f=this.gl.createShader(this.gl.VERTEX_SHADER);this.gl.shaderSource(f,d);n(this.gl,a,f);i=g.shaders.source[e];d=this.gl.createShader(this.gl.FRAGMENT_SHADER);this.gl.shaderSource(d,
-i);n(this.gl,e,d);n=this.gl.createProgram();this.gl.attachShader(n,f);this.gl.attachShader(n,d);for(j in b)f=b[j],this.gl.bindAttribLocation(n,f,j);this.gl.linkProgram(n);this.gl.getProgramParameter(n,this.gl.LINK_STATUS)||glerr("Could not link "+a+" with "+e);for(j in c)f=c[j],n[f]=this.gl.getUniformLocation(n,j);return n};return c}();g.Renderer=p;p=function(){var c,a,e,b;e=["sin","cos","pow","abs"];b=[];c=0;for(a=e.length;c<a;c++)v=e[c],b.push(Math[v]);return b}();F=p[0];D=p[1];E=vec3.dot;z=2*Math.PI;
-g="undefined"!==typeof exports&&null!==exports?exports:this;g.shaders={solidmesh:{keys:["VS-Scene","FS-Scene"],attribs:{Position:POSITION,Normal:NORMAL},uniforms:{Projection:"projection",Modelview:"modelview",NormalMatrix:"normalmatrix",Color:"color"}},wireframe:{keys:["VS-Wireframe","FS-Wireframe"],attribs:{Position:POSITION},uniforms:{Projection:"projection",Modelview:"modelview",DepthOffset:"depthOffset",Offset:"offset",Color:"color",Scale:"scale"}},vignette:{keys:["VS-Vignette","FS-Vignette"],
-attribs:{VertexID:VERTEXID},uniforms:{Viewport:"viewport"}}};g.shaders.source={};g.shaders.source["VS-Scene"]="attribute vec4 Position;\nattribute vec3 Normal;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform mat3 NormalMatrix;\nvarying vec3 vPosition;\nvarying vec3 vNormal;\nvoid main(void)\n{\n    vPosition = Position.xyz;\n    vNormal = NormalMatrix * Normal;\n    gl_Position = Projection * Modelview * Position;\n}";g.shaders.source["VS-Wireframe"]="attribute vec4 Position;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform float DepthOffset;\nuniform float Scale;\nuniform vec2 Offset;\nvoid main(void)\n{\n    vec4 p = Position;\n    p.xyz *= Scale;\n    gl_Position = Projection * Modelview * p;\n    gl_Position.z += DepthOffset;\n    gl_Position.xy += Offset * 0.15;\n}";
-g.shaders.source["FS-Wireframe"]="precision highp float;\nprecision highp vec3;\nuniform vec4 Color;\nvoid main()\n{\n    gl_FragColor = Color;\n}";g.shaders.source["FS-Scene"]="precision highp float;\nprecision highp vec3;\nvarying vec3 vNormal;\nvarying vec3 vPosition;\n\nvec3 LightPosition = vec3(0.25, 0.5, 1.0);\nvec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);\nvec3 SpecularMaterial = vec3(0.25, 0.25, 0.25);\nvec3 FrontMaterial = vec3(0.25, 0.5, 0.75);\nvec3 BackMaterial = vec3(0.75, 0.75, 0.7);\nfloat Shininess = 50.0;\n\nuniform vec4 Color;\n\nvoid main()\n{\n    vec3 N = normalize(vNormal);\n    if (!gl_FrontFacing)\n        N = -N;\n\n    vec3 L = normalize(LightPosition);\n    vec3 Eye = vec3(0, 0, 1);\n    vec3 H = normalize(L + Eye);\n\n    float df = max(0.0, dot(N, L));\n    float sf = max(0.0, dot(N, H));\n    sf = pow(sf, Shininess);\n\n    vec3 P = vPosition;\n    vec3 I = normalize(P);\n    float cosTheta = abs(dot(I, N));\n    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);\n\n    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;\n    color *= Color.rgb;\n    vec3 lighting = AmbientMaterial + df * color;\n    if (gl_FrontFacing)\n        lighting += sf * SpecularMaterial;\n\n    lighting += fresnel;\n    gl_FragColor = vec4(lighting,1);\n}";
-g.shaders.source["VS-Vignette"]="attribute vec2 VertexID;\nvoid main(void)\n{\n    vec2 p = 3.0 - 4.0 * VertexID;\n    gl_Position = vec4(p, 0, 1);\n}";g.shaders.source["FS-Vignette"]="precision highp float;\nprecision highp vec2;\n\nuniform vec2 Viewport;\nvoid main()\n{\n    vec2 c = gl_FragCoord.xy / Viewport;\n    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);\n    gl_FragColor = vec4(f, f, f, 1);\n    gl_FragColor.rgb *= vec3(0.867, 0.18, 0.447); // Hot Pink!\n}";g="undefined"!==typeof exports&&
-null!==exports?exports:this;p=function(){function c(){this.scale=0.15;this.tangentSmoothness=this.b\u00e9zierSlices=3;this.polygonSides=9;this.radius=0.07}c.name="TubeGenerator";c.prototype.getKnotPath=function(a){var e,b,c,g,d,i,j,f,m,o,l,k,q,r,p,s,G;o=this.b\u00e9zierSlices;m=new Float32Array(a.length*o+3);i=[0,0];g=i[0];for(i=i[1];g<a.length+3;){c=function(){var b,c,d,e;d=[0,2,3,5,6,8];e=[];b=0;for(c=d.length;b<c;b++)j=d[b],e.push((g+j)%a.length);return e}();e=a.subarray(c[0],c[1]+1);b=a.subarray(c[2],
-c[3]+1);c=a.subarray(c[4],c[5]+1);k=vec3.create(e);p=vec3.create(b);vec3.lerp(k,b,0.5);vec3.lerp(p,c,0.5);q=vec3.create(k);r=vec3.create(p);vec3.lerp(q,b,1/3);vec3.lerp(r,b,1/3);b=e=1/(o+1);for(s=0;0<=o?s<o:s>o;0<=o?++s:--s){c=1-b;c=[c*c*c,3*c*c*b,3*c*b*b,b*b*b];f=function(){var a,b,c,d;c=[k,q,r,p];d=[];a=0;for(b=c.length;a<b;a++)l=c[a],d.push(vec3.create(l));return d}();for(d=G=0;4>G;d=++G)vec3.scale(f[d],c[d]);f=f.reduce(function(a,b){return vec3.add(a,b)});vec3.scale(f,this.scale);m.set(f,i);i+=
-3;if(i>=m.length)return console.log("B\u00e9zier: generated "+i/3+" points from "+a.length/3+" control points."),m;b+=e}g+=3}};c.prototype.generateTube=function(a){var c,b,h,g,d,i,j,f,m,o,l,k,q,r,p,s;o=this.polygonSides;i=this.generateFrames(a);d=a.length/3;m=new Float32Array(6*d*(o+1));k=[0,0];j=k[0];f=k[1];k=vec3.create();for(l=this.radius;j<d;){r=0;h=function(){var a,c;c=[];for(b=a=0;2>=a;b=++a)c.push(i[b].subarray(3*j,3*j+3));return c}();h=function(){var a,d,f;f=[];a=0;for(d=h.length;a<d;a++)c=
-h[a],f.push(function(){var a,d;d=[];for(b=a=0;2>=a;b=++a)d.push(c[b]);return d}());return f}();h=h.reduce(function(a,b){return a.concat(b)});h=mat3.create(h);q=0;for(g=z/o;r<o+1;)p=l*D(q),s=l*F(q),mat3.multiplyVec3(h,[p,s,0],k),k[0]+=a[3*j+0],k[1]+=a[3*j+1],k[2]+=a[3*j+2],m.set(k,f),q=[f+6,r+1,q+g],f=q[0],r=q[1],q=q[2];j++}console.log("GenerateTube: generated "+f+" vertices from a centerline with "+d+" nodes.");f=[0,0];j=f[0];f=f[1];l=vec3.create();for(g=vec3.create();j<d;){for(r=0;r<o+1;)k[0]=m[f+
-0],k[1]=m[f+1],k[2]=m[f+2],g[0]=a[3*j+0],g[1]=a[3*j+1],g[2]=a[3*j+2],vec3.direction(k,g,l),m.set(l,f+3),r=[f+6,r+1],f=r[0],r=r[1];j++}return m};c.prototype.generateFrames=function(a){var c,b,h,g,d,i,j,f,m,o,l,k;c=a.length/3;b=new Float32Array(3*c);h=new Float32Array(3*c);g=new Float32Array(3*c);for(d=-1;++d<c;)i=(d+1+this.tangentSmoothness)%(c-1),l=a.subarray(3*d,3*d+3),k=a.subarray(3*i,3*i+3),m=g.subarray(3*d,3*d+3),vec3.direction(l,k,m);f=function(){var a,b;b=[];for(a=0;2>=a;++a)b.push(vec3.create());
-return b}();j=f[0];m=f[1];l=f[2];d=function(){var a,b;b=[];for(a=0;2>=a;++a)b.push(vec3.create());return b}();f=d[0];o=d[1];k=d[2];vec3.set(g.subarray(0,3),l);J(l,j);vec3.cross(l,j,m);vec3.normalize(j);vec3.normalize(m);vec3.set(j,b.subarray(0,3));vec3.set(m,h.subarray(0,3));i=[0,1];d=i[0];i=i[1];i=[j,m,l];j=i[0];for(m=i[2];d<c-1;)i=d+1,l=a.subarray(3*d,3*d+3),k=a.subarray(3*i,3*i+3),m=g.subarray(3*d,3*d+3),k=g.subarray(3*i,3*i+3),vec3.cross(k,j,o),vec3.normalize(o),vec3.cross(o,k,f),vec3.set(f,b.subarray(3*
-i,3*i+3)),vec3.set(o,h.subarray(3*i,3*i+3)),vec3.set(f,j),++d;return[b,h,g]};return c}();g.TubeGenerator=p;z=2*Math.PI;p=function(){var c,a,e,b;e=["sin","cos","pow","abs"];b=[];c=0;for(a=e.length;c<a;c++)v=e[c],b.push(Math[v]);return b}();F=p[0];D=p[1];E=vec3.dot;J=function(c,a){var e;e=vec3.create([1,0,0]);vec3.cross(c,e,a);0.01>E(a,a)&&(vec3.set(e,[0,1,0]),vec3.cross(c,e,a));return vec3.normalize(a)}}).call(this);
+// Generated by CoffeeScript 1.3.1
+(function() {
+  var CollapsedSizes, DevTips, ExpandedSizes, InitializeNumerals, Numerals, Renderer, Style, TWOPI, TubeGenerator, UpdateNumeralSizes, UpdateNumeralText, UpdateNumerals, aabb, abs, box, clone, cos, dot, f, perp, pow, root, sgn, sin, utility, _ref, _ref1;
+
+  root = typeof exports !== "undefined" && exports !== null ? exports : this;
+
+  root.utility = {};
+
+  utility = root.utility;
+
+  utility.clone = function(obj) {
+    var key, newInstance;
+    if (!(obj != null) || typeof obj !== 'object') {
+      return obj;
+    }
+    newInstance = new obj.constructor();
+    for (key in obj) {
+      newInstance[key] = clone(obj[key]);
+    }
+    return newInstance;
+  };
+
+  utility.aabb = aabb = (function() {
+
+    aabb.name = 'aabb';
+
+    function aabb(left, top, right, bottom) {
+      this.left = left;
+      this.top = top;
+      this.right = right;
+      this.bottom = bottom;
+    }
+
+    aabb.createFromCorner = function(leftTop, size) {
+      var bottom, left, right, top, _ref;
+      left = leftTop[0], top = leftTop[1];
+      _ref = [left + size[0], top + size[1]], right = _ref[0], bottom = _ref[1];
+      return new aabb(left, top, right, bottom);
+    };
+
+    aabb.createFromCenter = function(center, size) {
+      var bottom, hh, hw, left, right, top, _ref, _ref1, _ref2;
+      _ref = [size[0] / 2, size[1] / 2], hw = _ref[0], hh = _ref[1];
+      _ref1 = [center[0] - hw, center[1] - hh], left = _ref1[0], top = _ref1[1];
+      _ref2 = [center[0] + hw, center[1] + hh], right = _ref2[0], bottom = _ref2[1];
+      return new aabb(left, top, right, bottom);
+    };
+
+    aabb.prototype.setFromCenter = function(center, size) {
+      var hh, hw, _ref, _ref1, _ref2;
+      _ref = [size[0] / 2, size[1] / 2], hw = _ref[0], hh = _ref[1];
+      _ref1 = [center[0] - hw, center[1] - hh], this.left = _ref1[0], this.top = _ref1[1];
+      return _ref2 = [center[0] + hw, center[1] + hh], this.right = _ref2[0], this.bottom = _ref2[1], _ref2;
+    };
+
+    aabb.prototype.contains = function(x, y) {
+      return x >= this.left && x < this.right && y >= this.top && y < this.bottom;
+    };
+
+    aabb.prototype.width = function() {
+      return this.right - this.left;
+    };
+
+    aabb.prototype.height = function() {
+      return this.bottom - this.top;
+    };
+
+    aabb.prototype.centerx = function() {
+      return (this.left + this.right) / 2;
+    };
+
+    aabb.prototype.centery = function() {
+      return (this.bottom + this.top) / 2;
+    };
+
+    aabb.prototype.size = function() {
+      return [this.width(), this.height()];
+    };
+
+    aabb.prototype.viewport = function(gl) {
+      return gl.viewport(this.left, this.top, this.width(), this.height());
+    };
+
+    aabb.prototype.inflate = function(delta) {
+      this.left -= delta;
+      this.top -= delta;
+      this.right += delta;
+      return this.bottom += delta;
+    };
+
+    aabb.prototype.deflate = function(delta) {
+      this.left += delta;
+      this.top += delta;
+      this.right -= delta;
+      return this.bottom -= delta;
+    };
+
+    aabb.lerp = function(a, b, t) {
+      var h, w, x, y;
+      w = (1 - t) * a.width() + t * b.width();
+      h = (1 - t) * a.height() + t * b.height();
+      x = (1 - t) * a.centerx() + t * b.centerx();
+      y = (1 - t) * a.centery() + t * b.centery();
+      return aabb.createFromCenter([x, y], [w, h]);
+    };
+
+    return aabb;
+
+  })();
+
+  root = typeof exports !== "undefined" && exports !== null ? exports : this;
+
+  clone = root.utility.clone;
+
+  box = root.utility.box;
+
+  DevTips = "In Chrome, use Ctrl+Shift+J to see console, Alt+Cmd+J on a Mac.\nTo experiment with coffescript, try this from the console:\n> coffee --require './js/gl-matrix-min.js'";
+
+  root.AppInit = function() {
+    var c, gl, height, width;
+    c = $("canvas").get(0);
+    gl = c.getContext("experimental-webgl", {
+      antialias: true
+    });
+    if (!gl.getExtension("OES_texture_float")) {
+      glerr("Your browser does not support floating-point textures.");
+    }
+    if (!gl.getExtension("OES_standard_derivatives")) {
+      glerr("Your browser does not support GLSL derivatives.");
+    }
+    width = parseInt($("#overlay").css('width'));
+    height = parseInt($("#overlay").css('height'));
+    return root.renderer = new root.Renderer(gl, width, height);
+  };
+
+  root.UpdateLabels = function() {
+    InitializeNumerals();
+    return UpdateNumeralText();
+  };
+
+  root.OnKeyDown = function(keyname) {
+    var A, B, duration;
+    if (keyname === 'left') {
+      root.renderer.changeSelection(-1);
+    }
+    if (keyname === 'right') {
+      root.renderer.changeSelection(+1);
+    }
+    InitializeNumerals();
+    duration = 0.25 * root.renderer.transitionMilliseconds;
+    A = new TWEEN.Tween(Numerals.size).to(CollapsedSizes, duration).easing(TWEEN.Easing.Quintic.In).onUpdate(UpdateNumeralSizes);
+    B = new TWEEN.Tween(Numerals.size).to(ExpandedSizes, duration).easing(TWEEN.Easing.Quintic.In).onUpdate(UpdateNumerals);
+    A.chain(B);
+    return A.start();
+  };
+
+  CollapsedSizes = {
+    crossings: 2,
+    numComponents: 1,
+    index: 1
+  };
+
+  ExpandedSizes = {
+    crossings: 100,
+    numComponents: 50,
+    index: 50
+  };
+
+  Numerals = {
+    size: clone(ExpandedSizes),
+    text: {},
+    dirty: {}
+  };
+
+  InitializeNumerals = function() {
+    var key, labels, _results;
+    labels = root.renderer.getCurrentLink();
+    _results = [];
+    for (key in labels) {
+      Numerals.dirty[key] = Numerals.text[key] !== labels[key];
+      _results.push(Numerals.text[key] = labels[key]);
+    }
+    return _results;
+  };
+
+  UpdateNumeralSizes = function() {
+    $("#crossings").css('font-size', Numerals.size.crossings);
+    $("#superscript").css('font-size', Numerals.size.numComponents);
+    return $("#subscript").css('font-size', Numerals.size.index);
+  };
+
+  UpdateNumerals = function() {
+    UpdateNumeralSizes();
+    return UpdateNumeralText();
+  };
+
+  UpdateNumeralText = function() {
+    $("#crossings").text(Numerals.text.crossings);
+    $("#subscript").text(Numerals.text.index);
+    return $("#superscript").text(Numerals.text.numComponents);
+  };
+
+  root = typeof exports !== "undefined" && exports !== null ? exports : this;
+
+  root.links = [["0.1"], ["3.1", [3042, 47]], ["4.1", [1375, 69]], ["5.1", [7357, 69]], ["5.2", [1849, 81]], ["6.1", [1534, 96]], ["6.2", [0, 82]], ["6.3", [10652, 85]], ["7.1", [7845, 94]], ["7.2", [5595, 86]], ["7.3", [190, 122]], ["7.4", [3640, 102]], ["7.5", [1751, 98]], ["7.6", [5020, 102]], ["7.7", [9660, 91]], ["8.1", [1279, 96]], ["8.2", [9751, 108]], ["8.3", [2817, 112]], ["8.4", [3938, 105]], ["8.5", [4043, 105]], ["8.6", [4623, 90]], ["8.7", [1191, 88]], ["8.8", [5681, 100]], ["8.9", [1930, 98]], ["8.10", [9031, 85]], ["8.11", [1444, 90]], ["8.12", [4828, 94]], ["8.13", [6231, 90]], ["8.14", [885, 98]], ["8.15", [9574, 86]], ["8.16", [4148, 85]], ["8.17", [312, 81]], ["8.18", [2243, 97]], ["8.19", [6321, 86]], ["8.20", [7529, 88]], ["8.21", [686, 89]], ["9.1", [7013, 102]], ["9.2", [10544, 108]], ["9.3", [4922, 98]], ["9.4", [3322, 89]], ["9.5", [3411, 114]], ["9.6", [8182, 98]], ["9.7", [592, 94]], ["9.8", [10353, 91]], ["9.9", [2140, 103]], ["9.10", [8392, 112]], ["9.11", [9349, 120]], ["9.12", [2929, 113]], ["9.13", [9116, 123]], ["9.14", [3089, 102]], ["9.15", [7939, 116]], ["9.16", [5462, 133]], ["9.17", [10242, 111]], ["9.18", [82, 108]], ["9.19", [5122, 118]], ["9.20", [7725, 120]], ["9.21", [486, 106]], ["9.22", [1630, 121]], ["9.23", [2436, 113]], ["9.24", [775, 110]], ["9.25", [6601, 102]], ["9.26", [3525, 115]], ["9.27", [6407, 89]], ["9.28", [7426, 103]], ["9.29", [8280, 112]], ["9.30", [5781, 111]], ["9.31", [6703, 120]], ["9.32", [8055, 127]], ["9.33", [7227, 130]], ["9.34", [4713, 115]], ["9.35", [3191, 131]], ["9.36", [5240, 119]], ["0.2.1"], ["2.2.1", [2648, 36], [2684, 36]], ["4.2.1", [10161, 39], [10200, 42]], ["5.2.1", [8728, 38], [8766, 39]], ["6.2.1", [8931, 49], [8980, 51]], ["6.2.2", [2340, 47], [2387, 49]], ["6.2.3", [3742, 41], [3783, 54]], ["7.2.1", [9859, 44], [9903, 55]], ["7.2.2", [393, 45], [438, 48]], ["7.2.3", [6928, 39], [6967, 46]], ["7.2.4", [6496, 77], [6573, 28]], ["7.2.5", [5892, 45], [5937, 68]], ["7.2.6", [6823, 27], [6850, 78]], ["7.2.7", [10057, 78], [10135, 26]], ["7.2.8", [9239, 43], [9282, 67]], ["8.2.1", [7115, 58], [7173, 54]], ["8.2.2", [6005, 53], [6058, 59]], ["8.2.3", [8504, 42], [8546, 63]], ["8.2.4", [4357, 50], [4407, 57]], ["8.2.5", [9958, 51], [10009, 48]], ["8.2.6", [10444, 46], [10490, 54]], ["8.2.7", [5359, 47], [5406, 56]], ["8.2.8", [1097, 50], [1147, 44]], ["8.2.9", [2028, 42], [2070, 70]], ["8.2.10", [4233, 96], [4329, 28]], ["8.2.11", [6117, 93], [6210, 21]], ["0.3.1"], ["6.3.1", [3837, 37], [3874, 31], [3905, 33]], ["6.3.2", [9469, 38], [9507, 34], [9541, 33]], ["6.3.3", [2720, 35], [2755, 30], [2785, 32]], ["7.3.1", [7617, 44], [7661, 33], [7694, 31]], ["8.3.1", [8805, 45], [8850, 49], [8899, 32]], ["8.3.2", [8609, 45], [8654, 48], [8702, 26]], ["8.3.3", [983, 43], [1026, 36], [1062, 35]], ["8.3.4", [4464, 28], [4492, 29], [4521, 102]], ["8.3.5", [2549, 26], [2575, 29], [2604, 44]]];
+
+  root = typeof exports !== "undefined" && exports !== null ? exports : this;
+
+  aabb = root.utility.aabb;
+
+  Style = {
+    WIREFRAME: 0,
+    SILHOUETTE: 1,
+    RINGS: 2
+  };
+
+  Renderer = (function() {
+
+    Renderer.name = 'Renderer';
+
+    function Renderer(gl, width, height) {
+      this.gl = gl;
+      this.width = width;
+      this.height = height;
+      this.radiansPerSecond = 0.0003;
+      this.transitionMilliseconds = 750;
+      this.spinning = true;
+      this.style = Style.SILHOUETTE;
+      this.sketchy = true;
+      this.theta = 0;
+      this.vbos = {};
+      this.programs = {};
+      this.selectionIndex = 0;
+      this.tubeGen = new root.TubeGenerator;
+      this.tubeGen.polygonSides = 10;
+      this.tubeGen.bézierSlices = 3;
+      this.tubeGen.tangentSmoothness = 3;
+      this.compileShaders();
+      this.gl.disable(this.gl.CULL_FACE);
+      if (this.gl.getError() !== this.gl.NO_ERROR) {
+        glerr("OpenGL error during init");
+      }
+      this.downloadSpines();
+    }
+
+    Renderer.prototype.onDownloadComplete = function(data) {
+      var rawVerts;
+      rawVerts = data['centerlines'];
+      this.spines = new Float32Array(rawVerts);
+      this.vbos.spines = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, this.spines, this.gl.STATIC_DRAW);
+      if (this.gl.getError() !== this.gl.NO_ERROR) {
+        glerr("Error when trying to create spine VBO");
+      }
+      toast("downloaded " + (this.spines.length / 3) + " verts of spine data");
+      this.genVertexBuffers();
+      return this.render();
+    };
+
+    Renderer.prototype.getCurrentLink = function() {
+      var L, X;
+      X = this.links[this.selectionIndex].id.split('.');
+      L = {
+        crossings: X[0],
+        numComponents: X[1],
+        index: X[2]
+      };
+      if (L.numComponents === 1) {
+        L.numComponents = "";
+      }
+      return L;
+    };
+
+    Renderer.prototype.changeSelection = function(increment) {
+      var currentSelection, iconified, nextSelection;
+      currentSelection = this.selectionIndex;
+      nextSelection = currentSelection + increment;
+      if (nextSelection >= this.links.length || nextSelection < 0) {
+        return;
+      }
+      iconified = this.links[currentSelection].iconified;
+      if (iconified === 0) {
+        this.selectionIndex = nextSelection;
+        root.outgoing = new TWEEN.Tween(this.links[currentSelection]).to({
+          iconified: 1
+        }, 0.5 * this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
+        root.incoming = new TWEEN.Tween(this.links[nextSelection]).to({
+          iconified: 0
+        }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
+        root.incoming.start();
+        root.outgoing.start();
+        return;
+      }
+      this.selectionIndex = nextSelection;
+      this.links[currentSelection].iconified = 1;
+      this.links[nextSelection].iconified = iconified;
+      return root.incoming.replace(this.links[nextSelection]);
+    };
+
+    Renderer.prototype.downloadSpines = function() {
+      var worker;
+      worker = new Worker('js/downloader.js');
+      worker.renderer = this;
+      worker.onmessage = function(response) {
+        return this.renderer.onDownloadComplete(response.data);
+      };
+      return worker.postMessage(document.URL + 'data/centerlines.bin');
+    };
+
+    Renderer.prototype.compileShaders = function() {
+      var fs, metadata, name, vs, _ref, _ref1, _results;
+      _ref = root.shaders;
+      _results = [];
+      for (name in _ref) {
+        metadata = _ref[name];
+        if (name === "source") {
+          continue;
+        }
+        _ref1 = metadata.keys, vs = _ref1[0], fs = _ref1[1];
+        _results.push(this.programs[name] = this.compileProgram(vs, fs, metadata.attribs, metadata.uniforms));
+      }
+      return _results;
+    };
+
+    Renderer.prototype.render = function() {
+      var aspect, currentTime, elapsed, eye, far, fov, k, model, near, p, r, target, up, view, _i, _j, _len, _ref, _ref1;
+      r = function() {
+        return root.renderer.render();
+      };
+      window.requestAnimationFrame(r, $("canvas").get(0));
+      TWEEN.update();
+      currentTime = new Date().getTime();
+      if (this.previousTime != null) {
+        elapsed = currentTime - this.previousTime;
+        if (this.spinning) {
+          this.theta += this.radiansPerSecond * elapsed;
+        }
+      }
+      this.previousTime = currentTime;
+      this.projection = mat4.perspective(fov = 45, aspect = this.width / this.height, near = 5, far = 90);
+      view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
+      model = mat4.create();
+      this.modelview = mat4.create();
+      mat4.identity(model);
+      mat4.rotateX(model, 3.14 / 4);
+      mat4.rotateY(model, this.theta);
+      mat4.multiply(view, model, this.modelview);
+      this.normalMatrix = mat4.toMat3(this.modelview);
+      this.updateViewports();
+      for (p = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; p = 0 <= _ref ? ++_i : --_i) {
+        _ref1 = this.links[p];
+        for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
+          k = _ref1[_j];
+          this.renderKnot(k, p);
+        }
+      }
+      if (this.gl.getError() !== this.gl.NO_ERROR) {
+        return glerr("Render");
+      }
+    };
+
+    Renderer.prototype.updateViewports = function() {
+      var centralViewport, h, iconViewport, p, t, tileHeight, tileWidth, w, x, y, _i, _ref, _results;
+      w = tileWidth = this.width / this.links.length;
+      h = tileHeight = tileWidth * this.height / this.width;
+      y = tileHeight / 2;
+      x = tileWidth / 2;
+      centralViewport = new aabb(0, 0, this.width, this.height);
+      _results = [];
+      for (p = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; p = 0 <= _ref ? ++_i : --_i) {
+        iconViewport = aabb.createFromCenter([x, y], [w, h]);
+        t = this.links[p].iconified;
+        this.links[p].viewport = aabb.lerp(iconViewport, centralViewport, t);
+        _results.push(x = x + w);
+      }
+      return _results;
+    };
+
+    Renderer.prototype.renderKnot = function(knot, position) {
+      var alpha, h, iconPosition, iconified, left, leftMargin, offset, overlap, program, startVertex, stride, t, tileHeight, tileWidth, top, vertexCount, w, x, y, _i, _j, _ref;
+      this.gl.setColor = function(colorLocation, alpha) {
+        return this.uniform4f(colorLocation, knot.color[0], knot.color[1], knot.color[2], alpha);
+      };
+      tileWidth = this.width / 9;
+      if (tileWidth < 64) {
+        tileWidth = 64;
+      }
+      if (tileWidth > 128) {
+        tileWidth = 128;
+      }
+      overlap = (tileWidth * 9 - this.width) / 4;
+      if (overlap < 0) {
+        overlap = 0;
+      }
+      leftMargin = 0.5 * (this.width - (tileWidth - overlap) * 9) - tileWidth / 2;
+      if (leftMargin < 0) {
+        leftMargin = 0;
+      }
+      tileHeight = tileWidth * this.height / this.width;
+      iconPosition = leftMargin + (tileWidth - overlap) * position;
+      iconified = this.links[position].iconified;
+      alpha = 0.25 + 0.75 * iconified;
+      this.gl.viewport(iconPosition, this.height - tileHeight, tileWidth, tileHeight);
+      this.gl.enable(this.gl.BLEND);
+      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+      program = this.programs.wireframe;
+      this.gl.useProgram(program);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+      this.gl.enableVertexAttribArray(POSITION);
+      this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
+      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
+      this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
+      this.gl.uniform1f(program.scale, this.tubeGen.scale);
+      this.gl.uniform4f(program.color, 0, 0, 0, alpha);
+      _ref = knot.centerline, startVertex = _ref[0], vertexCount = _ref[1];
+      this.gl.enable(this.gl.DEPTH_TEST);
+      this.gl.lineWidth(2);
+      for (x = _i = -1; _i <= 1; x = _i += 2) {
+        for (y = _j = -1; _j <= 1; y = _j += 2) {
+          this.gl.uniform2f(program.offset, x, y);
+          this.gl.uniform1f(program.depthOffset, 0);
+          this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
+        }
+      }
+      this.gl.enable(this.gl.BLEND);
+      this.gl.lineWidth(2);
+      this.gl.setColor(program.color, alpha);
+      this.gl.uniform2f(program.offset, 0, 0);
+      this.gl.uniform1f(program.depthOffset, -0.5);
+      this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
+      this.gl.disableVertexAttribArray(POSITION);
+      this.gl.viewport(0, 0, this.width, this.height);
+      program.color[3] = 1;
+      t = 1 - iconified;
+      w = t * this.width + (1 - t) * tileWidth;
+      h = t * this.height + (1 - t) * tileHeight;
+      left = (1 - t) * iconPosition;
+      top = (1 - t) * (this.height - tileHeight);
+      this.gl.viewport(left, top, w, h);
+      program = this.programs.solidmesh;
+      this.gl.enable(this.gl.DEPTH_TEST);
+      this.gl.useProgram(program);
+      this.gl.setColor(program.color);
+      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
+      this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
+      this.gl.uniformMatrix3fv(program.normalmatrix, false, this.normalMatrix);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
+      this.gl.enableVertexAttribArray(POSITION);
+      this.gl.enableVertexAttribArray(NORMAL);
+      this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
+      this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 24, offset = 12);
+      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.triangles);
+      if (this.style === Style.SILHOUETTE) {
+        this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
+        this.gl.polygonOffset(-1, 12);
+      }
+      this.gl.drawElements(this.gl.TRIANGLES, knot.triangles.count, this.gl.UNSIGNED_SHORT, 0);
+      this.gl.disableVertexAttribArray(POSITION);
+      this.gl.disableVertexAttribArray(NORMAL);
+      this.gl.disable(this.gl.POLYGON_OFFSET_FILL);
+      this.gl.enable(this.gl.BLEND);
+      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+      program = this.programs.wireframe;
+      this.gl.useProgram(program);
+      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
+      this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
+      this.gl.uniform1f(program.scale, 1);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
+      this.gl.enableVertexAttribArray(POSITION);
+      this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
+      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, knot.wireframe);
+      if (this.style === Style.WIREFRAME) {
+        this.gl.lineWidth(1);
+        this.gl.uniform1f(program.depthOffset, -0.01);
+        this.gl.uniform4f(program.color, 0, 0, 0, 0.75);
+        this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
+      } else if (this.style === Style.RINGS) {
+        this.gl.lineWidth(1);
+        this.gl.uniform1f(program.depthOffset, -0.01);
+        this.gl.uniform4f(program.color, 0, 0, 0, 0.75);
+        this.gl.drawElements(this.gl.LINES, knot.wireframe.count / 2, this.gl.UNSIGNED_SHORT, knot.wireframe.count);
+      } else {
+        this.gl.lineWidth(2);
+        this.gl.uniform1f(program.depthOffset, 0.01);
+        this.gl.uniform4f(program.color, 0, 0, 0, 1);
+        this.gl.drawElements(this.gl.LINES, knot.wireframe.count, this.gl.UNSIGNED_SHORT, 0);
+        if (this.sketchy) {
+          this.gl.lineWidth(1);
+          this.gl.uniform4f(program.color, 0.1, 0.1, 0.1, 1);
+          this.gl.uniform1f(program.depthOffset, -0.01);
+          this.gl.drawElements(this.gl.LINES, knot.wireframe.count / 2, this.gl.UNSIGNED_SHORT, knot.wireframe.count);
+        }
+      }
+      return this.gl.disableVertexAttribArray(POSITION);
+    };
+
+    Renderer.prototype.getLink = function(id) {
+      var x;
+      return ((function() {
+        var _i, _len, _ref, _results;
+        _ref = root.links;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          x = _ref[_i];
+          if (x[0] === id) {
+            _results.push(x.slice(1));
+          }
+        }
+        return _results;
+      })())[0];
+    };
+
+    Renderer.prototype.genVertexBuffers = function() {
+      var component, id, knots, tableRow, _i, _len, _ref;
+      tableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3";
+      this.links = [];
+      _ref = tableRow.split(' ');
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        id = _ref[_i];
+        knots = (function() {
+          var _j, _len1, _ref1, _results;
+          _ref1 = this.getLink(id);
+          _results = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            component = _ref1[_j];
+            _results.push(this.tessKnot(component));
+          }
+          return _results;
+        }).call(this);
+        knots[0].color = [1, 1, 1, 0.75];
+        if (knots.length > 1) {
+          knots[1].color = [0.25, 0.5, 1, 0.75];
+        }
+        if (knots.length > 2) {
+          knots[2].color = [1, 0.5, 0.25, 0.75];
+        }
+        knots.iconified = 1;
+        knots.id = id;
+        this.links.push(knots);
+      }
+      this.links[0].iconified = 0;
+      return root.UpdateLabels();
+    };
+
+    Renderer.prototype.tessKnot = function(component) {
+      var byteOffset, centerline, faceCount, i, j, knot, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, wireframe, _ref, _ref1, _ref2, _ref3;
+      byteOffset = component[0] * 3 * 4;
+      numFloats = component[1] * 3;
+      segmentData = this.spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3);
+      centerline = this.tubeGen.getKnotPath(segmentData);
+      rawBuffer = this.tubeGen.generateTube(centerline);
+      vbo = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
+      console.log("Tube positions has " + (rawBuffer.length / 3) + " verts.");
+      tube = vbo;
+      polygonCount = centerline.length / 3 - 1;
+      sides = this.tubeGen.polygonSides;
+      lineCount = polygonCount * sides * 2;
+      rawBuffer = new Uint16Array(lineCount * 2);
+      _ref = [0, 0], i = _ref[0], ptr = _ref[1];
+      while (i < polygonCount * (sides + 1)) {
+        j = 0;
+        while (j < sides) {
+          sweepEdge = rawBuffer.subarray(ptr + 2, ptr + 4);
+          sweepEdge[0] = i + j;
+          sweepEdge[1] = i + j + sides + 1;
+          _ref1 = [ptr + 2, j + 1], ptr = _ref1[0], j = _ref1[1];
+        }
+        i += sides + 1;
+      }
+      i = 0;
+      while (i < polygonCount * (sides + 1)) {
+        j = 0;
+        while (j < sides) {
+          polygonEdge = rawBuffer.subarray(ptr + 0, ptr + 2);
+          polygonEdge[0] = i + j;
+          polygonEdge[1] = i + j + 1;
+          _ref2 = [ptr + 2, j + 1], ptr = _ref2[0], j = _ref2[1];
+        }
+        i += sides + 1;
+      }
+      vbo = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
+      wireframe = vbo;
+      wireframe.count = rawBuffer.length;
+      console.log("Tube wireframe has " + rawBuffer.length + " indices for " + sides + " sides and " + (centerline.length / 3 - 1) + " polygons.");
+      faceCount = centerline.length / 3 * sides * 2;
+      rawBuffer = new Uint16Array(faceCount * 3);
+      _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
+      while (++i < centerline.length / 3) {
+        j = -1;
+        while (++j < sides) {
+          next = (j + 1) % sides;
+          tri = rawBuffer.subarray(ptr + 0, ptr + 3);
+          tri[0] = v + next + sides + 1;
+          tri[1] = v + next;
+          tri[2] = v + j;
+          tri = rawBuffer.subarray(ptr + 3, ptr + 6);
+          tri[0] = v + j;
+          tri[1] = v + j + sides + 1;
+          tri[2] = v + next + sides + 1;
+          ptr += 6;
+        }
+        v += sides + 1;
+      }
+      vbo = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
+      triangles = vbo;
+      triangles.count = rawBuffer.length;
+      return knot = {
+        centerline: component,
+        tube: tube,
+        wireframe: wireframe,
+        triangles: triangles
+      };
+    };
+
+    Renderer.prototype.compileProgram = function(vName, fName, attribs, uniforms) {
+      var compileShader, fShader, fSource, key, program, status, vShader, vSource, value;
+      compileShader = function(gl, name, handle) {
+        var status;
+        gl.compileShader(handle);
+        status = gl.getShaderParameter(handle, gl.COMPILE_STATUS);
+        if (!status) {
+          return $.gritter.add({
+            title: "GLSL Error: " + name,
+            text: gl.getShaderInfoLog(handle)
+          });
+        }
+      };
+      vSource = root.shaders.source[vName];
+      vShader = this.gl.createShader(this.gl.VERTEX_SHADER);
+      this.gl.shaderSource(vShader, vSource);
+      compileShader(this.gl, vName, vShader);
+      fSource = root.shaders.source[fName];
+      fShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+      this.gl.shaderSource(fShader, fSource);
+      compileShader(this.gl, fName, fShader);
+      program = this.gl.createProgram();
+      this.gl.attachShader(program, vShader);
+      this.gl.attachShader(program, fShader);
+      for (key in attribs) {
+        value = attribs[key];
+        this.gl.bindAttribLocation(program, value, key);
+      }
+      this.gl.linkProgram(program);
+      status = this.gl.getProgramParameter(program, this.gl.LINK_STATUS);
+      if (!status) {
+        glerr("Could not link " + vName + " with " + fName);
+      }
+      for (key in uniforms) {
+        value = uniforms[key];
+        program[value] = this.gl.getUniformLocation(program, key);
+      }
+      return program;
+    };
+
+    return Renderer;
+
+  })();
+
+  root.Renderer = Renderer;
+
+  _ref = (function() {
+    var _i, _len, _ref, _results;
+    _ref = "sin cos pow abs".split(' ');
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      f = _ref[_i];
+      _results.push(Math[f]);
+    }
+    return _results;
+  })(), sin = _ref[0], cos = _ref[1], pow = _ref[2], abs = _ref[3];
+
+  dot = vec3.dot;
+
+  sgn = function(x) {
+    if (x > 0) {
+      return +1;
+    } else {
+      if (x < 0) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+  };
+
+  TWOPI = 2 * Math.PI;
+
+  root = typeof exports !== "undefined" && exports !== null ? exports : this;
+
+  root.shaders = {
+    solidmesh: {
+      keys: ["VS-Scene", "FS-Scene"],
+      attribs: {
+        Position: POSITION,
+        Normal: NORMAL
+      },
+      uniforms: {
+        Projection: 'projection',
+        Modelview: 'modelview',
+        NormalMatrix: 'normalmatrix',
+        Color: 'color'
+      }
+    },
+    wireframe: {
+      keys: ["VS-Wireframe", "FS-Wireframe"],
+      attribs: {
+        Position: POSITION
+      },
+      uniforms: {
+        Projection: 'projection',
+        Modelview: 'modelview',
+        DepthOffset: 'depthOffset',
+        Offset: 'offset',
+        Color: 'color',
+        Scale: 'scale'
+      }
+    },
+    vignette: {
+      keys: ["VS-Vignette", "FS-Vignette"],
+      attribs: {
+        VertexID: VERTEXID
+      },
+      uniforms: {
+        Viewport: 'viewport'
+      }
+    }
+  };
+
+  root.shaders.source = {};
+
+  root.shaders.source["VS-Scene"] = "attribute vec4 Position;\nattribute vec3 Normal;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform mat3 NormalMatrix;\nvarying vec3 vPosition;\nvarying vec3 vNormal;\nvoid main(void)\n{\n    vPosition = Position.xyz;\n    vNormal = NormalMatrix * Normal;\n    gl_Position = Projection * Modelview * Position;\n}";
+
+  root.shaders.source["VS-Wireframe"] = "attribute vec4 Position;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform float DepthOffset;\nuniform float Scale;\nuniform vec2 Offset;\nvoid main(void)\n{\n    vec4 p = Position;\n    p.xyz *= Scale;\n    gl_Position = Projection * Modelview * p;\n    gl_Position.z += DepthOffset;\n    gl_Position.xy += Offset * 0.15;\n}";
+
+  root.shaders.source["FS-Wireframe"] = "precision highp float;\nprecision highp vec3;\nuniform vec4 Color;\nvoid main()\n{\n    gl_FragColor = Color;\n}";
+
+  root.shaders.source["FS-Scene"] = "precision highp float;\nprecision highp vec3;\nvarying vec3 vNormal;\nvarying vec3 vPosition;\n\nvec3 LightPosition = vec3(0.25, 0.5, 1.0);\nvec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);\nvec3 SpecularMaterial = vec3(0.25, 0.25, 0.25);\nvec3 FrontMaterial = vec3(0.25, 0.5, 0.75);\nvec3 BackMaterial = vec3(0.75, 0.75, 0.7);\nfloat Shininess = 50.0;\n\nuniform vec4 Color;\n\nvoid main()\n{\n    vec3 N = normalize(vNormal);\n    if (!gl_FrontFacing)\n        N = -N;\n\n    vec3 L = normalize(LightPosition);\n    vec3 Eye = vec3(0, 0, 1);\n    vec3 H = normalize(L + Eye);\n\n    float df = max(0.0, dot(N, L));\n    float sf = max(0.0, dot(N, H));\n    sf = pow(sf, Shininess);\n\n    vec3 P = vPosition;\n    vec3 I = normalize(P);\n    float cosTheta = abs(dot(I, N));\n    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);\n\n    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;\n    color *= Color.rgb;\n    vec3 lighting = AmbientMaterial + df * color;\n    if (gl_FrontFacing)\n        lighting += sf * SpecularMaterial;\n\n    lighting += fresnel;\n    gl_FragColor = vec4(lighting,1);\n}";
+
+  root.shaders.source["VS-Vignette"] = "attribute vec2 VertexID;\nvoid main(void)\n{\n    vec2 p = 3.0 - 4.0 * VertexID;\n    gl_Position = vec4(p, 0, 1);\n}";
+
+  root.shaders.source["FS-Vignette"] = "precision highp float;\nprecision highp vec2;\n\nuniform vec2 Viewport;\nvoid main()\n{\n    vec2 c = gl_FragCoord.xy / Viewport;\n    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);\n    gl_FragColor = vec4(f, f, f, 1);\n    gl_FragColor.rgb *= vec3(0.867, 0.18, 0.447); // Hot Pink!\n}";
+
+  root = typeof exports !== "undefined" && exports !== null ? exports : this;
+
+  TubeGenerator = (function() {
+
+    TubeGenerator.name = 'TubeGenerator';
+
+    function TubeGenerator() {
+      this.scale = 0.15;
+      this.bézierSlices = 3;
+      this.tangentSmoothness = 3;
+      this.polygonSides = 9;
+      this.radius = 0.07;
+    }
+
+    TubeGenerator.prototype.getKnotPath = function(data) {
+      var a, b, c, dt, i, ii, j, n, p, r, rawBuffer, slice, slices, t, tt, v, v1, v2, v3, v4, _i, _j, _ref1;
+      slices = this.bézierSlices;
+      rawBuffer = new Float32Array(data.length * slices + 3);
+      _ref1 = [0, 0], i = _ref1[0], j = _ref1[1];
+      while (i < data.length + 3) {
+        r = (function() {
+          var _i, _len, _ref2, _results;
+          _ref2 = [0, 2, 3, 5, 6, 8];
+          _results = [];
+          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+            n = _ref2[_i];
+            _results.push((i + n) % data.length);
+          }
+          return _results;
+        })();
+        a = data.subarray(r[0], r[1] + 1);
+        b = data.subarray(r[2], r[3] + 1);
+        c = data.subarray(r[4], r[5] + 1);
+        v1 = vec3.create(a);
+        v4 = vec3.create(b);
+        vec3.lerp(v1, b, 0.5);
+        vec3.lerp(v4, c, 0.5);
+        v2 = vec3.create(v1);
+        v3 = vec3.create(v4);
+        vec3.lerp(v2, b, 1 / 3);
+        vec3.lerp(v3, b, 1 / 3);
+        t = dt = 1 / (slices + 1);
+        for (slice = _i = 0; 0 <= slices ? _i < slices : _i > slices; slice = 0 <= slices ? ++_i : --_i) {
+          tt = 1 - t;
+          c = [tt * tt * tt, 3 * tt * tt * t, 3 * tt * t * t, t * t * t];
+          p = (function() {
+            var _j, _len, _ref2, _results;
+            _ref2 = [v1, v2, v3, v4];
+            _results = [];
+            for (_j = 0, _len = _ref2.length; _j < _len; _j++) {
+              v = _ref2[_j];
+              _results.push(vec3.create(v));
+            }
+            return _results;
+          })();
+          for (ii = _j = 0; _j < 4; ii = ++_j) {
+            vec3.scale(p[ii], c[ii]);
+          }
+          p = p.reduce(function(a, b) {
+            return vec3.add(a, b);
+          });
+          vec3.scale(p, this.scale);
+          rawBuffer.set(p, j);
+          j += 3;
+          if (j >= rawBuffer.length) {
+            console.log("Bézier: generated " + (j / 3) + " points from " + (data.length / 3) + " control points.");
+            return rawBuffer;
+          }
+          t += dt;
+        }
+        i += 3;
+      }
+    };
+
+    TubeGenerator.prototype.generateTube = function(centerline) {
+      var B, C, basis, center, count, dtheta, frames, i, m, mesh, n, normal, p, r, theta, v, x, y, z, _ref1, _ref2, _ref3, _ref4;
+      n = this.polygonSides;
+      frames = this.generateFrames(centerline);
+      count = centerline.length / 3;
+      mesh = new Float32Array(count * (n + 1) * 6);
+      _ref1 = [0, 0], i = _ref1[0], m = _ref1[1];
+      p = vec3.create();
+      r = this.radius;
+      while (i < count) {
+        v = 0;
+        basis = (function() {
+          var _i, _results;
+          _results = [];
+          for (C = _i = 0; _i <= 2; C = ++_i) {
+            _results.push(frames[C].subarray(i * 3, i * 3 + 3));
+          }
+          return _results;
+        })();
+        basis = (function() {
+          var _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = basis.length; _i < _len; _i++) {
+            B = basis[_i];
+            _results.push((function() {
+              var _j, _results1;
+              _results1 = [];
+              for (C = _j = 0; _j <= 2; C = ++_j) {
+                _results1.push(B[C]);
+              }
+              return _results1;
+            })());
+          }
+          return _results;
+        })();
+        basis = basis.reduce(function(A, B) {
+          return A.concat(B);
+        });
+        basis = mat3.create(basis);
+        theta = 0;
+        dtheta = TWOPI / n;
+        while (v < n + 1) {
+          x = r * cos(theta);
+          y = r * sin(theta);
+          z = 0;
+          mat3.multiplyVec3(basis, [x, y, z], p);
+          p[0] += centerline[i * 3 + 0];
+          p[1] += centerline[i * 3 + 1];
+          p[2] += centerline[i * 3 + 2];
+          mesh.set(p, m);
+          _ref2 = [m + 6, v + 1, theta + dtheta], m = _ref2[0], v = _ref2[1], theta = _ref2[2];
+        }
+        i++;
+      }
+      console.log("GenerateTube: generated " + m + " vertices from a centerline with " + count + " nodes.");
+      _ref3 = [0, 0], i = _ref3[0], m = _ref3[1];
+      normal = vec3.create();
+      center = vec3.create();
+      while (i < count) {
+        v = 0;
+        while (v < n + 1) {
+          p[0] = mesh[m + 0];
+          p[1] = mesh[m + 1];
+          p[2] = mesh[m + 2];
+          center[0] = centerline[i * 3 + 0];
+          center[1] = centerline[i * 3 + 1];
+          center[2] = centerline[i * 3 + 2];
+          vec3.direction(p, center, normal);
+          mesh.set(normal, m + 3);
+          _ref4 = [m + 6, v + 1], m = _ref4[0], v = _ref4[1];
+        }
+        i++;
+      }
+      return mesh;
+    };
+
+    TubeGenerator.prototype.generateFrames = function(centerline) {
+      var count, frameR, frameS, frameT, i, j, n, r0, ri, rj, s0, si, sj, t0, ti, tj, xi, xj, _ref1, _ref2, _ref3, _ref4;
+      count = centerline.length / 3;
+      frameR = new Float32Array(count * 3);
+      frameS = new Float32Array(count * 3);
+      frameT = new Float32Array(count * 3);
+      i = -1;
+      while (++i < count) {
+        j = (i + 1 + this.tangentSmoothness) % (count - 1);
+        xi = centerline.subarray(i * 3, i * 3 + 3);
+        xj = centerline.subarray(j * 3, j * 3 + 3);
+        ti = frameT.subarray(i * 3, i * 3 + 3);
+        vec3.direction(xi, xj, ti);
+      }
+      _ref1 = (function() {
+        var _i, _results;
+        _results = [];
+        for (n = _i = 0; _i <= 2; n = ++_i) {
+          _results.push(vec3.create());
+        }
+        return _results;
+      })(), r0 = _ref1[0], s0 = _ref1[1], t0 = _ref1[2];
+      _ref2 = (function() {
+        var _i, _results;
+        _results = [];
+        for (n = _i = 0; _i <= 2; n = ++_i) {
+          _results.push(vec3.create());
+        }
+        return _results;
+      })(), rj = _ref2[0], sj = _ref2[1], tj = _ref2[2];
+      vec3.set(frameT.subarray(0, 3), t0);
+      perp(t0, r0);
+      vec3.cross(t0, r0, s0);
+      vec3.normalize(r0);
+      vec3.normalize(s0);
+      vec3.set(r0, frameR.subarray(0, 3));
+      vec3.set(s0, frameS.subarray(0, 3));
+      _ref3 = [0, 1], i = _ref3[0], j = _ref3[1];
+      _ref4 = [r0, s0, t0], ri = _ref4[0], si = _ref4[1], ti = _ref4[2];
+      while (i < count - 1) {
+        j = i + 1;
+        xi = centerline.subarray(i * 3, i * 3 + 3);
+        xj = centerline.subarray(j * 3, j * 3 + 3);
+        ti = frameT.subarray(i * 3, i * 3 + 3);
+        tj = frameT.subarray(j * 3, j * 3 + 3);
+        vec3.cross(tj, ri, sj);
+        vec3.normalize(sj);
+        vec3.cross(sj, tj, rj);
+        vec3.set(rj, frameR.subarray(j * 3, j * 3 + 3));
+        vec3.set(sj, frameS.subarray(j * 3, j * 3 + 3));
+        vec3.set(rj, ri);
+        ++i;
+      }
+      return [frameR, frameS, frameT];
+    };
+
+    return TubeGenerator;
+
+  })();
+
+  root.TubeGenerator = TubeGenerator;
+
+  TWOPI = 2 * Math.PI;
+
+  _ref1 = (function() {
+    var _i, _len, _ref1, _results;
+    _ref1 = "sin cos pow abs".split(' ');
+    _results = [];
+    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+      f = _ref1[_i];
+      _results.push(Math[f]);
+    }
+    return _results;
+  })(), sin = _ref1[0], cos = _ref1[1], pow = _ref1[2], abs = _ref1[3];
+
+  dot = vec3.dot;
+
+  sgn = function(x) {
+    if (x > 0) {
+      return +1;
+    } else {
+      if (x < 0) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+  };
+
+  perp = function(u, dest) {
+    var e, v;
+    v = vec3.create([1, 0, 0]);
+    vec3.cross(u, v, dest);
+    e = dot(dest, dest);
+    if (e < 0.01) {
+      vec3.set(v, [0, 1, 0]);
+      vec3.cross(u, v, dest);
+    }
+    return vec3.normalize(dest);
+  };
+
+}).call(this);

@@ -1,5 +1,7 @@
 root = exports ? this
 
+aabb = root.utility.aabb
+
 Style =
   WIREFRAME: 0
   SILHOUETTE: 1
@@ -40,10 +42,10 @@ class Renderer
     @render()
 
   getCurrentLink: ->
-    X = @links[@selectionIndex].id.split('.')
-    M = {crossings:X[0], numComponents:X[1], index:X[2]}
-    M.numComponents = "" if M.numComponents == 1
-    M
+    X = @links[@selectionIndex].id.split '.'
+    L = {crossings:X[0], numComponents:X[1], index:X[2]}
+    L.numComponents = "" if L.numComponents == 1
+    L
 
   changeSelection: (increment) ->
 
@@ -115,8 +117,21 @@ class Renderer
     #@gl.clear(@gl.COLOR_BUFFER_BIT)
 
     # Draw each knot in succession
+    @updateViewports()
     (@renderKnot(k, p) for k in @links[p]) for p in [0...@links.length]
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
+
+  updateViewports: ->
+    w = tileWidth = @width / @links.length
+    h = tileHeight = tileWidth * @height / @width
+    y = tileHeight / 2
+    x = tileWidth / 2
+    centralViewport = new aabb 0, 0, @width, @height
+    for p in [0...@links.length]
+      iconViewport = aabb.createFromCenter [x,y], [w,h]
+      t = @links[p].iconified
+      @links[p].viewport = aabb.lerp iconViewport, centralViewport, t
+      x = x + w
 
   renderKnot: (knot, position) ->
 
