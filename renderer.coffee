@@ -39,6 +39,9 @@ class Renderer
     @genVertexBuffers()
     @render()
 
+  getCurrentLink: ->
+     @links[@selectionIndex].id
+
   changeSelection: (increment) ->
 
     # Leave early if the current selection is already leftmost or rightmost.
@@ -126,7 +129,8 @@ class Renderer
     tileWidth = 128 if tileWidth > 128
     overlap = (tileWidth * 9 - @width) / 4
     overlap = 0 if overlap < 0
-    leftMargin = 0.5 * (@width - (tileWidth - overlap) * 9)
+    leftMargin = 0.5 * (@width - (tileWidth - overlap) * 9) - tileWidth / 2
+    leftMargin = 0 if leftMargin < 0
     tileHeight = tileWidth * @height / @width
     iconPosition = leftMargin + (tileWidth - overlap) * position
     iconified = @links[position].iconified
@@ -249,6 +253,7 @@ class Renderer
       knots[1].color = [0.25,0.5,1,0.75] if knots.length > 1
       knots[2].color = [1,0.5,0.25,0.75] if knots.length > 2
       knots.iconified = 1
+      knots.id = id
       @links.push(knots)
     @links[0].iconified = 0
 
