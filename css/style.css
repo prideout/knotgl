@@ -27,10 +27,15 @@ p {
     font-weight:700;
     font-size:100px;
     color:#74BBFB;
-    text-shadow: 0 0 5px #000,0 0 5px #000,0 0 5px #000,0 0 5px #000;
     position:absolute;
     bottom: 5px;
     right: -5px;
+    text-shadow:
+      3px 3px 0 #000, /* <-- inc these 2 #'s for a bigger drop shadow */
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -1px 1px 0 #000,
+      1px 1px 0 #000;
 }
 
 .scrollpage {

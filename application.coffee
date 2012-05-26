@@ -7,14 +7,6 @@ DevTips =
   > coffee --require './js/gl-matrix-min.js'
   """
 
-clone = (obj) ->
-  if not obj? or typeof obj isnt 'object'
-    return obj
-  newInstance = new obj.constructor()
-  for key of obj
-    newInstance[key] = clone obj[key]
-  return newInstance
-
 root.AppInit = ->
   c = $("canvas").get(0)
   gl = c.getContext("experimental-webgl", { antialias: true } )
@@ -23,6 +15,36 @@ root.AppInit = ->
   width = parseInt($("#overlay").css('width'))
   height = parseInt($("#overlay").css('height'))
   root.renderer = new root.Renderer gl, width, height
+
+root.UpdateLabels = ->
+  InitializeNumerals()
+  UpdateNumeralText()
+
+root.OnKeyDown = (keyname) ->
+  root.renderer.changeSelection(-1) if keyname is 'left'
+  root.renderer.changeSelection(+1) if keyname is 'right'
+  InitializeNumerals()
+  duration = 0.25 * root.renderer.transitionMilliseconds
+  A = new TWEEN.Tween(Numerals.size)
+    .to(CollapsedSizes, duration)
+    .easing(TWEEN.Easing.Quintic.In)
+    .onUpdate(UpdateNumeralSizes);
+  B = new TWEEN.Tween(Numerals.size)
+    .to(ExpandedSizes, duration)
+    .easing(TWEEN.Easing.Quintic.In)
+    .onUpdate(UpdateNumerals);
+  A.chain(B)
+  A.start()
+
+## PRIVATE ##
+
+clone = (obj) ->
+  if not obj? or typeof obj isnt 'object'
+    return obj
+  newInstance = new obj.constructor()
+  for key of obj
+    newInstance[key] = clone obj[key]
+  return newInstance
 
 CollapsedSizes =
   crossings: 2
@@ -34,49 +56,27 @@ ExpandedSizes =
   numComponents: 50
   index: 50
 
-root.Numerals =
-  size: clone(ExpandedSizes)
+Numerals =
+  size: clone ExpandedSizes
   text: {}
   dirty: {}
 
-root.UpdateNumeralSizes = ->
-  $("#crossings").css('font-size', root.Numerals.size.crossings)
-  $("#superscript").css('font-size', root.Numerals.size.numComponents)
-  $("#subscript").css('font-size', root.Numerals.size.index)
+InitializeNumerals = ->
+  labels = root.renderer.getCurrentLink()
+  for key of labels
+    Numerals.dirty[key] = Numerals.text[key] isnt labels[key]
+    Numerals.text[key] = labels[key]
 
-root.UpdateNumerals = ->
+UpdateNumeralSizes = ->
+  $("#crossings").css('font-size', Numerals.size.crossings)
+  $("#superscript").css('font-size', Numerals.size.numComponents)
+  $("#subscript").css('font-size', Numerals.size.index)
+
+UpdateNumerals = ->
   UpdateNumeralSizes()
-  $("#crossings").text(root.Numerals.text.crossings)
-  $("#subscript").text(root.Numerals.text.index)
-  $("#superscript").text(root.Numerals.text.numComponents)
+  UpdateNumeralText()
 
-root.OnKeyDown = (keyname) ->
-
-  # First ask the renderer to respond
-  root.renderer.changeSelection(-1) if keyname is 'left'
-  root.renderer.changeSelection(+1) if keyname is 'right'
-
-  # Next figure out the text content of the three labels
-  [crossings, numComponents, index] = root.renderer.getCurrentLink().split('.')
-  numComponents = "" if numComponents == 1
-
-  # TODO loop over keys instead of this repititive stuff
-  root.Numerals.dirty.crossings = root.Numerals.text.crossings isnt crossings
-  root.Numerals.dirty.numComponents = root.Numerals.text.numComponents isnt numComponents
-  root.Numerals.dirty.index = root.Numerals.text.index isnt index
-  root.Numerals.text.crossings = crossings
-  root.Numerals.text.numComponents = numComponents
-  root.Numerals.text.index = index
-
-  # Now configure the tweening animation as two steps (collapse and expand)
-  duration = 0.25 * root.renderer.transitionMilliseconds
-  A = new TWEEN.Tween(root.Numerals.size)
-    .to(CollapsedSizes, duration)
-    .easing(TWEEN.Easing.Quintic.In)
-    .onUpdate(root.UpdateNumeralSizes);
-  B = new TWEEN.Tween(root.Numerals.size)
-    .to(ExpandedSizes, duration)
-    .easing(TWEEN.Easing.Quintic.In)
-    .onUpdate(root.UpdateNumerals);
-  A.chain(B)
-  A.start()
+UpdateNumeralText = ->
+  $("#crossings").text(Numerals.text.crossings)
+  $("#subscript").text(Numerals.text.index)
+  $("#superscript").text(Numerals.text.numComponents)

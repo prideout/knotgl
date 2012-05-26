@@ -40,7 +40,10 @@ class Renderer
     @render()
 
   getCurrentLink: ->
-     @links[@selectionIndex].id
+    X = @links[@selectionIndex].id.split('.')
+    M = {crossings:X[0], numComponents:X[1], index:X[2]}
+    M.numComponents = "" if M.numComponents == 1
+    M
 
   changeSelection: (increment) ->
 
@@ -256,6 +259,7 @@ class Renderer
       knots.id = id
       @links.push(knots)
     @links[0].iconified = 0
+    root.UpdateLabels()
 
   # Tessellate the given knot
   tessKnot: (component) ->
