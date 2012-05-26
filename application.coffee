@@ -1,4 +1,6 @@
 root = exports ? this
+clone = root.utility.clone
+box = root.utility.box
 
 DevTips =
   """
@@ -37,14 +39,6 @@ root.OnKeyDown = (keyname) ->
   A.start()
 
 ## PRIVATE ##
-
-clone = (obj) ->
-  if not obj? or typeof obj isnt 'object'
-    return obj
-  newInstance = new obj.constructor()
-  for key of obj
-    newInstance[key] = clone obj[key]
-  return newInstance
 
 CollapsedSizes =
   crossings: 2
