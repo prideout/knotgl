@@ -30,7 +30,8 @@ task 'build', 'Build single application file from source files', ->
 
 # Uses Google Closure
 task 'minify', 'Minify the resulting application file after build', ->
-  exec '/usr/lib/jvm/java/bin/java -jar "./compiler.jar" --js js/knotgl.js --js_output_file js/knotgl-min.js', (err, stdout, stderr) ->
+#  exec '/usr/lib/jvm/java/bin/java -jar "./compiler.jar" --js js/knotgl.js --js_output_file js/knotgl-min.js', (err, stdout, stderr) ->
+  exec 'java -jar "./compiler.jar" --js js/knotgl.js --js_output_file js/knotgl-min.js', (err, stdout, stderr) ->
     throw err if err
     console.log stdout + stderr
     console.log 'Done.'
@@ -39,7 +40,8 @@ task 'watch', 'Watch prod source files and build changes', ->
   console.log "Watching for changes"
 
   for file in appFiles then do (file) ->
-    fs.watchFile "#{file}.coffee", (curr, prev) ->
+#    fs.watchFile "#{file}.coffee", (curr, prev) ->
+    fs.watch "#{file}.coffee", (curr, prev) ->
       if +curr.mtime isnt +prev.mtime
         console.log "Saw change in #{file}.coffee"
         invoke 'build'

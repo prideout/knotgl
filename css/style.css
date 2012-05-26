@@ -25,7 +25,12 @@ p {
 .numeral {
     font-family: 'Nobile', sans-serif;
     font-weight:700;
-    font-size:36px;
+    font-size:100px;
+    color:#74BBFB;
+    text-shadow: 0 0 5px #000,0 0 5px #000,0 0 5px #000,0 0 5px #000;
+    position:absolute;
+    bottom: 5px;
+    right: -5px;
 }
 
 .scrollpage {
