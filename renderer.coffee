@@ -118,9 +118,10 @@ class Renderer
 
     # Draw each knot in succession
     @updateViewports()
-    (@renderKnot(k, p) for k in @links[p]) for p in [0...@links.length]
+    (@renderKnot(knot, link) for knot in link) for link in @links
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
+  # Annotates each link with 'iconBox' and 'centralBox', which are aabb objects.
   updateViewports: ->
     w = tileWidth = @width / @links.length
     h = tileHeight = tileWidth * @height / @width
@@ -133,7 +134,7 @@ class Renderer
       @links[p].centralBox = aabb.lerp iconBox, bigBox, t
       x = x + w
 
-  renderKnot: (knot, position) ->
+  renderKnot: (knot, link) ->
 
     @gl.setColor = (colorLocation, alpha) -> @uniform4f(
       colorLocation,
@@ -142,10 +143,10 @@ class Renderer
       knot.color[2],
       alpha)
 
-    alpha = 0.25 + 0.75 * @links[position].iconified
+    alpha = 0.25 + 0.75 * link.iconified
 
     # Draw the icon
-    @links[position].iconBox.viewport @gl
+    link.iconBox.viewport @gl
     @gl.enable(@gl.BLEND)
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     program = @programs.wireframe
@@ -182,7 +183,7 @@ class Renderer
     program.color[3] = 1
 
     # Draw the solid knot
-    @links[position].centralBox.viewport @gl
+    link.centralBox.viewport @gl
     program = @programs.solidmesh
     @gl.enable(@gl.DEPTH_TEST)
     @gl.useProgram(program)

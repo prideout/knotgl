@@ -328,7 +328,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, elapsed, eye, far, fov, k, model, near, p, r, target, up, view, _i, _j, _len, _ref, _ref1;
+      var aspect, currentTime, elapsed, eye, far, fov, knot, link, model, near, r, target, up, view, _i, _j, _len, _len1, _ref;
       r = function() {
         return root.renderer.render();
       };
@@ -352,11 +352,12 @@
       mat4.multiply(view, model, this.modelview);
       this.normalMatrix = mat4.toMat3(this.modelview);
       this.updateViewports();
-      for (p = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; p = 0 <= _ref ? ++_i : --_i) {
-        _ref1 = this.links[p];
-        for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
-          k = _ref1[_j];
-          this.renderKnot(k, p);
+      _ref = this.links;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        link = _ref[_i];
+        for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
+          knot = link[_j];
+          this.renderKnot(knot, link);
         }
       }
       if (this.gl.getError() !== this.gl.NO_ERROR) {
@@ -381,13 +382,13 @@
       return _results;
     };
 
-    Renderer.prototype.renderKnot = function(knot, position) {
+    Renderer.prototype.renderKnot = function(knot, link) {
       var alpha, offset, program, startVertex, stride, vertexCount, x, y, _i, _j, _ref;
       this.gl.setColor = function(colorLocation, alpha) {
         return this.uniform4f(colorLocation, knot.color[0], knot.color[1], knot.color[2], alpha);
       };
-      alpha = 0.25 + 0.75 * this.links[position].iconified;
-      this.links[position].iconBox.viewport(this.gl);
+      alpha = 0.25 + 0.75 * link.iconified;
+      link.iconBox.viewport(this.gl);
       this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       program = this.programs.wireframe;
@@ -418,7 +419,7 @@
       this.gl.disableVertexAttribArray(POSITION);
       this.gl.viewport(0, 0, this.width, this.height);
       program.color[3] = 1;
-      this.links[position].centralBox.viewport(this.gl);
+      link.centralBox.viewport(this.gl);
       program = this.programs.solidmesh;
       this.gl.enable(this.gl.DEPTH_TEST);
       this.gl.useProgram(program);

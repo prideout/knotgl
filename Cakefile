@@ -11,7 +11,7 @@ appFiles  = [
 ]
 
 graceful = true
-doMinify = false
+doMinify = true
 linux = true
 
 task 'build', 'Build single application file from source files', ->
