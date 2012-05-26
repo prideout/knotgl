@@ -139,14 +139,18 @@
   };
 
   root.OnKeyDown = function(keyname) {
-    var A, B, duration;
+    var A, B, dirty, duration;
+    dirty = false;
     if (keyname === 'left') {
-      root.renderer.changeSelection(-1);
+      dirty = root.renderer.changeSelection(-1);
     }
     if (keyname === 'right') {
-      root.renderer.changeSelection(+1);
+      dirty = root.renderer.changeSelection(+1);
     }
     InitializeNumerals();
+    if (!dirty) {
+      return;
+    }
     duration = 0.25 * root.renderer.transitionMilliseconds;
     A = new TWEEN.Tween(Numerals.size).to(CollapsedSizes, duration).easing(TWEEN.Easing.Quintic.In).onUpdate(UpdateNumeralSizes);
     B = new TWEEN.Tween(Numerals.size).to(ExpandedSizes, duration).easing(TWEEN.Easing.Quintic.In).onUpdate(UpdateNumerals);
@@ -155,9 +159,9 @@
   };
 
   CollapsedSizes = {
-    crossings: 2,
-    numComponents: 1,
-    index: 1
+    crossings: 10,
+    numComponents: 5,
+    index: 5
   };
 
   ExpandedSizes = {
@@ -290,7 +294,7 @@
         }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
         root.incoming.start();
         root.outgoing.start();
-        return;
+        return true;
       }
       this.selectionIndex = nextSelection;
       this.links[currentSelection].iconified = 1;
@@ -361,47 +365,29 @@
     };
 
     Renderer.prototype.updateViewports = function() {
-      var centralViewport, h, iconViewport, p, t, tileHeight, tileWidth, w, x, y, _i, _ref, _results;
+      var bigBox, h, iconBox, p, t, tileHeight, tileWidth, w, x, y, _i, _ref, _results;
       w = tileWidth = this.width / this.links.length;
       h = tileHeight = tileWidth * this.height / this.width;
-      y = tileHeight / 2;
+      y = this.height - tileHeight / 2;
       x = tileWidth / 2;
-      centralViewport = new aabb(0, 0, this.width, this.height);
+      bigBox = new aabb(0, 0, this.width, this.height);
       _results = [];
       for (p = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; p = 0 <= _ref ? ++_i : --_i) {
-        iconViewport = aabb.createFromCenter([x, y], [w, h]);
-        t = this.links[p].iconified;
-        this.links[p].viewport = aabb.lerp(iconViewport, centralViewport, t);
+        iconBox = this.links[p].iconBox = aabb.createFromCenter([x, y], [w, h]);
+        t = 1 - this.links[p].iconified;
+        this.links[p].centralBox = aabb.lerp(iconBox, bigBox, t);
         _results.push(x = x + w);
       }
       return _results;
     };
 
     Renderer.prototype.renderKnot = function(knot, position) {
-      var alpha, h, iconPosition, iconified, left, leftMargin, offset, overlap, program, startVertex, stride, t, tileHeight, tileWidth, top, vertexCount, w, x, y, _i, _j, _ref;
+      var alpha, offset, program, startVertex, stride, vertexCount, x, y, _i, _j, _ref;
       this.gl.setColor = function(colorLocation, alpha) {
         return this.uniform4f(colorLocation, knot.color[0], knot.color[1], knot.color[2], alpha);
       };
-      tileWidth = this.width / 9;
-      if (tileWidth < 64) {
-        tileWidth = 64;
-      }
-      if (tileWidth > 128) {
-        tileWidth = 128;
-      }
-      overlap = (tileWidth * 9 - this.width) / 4;
-      if (overlap < 0) {
-        overlap = 0;
-      }
-      leftMargin = 0.5 * (this.width - (tileWidth - overlap) * 9) - tileWidth / 2;
-      if (leftMargin < 0) {
-        leftMargin = 0;
-      }
-      tileHeight = tileWidth * this.height / this.width;
-      iconPosition = leftMargin + (tileWidth - overlap) * position;
-      iconified = this.links[position].iconified;
-      alpha = 0.25 + 0.75 * iconified;
-      this.gl.viewport(iconPosition, this.height - tileHeight, tileWidth, tileHeight);
+      alpha = 0.25 + 0.75 * this.links[position].iconified;
+      this.links[position].iconBox.viewport(this.gl);
       this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       program = this.programs.wireframe;
@@ -432,16 +418,11 @@
       this.gl.disableVertexAttribArray(POSITION);
       this.gl.viewport(0, 0, this.width, this.height);
       program.color[3] = 1;
-      t = 1 - iconified;
-      w = t * this.width + (1 - t) * tileWidth;
-      h = t * this.height + (1 - t) * tileHeight;
-      left = (1 - t) * iconPosition;
-      top = (1 - t) * (this.height - tileHeight);
-      this.gl.viewport(left, top, w, h);
+      this.links[position].centralBox.viewport(this.gl);
       program = this.programs.solidmesh;
       this.gl.enable(this.gl.DEPTH_TEST);
       this.gl.useProgram(program);
-      this.gl.setColor(program.color);
+      this.gl.setColor(program.color, 1);
       this.gl.uniformMatrix4fv(program.projection, false, this.projection);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniformMatrix3fv(program.normalmatrix, false, this.normalMatrix);

@@ -23,9 +23,13 @@ root.UpdateLabels = ->
   UpdateNumeralText()
 
 root.OnKeyDown = (keyname) ->
-  root.renderer.changeSelection(-1) if keyname is 'left'
-  root.renderer.changeSelection(+1) if keyname is 'right'
+  dirty = false
+  if keyname is 'left'
+    dirty = root.renderer.changeSelection(-1)
+  if keyname is 'right'
+    dirty = root.renderer.changeSelection(+1)
   InitializeNumerals()
+  return if not dirty
   duration = 0.25 * root.renderer.transitionMilliseconds
   A = new TWEEN.Tween(Numerals.size)
     .to(CollapsedSizes, duration)
@@ -41,9 +45,9 @@ root.OnKeyDown = (keyname) ->
 ## PRIVATE ##
 
 CollapsedSizes =
-  crossings: 2
-  numComponents: 1
-  index: 1
+  crossings: 10
+  numComponents: 5
+  index: 5
 
 ExpandedSizes =
   crossings: 100

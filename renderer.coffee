@@ -67,7 +67,7 @@ class Renderer
         .easing(TWEEN.Easing.Bounce.Out)
       root.incoming.start()
       root.outgoing.start()
-      return
+      return true
 
     # If we reached this point, we're interupting an in-progress transition.
     # We instantly snap the currently-incoming element back to the toolbar
@@ -124,42 +124,28 @@ class Renderer
   updateViewports: ->
     w = tileWidth = @width / @links.length
     h = tileHeight = tileWidth * @height / @width
-    y = tileHeight / 2
+    y = @height - tileHeight / 2
     x = tileWidth / 2
-    centralViewport = new aabb 0, 0, @width, @height
+    bigBox = new aabb 0, 0, @width, @height
     for p in [0...@links.length]
-      iconViewport = aabb.createFromCenter [x,y], [w,h]
-      t = @links[p].iconified
-      @links[p].viewport = aabb.lerp iconViewport, centralViewport, t
+      iconBox = @links[p].iconBox = aabb.createFromCenter [x,y], [w,h]
+      t = 1-@links[p].iconified
+      @links[p].centralBox = aabb.lerp iconBox, bigBox, t
       x = x + w
 
   renderKnot: (knot, position) ->
 
-    @gl.setColor = (colorLocation, alpha) ->
-      @uniform4f(colorLocation,
-        knot.color[0],
-        knot.color[1],
-        knot.color[2],
-        alpha)
+    @gl.setColor = (colorLocation, alpha) -> @uniform4f(
+      colorLocation,
+      knot.color[0],
+      knot.color[1],
+      knot.color[2],
+      alpha)
 
-    tileWidth = @width / 9
-    tileWidth = 64 if tileWidth < 64
-    tileWidth = 128 if tileWidth > 128
-    overlap = (tileWidth * 9 - @width) / 4
-    overlap = 0 if overlap < 0
-    leftMargin = 0.5 * (@width - (tileWidth - overlap) * 9) - tileWidth / 2
-    leftMargin = 0 if leftMargin < 0
-    tileHeight = tileWidth * @height / @width
-    iconPosition = leftMargin + (tileWidth - overlap) * position
-    iconified = @links[position].iconified
-    alpha = 0.25 + 0.75 * iconified
+    alpha = 0.25 + 0.75 * @links[position].iconified
 
-    # Draw the icon (TODO refactor into its own method)
-    @gl.viewport(
-      iconPosition,
-      @height-tileHeight,
-      tileWidth,
-      tileHeight)
+    # Draw the icon
+    @links[position].iconBox.viewport @gl
     @gl.enable(@gl.BLEND)
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     program = @programs.wireframe
@@ -196,16 +182,11 @@ class Renderer
     program.color[3] = 1
 
     # Draw the solid knot
-    t = 1-iconified
-    w = t*@width + (1-t)*tileWidth
-    h = t*@height + (1-t)*tileHeight
-    left = (1-t) * iconPosition
-    top = (1-t) * (@height-tileHeight)
-    @gl.viewport(left,top,w,h)
+    @links[position].centralBox.viewport @gl
     program = @programs.solidmesh
     @gl.enable(@gl.DEPTH_TEST)
     @gl.useProgram(program)
-    @gl.setColor(program.color)
+    @gl.setColor(program.color, 1)
     @gl.uniformMatrix4fv(program.projection, false, @projection)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
