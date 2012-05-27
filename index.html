@@ -23,11 +23,8 @@
 <script type="text/javascript" src="js/tube.js"></script>
 </head>
 
-<body style="margin:0;background-color:#ccc" onresize="layout()" onload="init()">
-  <div id="wideband"
-       onclick="mouseClick(event)"
-       onmousemove="mouseMove(event)"
-       onmouseout="mouseLeave()">
+<body style="margin:0;background-color:#ccc" onresize="layout()">
+  <div id="wideband">
 
     <!-- CANVAS PAGE -->
     <div id="canvaspage">
@@ -41,12 +38,7 @@
       <p>
         Call me Ishmael.  Some years ago - never mind how long precisely - having little or no money in my purse, and nothing particular to interest me on shore...
       </p>
-      <div style="right: -10px"
-           id="rightarrow"
-           onmouseover="inArrow(this)"
-           onmouseout="outArrow(this)"
-           onclick="clickArrow(this)"
-           class="arrow">
+      <div style="right: -10px" id="rightarrow" class="arrow">
           <span class="icon-right"></span>
       </div>
     </div>
@@ -58,18 +50,12 @@
       <div id="superscript" class="numeral" style="bottom:110px;right:20px;font-size: 50px;">&nbsp;</div>
       <div id="subscript"   class="numeral" style="bottom: 30px;right:20px;font-size: 50px;">&nbsp;</div>
 
-      <div style="left: -10px"
-           id="leftarrow"
-           onmouseover="inArrow(this)"
-           onmouseout="outArrow(this)"
-           onclick="clickArrow(this)"
-           class="arrow">
+      <div style="left: -10px" id="leftarrow" class="arrow">
         <span class="icon-left"></span>
         <span class="icon-github"></span>
-        <span class="icon-cog"></span> <!-- There should be an option to remove the hot pinkness -->
+        <span class="icon-cog"></span>
         <span class="icon-link"></span>
       </div>
     </div>
-
   </div>
 </body>

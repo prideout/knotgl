@@ -10,22 +10,10 @@ TEXCOORD = 2;
 function glerr(msg) { $.gritter.add({ title: 'WebGL Error', text: msg }); }
 function toast(msg) { $.gritter.add({ title: 'Notice', text: msg }); }
 
-// Key Handler
 $(document).keydown(function(e){
     if (e.keyCode == 37) window.OnKeyDown('left');
     if (e.keyCode == 39) window.OnKeyDown('right');
 });
-
-function init()
-{
-    window.mouse = {}
-    window.mouse.position = {x: -1, y: -1};
-    window.mouse.within = false;
-    window.mouse.hot = false;
-    window.pan = {x: 0};
-    window.AppInit();
-    layout();
-}
 
 function layout()
 {
@@ -49,30 +37,6 @@ function layout()
     updateTween();
 }
 
-function inArrow(element)
-{
-    q = $("#" + element.id)
-    q.css('color', '#cdf');
-    window.mouse.hot = 1;
-}
-
-function outArrow(element)
-{
-    q = $("#" + element.id)
-    q.css({'color' : ''});
-    window.mouse.hot = false;
-}
-
-function clickArrow(element)
-{
-    panTarget = element.id == "leftarrow" ? window.pan.width : 0
-    tween = new TWEEN.Tween(window.pan)
-        .to({x: panTarget}, 1000)
-        .easing(TWEEN.Easing.Bounce.Out)
-        .onUpdate(updateTween);
-    tween.start()
-}
-
 function updateTween()
 {
     w = parseInt($("#canvaspage").css('width'));
@@ -83,23 +47,52 @@ function updateTween()
     $("#rightpage").css("width", w - 40);
 }
 
-function mouseMove(event)
-{
-    var p = $('#wideband').position();
-    var x = window.mouse.position.x = event.clientX - p.left;
-    var y = window.mouse.position.y = event.clientY - p.top;
-    window.mouse.within = 1;
-}
-
-function mouseClick(event)
-{
-    mouseMove(event);
-    window.MouseClick();
-}
-
-function mouseLeave(event)
-{
-    window.mouse.position.x = -1;
-    window.mouse.position.y = -1;
+$(document).ready(function(e){
+    window.mouse = {}
+    window.mouse.position = {x: -1, y: -1};
     window.mouse.within = false;
-}
+    window.mouse.hot = false;
+    window.pan = {x: 0};
+    window.AppInit();
+    layout();
+
+    $(".arrow").mouseover(function(){
+      $(this).css('color', '#cdf');
+      window.mouse.hot = 1;
+    });
+
+    $(".arrow").mouseout(function(){
+      $(this).css({'color' : ''});
+      window.mouse.hot = false;
+    });
+
+    $(".arrow").click(function(){
+      panTarget = $(this).attr('id') == "leftarrow" ? window.pan.width : 0
+      tween = new TWEEN.Tween(window.pan)
+          .to({x: panTarget}, 1000)
+          .easing(TWEEN.Easing.Bounce.Out)
+          .onUpdate(updateTween);
+      tween.start()
+    });
+
+    $("#wideband").mousemove(function(e){
+        var p = $(this).position();
+        var x = window.mouse.position.x = e.clientX - p.left;
+        var y = window.mouse.position.y = e.clientY - p.top;
+        window.mouse.within = 1;
+    });
+
+    $("#wideband").click(function(e){
+        var p = $(this).position();
+        var x = window.mouse.position.x = e.clientX - p.left;
+        var y = window.mouse.position.y = e.clientY - p.top;
+        window.mouse.within = 1;
+        window.MouseClick();
+    });
+
+    $("#wideband").mouseout(function(e){
+        window.mouse.position.x = -1;
+        window.mouse.position.y = -1;
+        window.mouse.within = false;
+    });
+});
