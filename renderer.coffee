@@ -52,12 +52,14 @@ class Renderer
     currentSelection = @selectionIndex
     nextSelection = currentSelection + increment
     return if nextSelection >= @links.length or nextSelection < 0
+    return if nextSelection == currentSelection
     @changeSelection(nextSelection)
 
   changeSelection: (nextSelection) ->
 
     currentSelection = @selectionIndex
     @selectionIndex = nextSelection
+    root.AnimateNumerals()
 
     # Note that "iconified" is an animation percentange in [0,1]
     # If the current selection has animation = 0, then start a new transition.
@@ -71,7 +73,6 @@ class Renderer
         .easing(TWEEN.Easing.Bounce.Out)
       root.incoming.start()
       root.outgoing.start()
-      return true
 
     # If we reached this point, we're interupting an in-progress transition.
     # We instantly snap the currently-incoming element back to the toolbar

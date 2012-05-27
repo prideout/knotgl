@@ -28,15 +28,13 @@ root.UpdateLabels = UpdateLabels = ->
   $("#superscript").text(labels.numComponents)
 
 root.OnKeyDown = (keyname) ->
-  dirty = false
   switch keyname
-    when 'left'  then dirty = root.renderer.moveSelection(-1)
-    when 'right' then dirty = root.renderer.moveSelection(+1)
-  return if not dirty
+    when 'left'  then root.renderer.moveSelection(-1)
+    when 'right' then root.renderer.moveSelection(+1)
 
+root.AnimateNumerals = ->
   root.collapse.stop() if root.collapse?
   root.expand.stop() if root.expand?
-
   duration = 0.25 * root.renderer.transitionMilliseconds
   root.collapse = A = new TWEEN.Tween(CurrentSizes)
     .to(CollapsedSizes, duration)
