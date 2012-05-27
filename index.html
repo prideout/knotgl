@@ -15,7 +15,6 @@
 <script type="text/javascript" src="js/globals.js"></script>
 <script type="text/javascript" src="js/knotgl-min.js"></script>
 <script type="text/javascript">
-var pan;
 var tween;
 function init()
 {
@@ -23,7 +22,7 @@ function init()
     window.mouse.position = {x: -1, y: -1};
     window.mouse.within = false;
     window.mouse.hot = false;
-    pan = {x: 0};
+    window.pan = {x: 0};
     window.AppInit();
     layout();
 }
@@ -36,7 +35,7 @@ function layout()
     bodyWidth = parseInt($("body").css('width'));
     $("#wideband").css("left", bodyWidth / 2 - width / 2);
 
-    width = parseInt($("#canvaspage").css('width'));
+    width = window.pan.width = parseInt($("#canvaspage").css('width'));
     height = parseInt($("#canvaspage").css('height'));
     c = $("canvas").get(0);
     c.clientWidth = width;
@@ -52,23 +51,18 @@ function inArrow(element)
 {
     q = $("#" + element.id)
     q.css('color', '#cdf');
-    //q.css('font-weight', '600');
-    //q.css('cursor', 'pointer');
     window.mouse.hot = 1;
 }
 function outArrow(element)
 {
     q = $("#" + element.id)
     q.css({'color' : ''});
-    //q.css({'font-weight' : ''});
-    //q.css({'cursor' : ''});
     window.mouse.hot = false;
 }
 function clickArrow(element)
 {
-    width = parseInt($("#canvaspage").css('width'));
-    panTarget = element.id == "leftarrow" ? width : 0
-    tween = new TWEEN.Tween(pan)
+    panTarget = element.id == "leftarrow" ? window.pan.width : 0
+    tween = new TWEEN.Tween(window.pan)
         .to({x: panTarget}, 1000)
         .easing(TWEEN.Easing.Bounce.Out)
         .onUpdate(updateTween);
@@ -78,9 +72,9 @@ function updateTween()
 {
     w = parseInt($("#canvaspage").css('width'));
     h = parseInt($("#canvaspage").css('height'));
-    $("#leftpage").css("left", -w + pan.x);
+    $("#leftpage").css("left", -w + window.pan.x);
     $("#leftpage").css("width", w - 40);
-    $("#rightpage").css("left", 0 + pan.x);
+    $("#rightpage").css("left", 0 + window.pan.x);
     $("#rightpage").css("width", w - 40);
 }
 function mouseMove(event)

@@ -172,6 +172,15 @@ class Renderer
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
 
+  setViewport: (box) ->
+    box = box.translated(window.pan.x,0)
+    canvasBox = new aabb 0, 0, @width, @height
+    box = aabb.intersect(box, canvasBox)
+    if box.degenerate()
+      @gl.viewport(0,0,1,1)
+    else
+      box.viewport @gl
+
   renderKnot: (knot, link) ->
 
     black = [0,0,0]
@@ -179,7 +188,7 @@ class Renderer
     alpha = 0.25 + 0.75 * link.iconified
 
     # Draw the icon
-    link.iconBox.viewport @gl
+    @setViewport link.iconBox
     @gl.enable(@gl.BLEND)
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     program = @programs.wireframe
@@ -214,7 +223,7 @@ class Renderer
     @gl.disableVertexAttribArray(POSITION)
 
     # Draw the solid knot
-    link.centralBox.viewport @gl
+    @setViewport link.centralBox
     program = @programs.solidmesh
     @gl.enable(@gl.DEPTH_TEST)
     @gl.useProgram(program)

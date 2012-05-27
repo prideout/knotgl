@@ -12,7 +12,7 @@ appFiles  = [
 
 graceful = true
 doMinify = true
-linux = true
+linux = false
 
 task 'build', 'Build single application file from source files', ->
   appname = 'knotgl'
@@ -50,7 +50,7 @@ task 'watch', 'Watch prod source files and build changes', ->
   console.log "Watching for changes"
 
   for file in appFiles then do (file) ->
-    watch = if linux then fs.watch else fs.watchFile
+    watch = if linux then fs.watchFile else fs.watch
     watch "#{file}.coffee", (curr, prev) ->
       if +curr.mtime isnt +prev.mtime
         console.log "Saw change in #{file}.coffee"

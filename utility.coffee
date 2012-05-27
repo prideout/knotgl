@@ -41,6 +41,15 @@ utility.aabb = class aabb
   centery: -> (@bottom + @top) / 2
   size: -> [@width(), @height()]
   viewport: (gl) -> gl.viewport @left, @top, @width(), @height()
+  translated: (x,y) -> new aabb @left+x,@top+y,@right+x,@bottom+y
+
+  @intersect: (a, b) -> new aabb(
+    Math.max(a.left,b.left),
+    Math.max(a.top,b.top),
+    Math.min(a.right,b.right),
+    Math.min(a.bottom,b.bottom))
+
+  degenerate: -> @left >= @right or @top >= @bottom
 
   inflate: (delta) ->
     @left -= delta
