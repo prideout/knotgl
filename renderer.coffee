@@ -93,23 +93,31 @@ class Renderer
       @programs[name] = @compileProgram vs, fs, metadata.attribs, metadata.uniforms
 
   render: ->
+
+    # Request the next render cycle on vertical refresh (vsync).
     r = -> root.renderer.render()
     window.requestAnimationFrame(r, $("canvas").get(0))
+
+    # Update all the tweening workers for snazzy animations and whatnot.
     TWEEN.update()
+
+    # Update the Alexander-Briggs labels unless they're collapse-animating.
     root.UpdateLabels() if root.UpdateLabels?
 
+    # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
+    # or the coffeescript logic can make it hot (this.hotMouse).
     cursor = if @hotMouse or window.mouse.hot then 'pointer' else ''
     $('#rightpage').css({'cursor' : cursor})
     $('#leftpage').css({'cursor' : cursor})
 
-    # Update the spinning animation
+    # Update the spinning animation.
     currentTime = new Date().getTime()
     if @previousTime?
       elapsed = currentTime - @previousTime
       @theta += @radiansPerSecond * elapsed if @spinning
     @previousTime = currentTime
 
-    # Adjust the camera and compute various transforms
+    # Adjust the camera and compute various transforms.
     @projection = mat4.perspective(fov = 45, aspect = @width/@height, near = 5, far = 90)
     view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
     model = mat4.create()
@@ -124,12 +132,13 @@ class Renderer
     #@gl.clearColor(1,0,0,1)
     #@gl.clear(@gl.COLOR_BUFFER_BIT)
 
-    # Draw each knot in succession
+    # Draw each knot in its respective viewport
     @updateViewports()
     @renderKnot(knot, link) for knot in link for link in @links
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
   # Annotates each link with 'iconBox' and 'centralBox', which are aabb objects.
+  # If a transition animation is underway, centralBox is an interpolated result.
   updateViewports: ->
     w = tileWidth = @width / @links.length
     h = tileHeight = tileWidth * @height / @width
