@@ -61,11 +61,8 @@
 
   root.AnimateNumerals = function() {
     var A, B, duration;
-    if (root.collapse != null) {
-      root.collapse.stop();
-    }
-    if (root.expand != null) {
-      root.expand.stop();
+    if ((root.collapse != null) || (root.expand != null)) {
+      return;
     }
     duration = 0.25 * root.renderer.transitionMilliseconds;
     root.collapse = A = new TWEEN.Tween(root.CurrentSizes).to(CollapsedSizes, duration).easing(TWEEN.Easing.Quintic.In).onUpdate(UpdateNumeralSizes);
@@ -73,7 +70,11 @@
     A.chain(B);
     root.UpdateLabels = null;
     root.collapse.onComplete(function() {
-      return root.UpdateLabels = UpdateLabels;
+      root.UpdateLabels = UpdateLabels;
+      return root.collapse = null;
+    });
+    root.expand.onComplete(function() {
+      return root.expand = null;
     });
     return A.start();
   };

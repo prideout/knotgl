@@ -37,8 +37,7 @@ root.OnKeyDown = (keyname) ->
     when 'right' then root.renderer.moveSelection(+1)
 
 root.AnimateNumerals = ->
-  root.collapse.stop() if root.collapse?
-  root.expand.stop() if root.expand?
+  return if root.collapse? or root.expand?
   duration = 0.25 * root.renderer.transitionMilliseconds
   root.collapse = A = new TWEEN.Tween(root.CurrentSizes)
     .to(CollapsedSizes, duration)
@@ -54,6 +53,9 @@ root.AnimateNumerals = ->
   root.UpdateLabels = null
   root.collapse.onComplete ->
     root.UpdateLabels = UpdateLabels
+    root.collapse = null
+  root.expand.onComplete ->
+    root.expand = null
 
   A.start()
 
