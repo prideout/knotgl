@@ -231,11 +231,19 @@
       return this.gl.uniform4f(loc, c[0], c[1], c[2], α);
     };
 
-    Renderer.prototype.setViewport = function(box) {
-      var canvasBox;
+    Renderer.prototype.setViewport = function(box, projectionUniform) {
+      var cropMatrix, cropRegion, entireViewport, proj;
       box = box.translated(window.pan.x, 0);
-      canvasBox = new aabb(0, 0, this.width, this.height);
-      box = aabb.intersect(box, canvasBox);
+      entireViewport = new aabb(0, 0, this.width, this.height);
+      box = aabb.intersect(box, entireViewport);
+      cropRegion = new aabb(0, 0, entireViewport.width(), entireViewport.height());
+      cropMatrix = aabb.cropMatrix(cropRegion, entireViewport);
+      mat4.transpose(cropMatrix);
+      proj = mat4.create(this.projection);
+      mat4.multiply(proj, cropMatrix);
+      this.gl.uniformMatrix4fv(projectionUniform, false, proj);
+      entireViewport.viewport(this.gl);
+      return;
       if (box.degenerate()) {
         return this.gl.viewport(0, 0, 1, 1);
       } else {
@@ -248,15 +256,14 @@
       black = [0, 0, 0];
       gray = [.1, .1, .1];
       alpha = 0.25 + 0.75 * link.iconified;
-      this.setViewport(link.iconBox);
-      this.gl.enable(this.gl.BLEND);
-      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       program = this.programs.wireframe;
       this.gl.useProgram(program);
+      this.setViewport(link.iconBox, program.projection);
+      this.gl.enable(this.gl.BLEND);
+      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
       this.gl.enableVertexAttribArray(POSITION);
       this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
-      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniform1f(program.scale, this.tubeGen.scale);
       this.setColor(program.color, black, alpha);
@@ -277,12 +284,11 @@
       this.gl.uniform1f(program.depthOffset, -0.5);
       this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
       this.gl.disableVertexAttribArray(POSITION);
-      this.setViewport(link.centralBox);
       program = this.programs.solidmesh;
       this.gl.enable(this.gl.DEPTH_TEST);
       this.gl.useProgram(program);
+      this.setViewport(link.centralBox, program.projection);
       this.setColor(program.color, knot.color, 1);
-      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniformMatrix3fv(program.normalmatrix, false, this.normalMatrix);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);
@@ -303,7 +309,7 @@
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       program = this.programs.wireframe;
       this.gl.useProgram(program);
-      this.gl.uniformMatrix4fv(program.projection, false, this.projection);
+      this.setViewport(link.centralBox, program.projection);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniform1f(program.scale, 1);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, knot.tube);

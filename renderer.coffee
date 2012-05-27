@@ -173,10 +173,25 @@ class Renderer
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
 
-  setViewport: (box) ->
+  setViewport: (box, projectionUniform) ->
     box = box.translated(window.pan.x,0)
-    canvasBox = new aabb 0, 0, @width, @height
-    box = aabb.intersect(box, canvasBox)
+    entireViewport = new aabb(0, 0, @width, @height)
+    box = aabb.intersect(box, entireViewport)
+
+    #cropRegion = new aabb(entireViewport.width()/2, entireViewport.height()/2, entireViewport.width(), entireViewport.height())
+    cropRegion = new aabb(0, 0, entireViewport.width(), entireViewport.height())
+
+    cropMatrix = aabb.cropMatrix(cropRegion, entireViewport)
+    mat4.transpose(cropMatrix)
+    #cropMatrix = mat4.identity()
+
+    proj = mat4.create(@projection)
+    mat4.multiply(proj, cropMatrix)
+    @gl.uniformMatrix4fv(projectionUniform, false, proj)
+
+    entireViewport.viewport @gl
+    return
+
     if box.degenerate()
       @gl.viewport(0,0,1,1)
     else
@@ -189,15 +204,14 @@ class Renderer
     alpha = 0.25 + 0.75 * link.iconified
 
     # Draw the icon
-    @setViewport link.iconBox
-    @gl.enable(@gl.BLEND)
-    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     program = @programs.wireframe
     @gl.useProgram(program)
+    @setViewport link.iconBox, program.projection
+    @gl.enable(@gl.BLEND)
+    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
     @gl.enableVertexAttribArray(POSITION)
     @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-    @gl.uniformMatrix4fv(program.projection, false, @projection)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniform1f(program.scale, @tubeGen.scale)
     @setColor(program.color, black, alpha)
@@ -224,12 +238,11 @@ class Renderer
     @gl.disableVertexAttribArray(POSITION)
 
     # Draw the solid knot
-    @setViewport link.centralBox
     program = @programs.solidmesh
     @gl.enable(@gl.DEPTH_TEST)
     @gl.useProgram(program)
+    @setViewport link.centralBox, program.projection
     @setColor(program.color, knot.color, 1)
-    @gl.uniformMatrix4fv(program.projection, false, @projection)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
@@ -251,7 +264,7 @@ class Renderer
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     program = @programs.wireframe
     @gl.useProgram(program)
-    @gl.uniformMatrix4fv(program.projection, false, @projection)
+    @setViewport link.centralBox, program.projection
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniform1f(program.scale, 1)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
