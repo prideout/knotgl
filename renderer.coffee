@@ -21,6 +21,7 @@ class Renderer
     @vbos = {}
     @programs = {}
     @selectionIndex = 0
+    @hotMouse = false
     @tubeGen = new root.TubeGenerator
     @tubeGen.polygonSides = 10
     @tubeGen.bézierSlices = 3
@@ -97,6 +98,10 @@ class Renderer
     TWEEN.update()
     root.UpdateLabels() if root.UpdateLabels?
 
+    cursor = if @hotMouse or window.mouse.hot then 'pointer' else ''
+    $('#rightpage').css({'cursor' : cursor})
+    $('#leftpage').css({'cursor' : cursor})
+
     # Update the spinning animation
     currentTime = new Date().getTime()
     if @previousTime?
@@ -132,14 +137,17 @@ class Renderer
     x = tileWidth / 2
     bigBox = new aabb 0, 0, @width, @height
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
+    @hotMouse = false
     for link in @links
       iconBox = aabb.createFromCenter [x,y], [w,h]
       distance = vec2.dist([x,y], mouse)
-      if distance < w and link.iconified is 1
+      radius = h/2
+      if distance < radius and link.iconified is 1
         # 'd' is normalized proximity between mouse and icon center
-        d = 1 - distance / w
-        maxExpansion = w / 3
+        d = 1 - distance / radius
+        maxExpansion = radius / 3
         iconBox.inflate(d*d * maxExpansion)
+        @hotMouse = true
       link.iconBox = iconBox
       t = 1-link.iconified
       link.centralBox = aabb.lerp iconBox, bigBox, t

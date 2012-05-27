@@ -22,6 +22,7 @@ function init()
     window.mouse = {}
     window.mouse.position = {x: -1, y: -1};
     window.mouse.within = false;
+    window.mouse.hot = false;
     pan = {x: 0};
     window.AppInit();
     layout();
@@ -52,14 +53,16 @@ function inArrow(element)
     q = $("#" + element.id)
     q.css('color', '#cdf');
     //q.css('font-weight', '600');
-    q.css('cursor', 'pointer');
+    //q.css('cursor', 'pointer');
+    window.mouse.hot = 1;
 }
 function outArrow(element)
 {
     q = $("#" + element.id)
     q.css({'color' : ''});
     //q.css({'font-weight' : ''});
-    q.css({'cursor' : ''});
+    //q.css({'cursor' : ''});
+    window.mouse.hot = false;
 }
 function clickArrow(element)
 {
