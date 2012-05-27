@@ -51,16 +51,18 @@ utility.aabb = class aabb
 
   degenerate: -> @left >= @right or @top >= @bottom
 
-  inflate: (delta) ->
+  inflate: (delta, deltay) ->
     @left -= delta
-    @top -= delta
     @right += delta
+    delta = deltay if deltay?
+    @top -= delta
     @bottom += delta
 
-  deflate: (delta) ->
+  deflate: (delta, deltay) ->
     @left += delta
-    @top += delta
     @right -= delta
+    delta = deltay if deltay?
+    @top += delta
     @bottom -= delta
 
   @lerp: (a, b, t) ->
@@ -75,6 +77,8 @@ utility.aabb = class aabb
   # See bottom of:
   #   http://github.prideout.net/barrel-distortion/
   @cropMatrix: (cropRegion, entireViewport) ->
+    # TODO this can be simplified with high-school math skills!
+    cropRegion = cropRegion.translated cropRegion.width()/2, cropRegion.height()/2
     sx = entireViewport.width() / cropRegion.width()
     sy = entireViewport.height() / cropRegion.height()
     tx = (entireViewport.width() + 2 * (entireViewport.left - cropRegion.left)) / cropRegion.width()

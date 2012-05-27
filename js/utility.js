@@ -93,17 +93,23 @@
       return this.left >= this.right || this.top >= this.bottom;
     };
 
-    aabb.prototype.inflate = function(delta) {
+    aabb.prototype.inflate = function(delta, deltay) {
       this.left -= delta;
-      this.top -= delta;
       this.right += delta;
+      if (deltay != null) {
+        delta = deltay;
+      }
+      this.top -= delta;
       return this.bottom += delta;
     };
 
-    aabb.prototype.deflate = function(delta) {
+    aabb.prototype.deflate = function(delta, deltay) {
       this.left += delta;
-      this.top += delta;
       this.right -= delta;
+      if (deltay != null) {
+        delta = deltay;
+      }
+      this.top += delta;
       return this.bottom -= delta;
     };
 
@@ -118,6 +124,7 @@
 
     aabb.cropMatrix = function(cropRegion, entireViewport) {
       var m, sx, sy, tx, ty;
+      cropRegion = cropRegion.translated(cropRegion.width() / 2, cropRegion.height() / 2);
       sx = entireViewport.width() / cropRegion.width();
       sy = entireViewport.height() / cropRegion.height();
       tx = (entireViewport.width() + 2 * (entireViewport.left - cropRegion.left)) / cropRegion.width();
