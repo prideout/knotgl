@@ -31,21 +31,13 @@
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         glerr("OpenGL error during init");
       }
+      this.parseMetadata();
       this.downloadSpines();
     }
 
-    Renderer.prototype.onDownloadComplete = function(data) {
-      var Colors, TableRow, id, knot, link, range, ranges, rawVerts, x, _i, _j, _len, _len1, _ref;
-      rawVerts = data['centerlines'];
-      this.spines = new Float32Array(rawVerts);
-      this.vbos.spines = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, this.spines, this.gl.STATIC_DRAW);
-      if (this.gl.getError() !== this.gl.NO_ERROR) {
-        glerr("Error when trying to create spine VBO");
-      }
-      toast("downloaded " + (this.spines.length / 3) + " verts of spine data");
-      Colors = [[1, 1, 1, 0.75], [0.25, 0.5, 1, 0.75], [1, 0.5, 0.25, 0.75]];
+    Renderer.prototype.parseMetadata = function() {
+      var KnotColors, TableRow, id, knot, link, range, ranges, x, _i, _j, _len, _len1, _ref;
+      KnotColors = [[1, 1, 1, 0.75], [0.25, 0.5, 1, 0.75], [1, 0.5, 0.25, 0.75]];
       TableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3";
       this.links = [];
       _ref = TableRow.split(' ');
@@ -68,15 +60,45 @@
           range = ranges[_j];
           knot = {};
           knot.range = range;
-          knot.vbos = this.tessKnot(range);
-          knot.color = Colors[ranges.indexOf(range)];
+          knot.color = KnotColors[ranges.indexOf(range)];
           link.push(knot);
         }
         link.iconified = 1;
         link.id = id;
         this.links.push(link);
       }
-      this.links[this.selectedColumn].iconified = 0;
+      return this.links[this.selectedColumn].iconified = 0;
+    };
+
+    Renderer.prototype.downloadSpines = function() {
+      var worker;
+      worker = new Worker('js/downloader.js');
+      worker.renderer = this;
+      worker.onmessage = function(response) {
+        return this.renderer.onDownloadComplete(response.data);
+      };
+      return worker.postMessage(document.URL + 'data/centerlines.bin');
+    };
+
+    Renderer.prototype.onDownloadComplete = function(data) {
+      var knot, link, rawVerts, _i, _j, _len, _len1, _ref;
+      rawVerts = data['centerlines'];
+      this.spines = new Float32Array(rawVerts);
+      this.vbos.spines = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, this.spines, this.gl.STATIC_DRAW);
+      if (this.gl.getError() !== this.gl.NO_ERROR) {
+        glerr("Error when trying to create spine VBO");
+      }
+      toast("downloaded " + (this.spines.length / 3) + " verts of spine data");
+      _ref = this.links;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        link = _ref[_i];
+        for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
+          knot = link[_j];
+          knot.vbos = this.tessKnot(knot.range);
+        }
+      }
       root.UpdateLabels();
       return this.render();
     };
@@ -128,16 +150,6 @@
       this.links[currentSelection].iconified = 1;
       this.links[nextSelection].iconified = iconified;
       return root.incoming.replace(this.links[nextSelection]);
-    };
-
-    Renderer.prototype.downloadSpines = function() {
-      var worker;
-      worker = new Worker('js/downloader.js');
-      worker.renderer = this;
-      worker.onmessage = function(response) {
-        return this.renderer.onDownloadComplete(response.data);
-      };
-      return worker.postMessage(document.URL + 'data/centerlines.bin');
     };
 
     Renderer.prototype.compileShaders = function() {

@@ -21,7 +21,40 @@ class Renderer
     @compileShaders()
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
+    @parseMetadata()
     @downloadSpines()
+
+  # Read the metadata table (see knots.coffee) and arrange it into a "links" array.
+  # Each "link" is an annotated array of "knot" objects.
+  # Link properties: id, iconified, iconBox, centralBox.
+  # Knot properties: range, vbos, color.
+  # Each "range" is an [index, count] pair that defines a window into the raw spine data.
+  parseMetadata: ->
+    KnotColors = [
+      [1,1,1,0.75]
+      [0.25,0.5,1,0.75]
+      [1,0.5,0.25,0.75]
+    ]
+    TableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
+    @links = []
+    for id in TableRow.split(' ')
+      link = []
+      ranges = (x[1..] for x in root.links when x[0] is id)[0]
+      for range in ranges
+        knot = {}
+        knot.range = range
+        knot.color = KnotColors[ranges.indexOf(range)]
+        link.push(knot)
+      link.iconified = 1
+      link.id = id
+      @links.push(link)
+    @links[@selectedColumn].iconified = 0
+
+  downloadSpines: ->
+    worker = new Worker 'js/downloader.js'
+    worker.renderer = this
+    worker.onmessage = (response) -> @renderer.onDownloadComplete(response.data)
+    worker.postMessage(document.URL + 'data/centerlines.bin')
 
   onDownloadComplete: (data) ->
     rawVerts = data['centerlines']
@@ -31,36 +64,9 @@ class Renderer
     @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
     glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
     toast("downloaded #{@spines.length / 3} verts of spine data")
-
-    # TODO most of the following code (except tessKnot) can be done BEFORE onDownloadComplete
-
-    # Component colors
-    Colors = [
-      [1,1,1,0.75]
-      [0.25,0.5,1,0.75]
-      [1,0.5,0.25,0.75]
-    ]
-    TableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
-
-    # A "link" is an array of "knot" objects.
-    # Link properties: id, iconified, iconBox, centralBox.
-    # Knot properties: range, vbos, color.
-
-    @links = []
-    for id in TableRow.split(' ')
-      link = []
-      # Each range is an [index, count] pair
-      ranges = (x[1..] for x in root.links when x[0] is id)[0]
-      for range in ranges
-        knot = {}
-        knot.range = range
-        knot.vbos = @tessKnot(range) # <---- TODO fork this out.
-        knot.color = Colors[ranges.indexOf(range)]
-        link.push(knot)
-      link.iconified = 1
-      link.id = id
-      @links.push(link)
-    @links[@selectedColumn].iconified = 0
+    for link in @links
+      for knot in link
+        knot.vbos = @tessKnot(knot.range)
 
     root.UpdateLabels()
     @render()
@@ -103,12 +109,6 @@ class Renderer
     @links[currentSelection].iconified = 1
     @links[nextSelection].iconified = iconified
     root.incoming.replace(@links[nextSelection])
-
-  downloadSpines: ->
-    worker = new Worker 'js/downloader.js'
-    worker.renderer = this
-    worker.onmessage = (response) -> @renderer.onDownloadComplete(response.data)
-    worker.postMessage(document.URL + 'data/centerlines.bin')
 
   compileShaders: ->
     for name, metadata of root.shaders
