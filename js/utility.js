@@ -146,7 +146,7 @@
       m[13] = 0;
       m[14] = 0;
       m[15] = 1;
-      return m;
+      return mat4.transpose(m);
     };
 
     return aabb;

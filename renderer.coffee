@@ -182,8 +182,6 @@ class Renderer
     cropRegion = new aabb(0, 0, entireViewport.width(), entireViewport.height())
 
     cropMatrix = aabb.cropMatrix(cropRegion, entireViewport)
-    mat4.transpose(cropMatrix)
-    #cropMatrix = mat4.identity()
 
     proj = mat4.create(@projection)
     mat4.multiply(proj, cropMatrix)

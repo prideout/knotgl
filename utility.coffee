@@ -88,4 +88,5 @@ utility.aabb = class aabb
     m[4] = 0; m[5] = sy; m[6] = 0; m[7] = ty;
     m[8] = 0; m[9] = 0; m[10] = 1; m[11] = 0;
     m[12] = 0; m[13] = 0; m[14] = 0; m[15] = 1;
-    m
+    mat4.transpose(m)
+

@@ -238,7 +238,6 @@
       box = aabb.intersect(box, entireViewport);
       cropRegion = new aabb(0, 0, entireViewport.width(), entireViewport.height());
       cropMatrix = aabb.cropMatrix(cropRegion, entireViewport);
-      mat4.transpose(cropMatrix);
       proj = mat4.create(this.projection);
       mat4.multiply(proj, cropMatrix);
       this.gl.uniformMatrix4fv(projectionUniform, false, proj);
