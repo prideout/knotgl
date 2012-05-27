@@ -119,7 +119,7 @@ class Renderer
 
     # Draw each knot in succession
     @updateViewports()
-    (@renderKnot(knot, link) for knot in link) for link in @links
+    @renderKnot(knot, link) for knot in link for link in @links
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
   # Annotates each link with 'iconBox' and 'centralBox', which are aabb objects.
@@ -135,15 +135,13 @@ class Renderer
       @links[p].centralBox = aabb.lerp iconBox, bigBox, t
       x = x + w
 
+  # Shortcut for setting up a vec4 color uniform
+  setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
+
   renderKnot: (knot, link) ->
 
-    @gl.setColor = (colorLocation, alpha) -> @uniform4f(
-      colorLocation,
-      knot.color[0],
-      knot.color[1],
-      knot.color[2],
-      alpha)
-
+    black = [0,0,0]
+    gray = [.1,.1,.1]
     alpha = 0.25 + 0.75 * link.iconified
 
     # Draw the icon
@@ -158,7 +156,7 @@ class Renderer
     @gl.uniformMatrix4fv(program.projection, false, @projection)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniform1f(program.scale, @tubeGen.scale)
-    @gl.uniform4f(program.color,0,0,0,alpha)
+    @setColor(program.color, black, alpha)
     [startVertex, vertexCount] = knot.centerline
     @gl.enable(@gl.DEPTH_TEST)
     @gl.lineWidth(2)
@@ -175,20 +173,18 @@ class Renderer
     # Draw a thinner center line down the spine for added depth.
     @gl.enable(@gl.BLEND)
     @gl.lineWidth(2)
-    @gl.setColor(program.color, alpha)
+    @setColor(program.color, knot.color, alpha)
     @gl.uniform2f(program.offset, 0,0)
     @gl.uniform1f(program.depthOffset, -0.5)
     @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
     @gl.disableVertexAttribArray(POSITION)
-    @gl.viewport(0,0,@width,@height)
-    program.color[3] = 1
 
     # Draw the solid knot
     link.centralBox.viewport @gl
     program = @programs.solidmesh
     @gl.enable(@gl.DEPTH_TEST)
     @gl.useProgram(program)
-    @gl.setColor(program.color, 1)
+    @setColor(program.color, knot.color, 1)
     @gl.uniformMatrix4fv(program.projection, false, @projection)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
@@ -221,21 +217,21 @@ class Renderer
     if @style == Style.WIREFRAME
       @gl.lineWidth(1)
       @gl.uniform1f(program.depthOffset, -0.01)
-      @gl.uniform4f(program.color, 0,0,0,0.75)
+      @setColor(program.color, black, 0.75)
       @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
     else if @style == Style.RINGS
       @gl.lineWidth(1)
       @gl.uniform1f(program.depthOffset, -0.01)
-      @gl.uniform4f(program.color, 0,0,0,0.75)
+      @setColor(program.color, black, 0.75)
       @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
     else
       @gl.lineWidth(2)
       @gl.uniform1f(program.depthOffset, 0.01)
-      @gl.uniform4f(program.color, 0,0,0,1)
+      @setColor(program.color, black, 1)
       @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
       if @sketchy
         @gl.lineWidth(1)
-        @gl.uniform4f(program.color, 0.1,0.1,0.1,1)
+        @setColor(program.color, gray, 1)
         @gl.uniform1f(program.depthOffset, -0.01)
         @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
 
