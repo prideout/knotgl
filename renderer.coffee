@@ -1,26 +1,18 @@
 root = exports ? this
 
-aabb = root.utility.aabb
-
-Style =
-  WIREFRAME: 0
-  SILHOUETTE: 1
-  RINGS: 2
-
 # All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
+
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.0003
     @transitionMilliseconds = 750
     @spinning = true
     @style = Style.SILHOUETTE
-    #@style = Style.WIREFRAME
-    #@style = Style.RINGS
     @sketchy = true
     @theta = 0
     @vbos = {}
     @programs = {}
-    @selectionIndex = 0
+    @selectedColumn = 0
     @hotMouse = false
     @tubeGen = new root.TubeGenerator
     @tubeGen.polygonSides = 10
@@ -39,26 +31,56 @@ class Renderer
     @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
     glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
     toast("downloaded #{@spines.length / 3} verts of spine data")
-    @genVertexBuffers()
+
+    # TODO most of the following code (except tessKnot) can be done BEFORE onDownloadComplete
+
+    # Component colors
+    Colors = [
+      [1,1,1,0.75]
+      [0.25,0.5,1,0.75]
+      [1,0.5,0.25,0.75]
+    ]
+    TableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
+
+    # A "link" is an array of "knot" objects.
+    # Link properties: id, iconified, iconBox, centralBox.
+    # Knot properties: range, vbos, color.
+
+    @links = []
+    for id in TableRow.split(' ')
+      link = []
+      # Each range is an [index, count] pair
+      ranges = (x[1..] for x in root.links when x[0] is id)[0]
+      for range in ranges
+        knot = {}
+        knot.range = range
+        knot.vbos = @tessKnot(range) # <---- TODO fork this out.
+        knot.color = Colors[ranges.indexOf(range)]
+        link.push(knot)
+      link.iconified = 1
+      link.id = id
+      @links.push(link)
+    @links[@selectedColumn].iconified = 0
+
+    root.UpdateLabels()
     @render()
 
-  getCurrentLink: ->
-    X = @links[@selectionIndex].id.split '.'
+  getCurrentLinkInfo: ->
+    X = @links[@selectedColumn].id.split '.'
     L = {crossings:X[0], numComponents:X[1], index:X[2]}
     L.numComponents = "" if L.numComponents == 1
     L
 
   moveSelection: (increment) ->
-    currentSelection = @selectionIndex
+    currentSelection = @selectedColumn
     nextSelection = currentSelection + increment
     return if nextSelection >= @links.length or nextSelection < 0
     return if nextSelection == currentSelection
     @changeSelection(nextSelection)
 
   changeSelection: (nextSelection) ->
-
-    currentSelection = @selectionIndex
-    @selectionIndex = nextSelection
+    currentSelection = @selectedColumn
+    @selectedColumn = nextSelection
     root.AnimateNumerals()
 
     # Note that "iconified" is an animation percentange in [0,1]
@@ -169,6 +191,7 @@ class Renderer
       link.centralBox = aabb.lerp bigBox, iconBox, link.iconified
       x = x + w
 
+  # Responds to a mouse click by checking to see if a knot icon was selected.
   click: ->
     return if not @links? or @links.length is 0
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
@@ -179,6 +202,8 @@ class Renderer
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
 
+  # Issues a gl.viewport and update the projection matrix according to the given aabb.
+  # The viewing aabb is clipped against the canvas size.
   setViewport: (box, projectionUniform) ->
     box = box.translated(window.pan.x,0)
     entireViewport = new aabb(0, 0, @width, @height)
@@ -194,8 +219,6 @@ class Renderer
 
   renderIconKnot: (knot, link) ->
 
-    alpha = 0.25 + 0.75 * link.iconified
-
     # Draw the thick black outer line.
     # Large values of lineWidth causes ugly fin gaps.
     # Redraw with screen-space offsets to achieve extra thickness.
@@ -209,8 +232,9 @@ class Renderer
     @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniform1f(program.scale, @tubeGen.scale)
+    alpha = 0.25 + 0.75 * link.iconified
     @setColor(program.color, COLORS.black, alpha)
-    [startVertex, vertexCount] = knot.centerline
+    [startVertex, vertexCount] = knot.range
     @gl.enable(@gl.DEPTH_TEST)
     @gl.lineWidth(2)
     for x in [-1..1] by 2
@@ -219,7 +243,7 @@ class Renderer
         @gl.uniform1f(program.depthOffset, 0)
         @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
 
-    # Draw a center line down the spine for added depth.
+    # Draw the center line using the color of the link component.
     @setColor(program.color, knot.color, alpha)
     @gl.uniform2f(program.offset, 0,0)
     @gl.uniform1f(program.depthOffset, -0.5)
@@ -227,8 +251,9 @@ class Renderer
     @gl.disableVertexAttribArray(POSITION)
 
   renderBigKnot: (knot, link, pass) ->
-
     return if link.iconified is 1
+    return if not knot.vbos?
+    vbos = knot.vbos
 
     # Draw the solid knot
     if pass is 0
@@ -239,16 +264,16 @@ class Renderer
         @setColor(program.color, knot.color, 1)
         @gl.uniformMatrix4fv(program.modelview, false, @modelview)
         @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
         @gl.enableVertexAttribArray(POSITION)
         @gl.enableVertexAttribArray(NORMAL)
         @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
         @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbos.triangles)
         if @style == Style.SILHOUETTE
           @gl.enable(@gl.POLYGON_OFFSET_FILL)
           @gl.polygonOffset(-1,12)
-        @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
+        @gl.drawElements(@gl.TRIANGLES, vbos.triangles.count, @gl.UNSIGNED_SHORT, 0)
         @gl.disableVertexAttribArray(POSITION)
         @gl.disableVertexAttribArray(NORMAL)
         @gl.disable(@gl.POLYGON_OFFSET_FILL)
@@ -262,51 +287,33 @@ class Renderer
         @setViewport link.centralBox, program.projection
         @gl.uniformMatrix4fv(program.modelview, false, @modelview)
         @gl.uniform1f(program.scale, 1)
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
         @gl.enableVertexAttribArray(POSITION)
         @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbos.wireframe)
         if @style == Style.WIREFRAME
           @gl.lineWidth(1)
           @gl.uniform1f(program.depthOffset, -0.01)
           @setColor(program.color, COLORS.black, 0.75)
-          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+          @gl.drawElements(@gl.LINES, vbos.wireframe.count, @gl.UNSIGNED_SHORT, 0)
         else if @style == Style.RINGS
           @gl.lineWidth(1)
           @gl.uniform1f(program.depthOffset, -0.01)
           @setColor(program.color, COLORS.black, 0.75)
-          @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
+          @gl.drawElements(@gl.LINES, vbos.wireframe.count/2, @gl.UNSIGNED_SHORT, vbos.wireframe.count)
         else
           @gl.lineWidth(2)
           @gl.uniform1f(program.depthOffset, 0.01)
           @setColor(program.color, COLORS.black, 1)
-          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+          @gl.drawElements(@gl.LINES, vbos.wireframe.count, @gl.UNSIGNED_SHORT, 0)
           if @sketchy
             @gl.lineWidth(1)
             @setColor(program.color, COLORS.darkgray, 1)
             @gl.uniform1f(program.depthOffset, -0.01)
-            @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
+            @gl.drawElements(@gl.LINES, vbos.wireframe.count/2, @gl.UNSIGNED_SHORT, vbos.wireframe.count)
         @gl.disableVertexAttribArray(POSITION)
 
-  # Returns a list of 'ranges' where each range is an [index, count] pair
-  # The required [0] at the end seems like a coffeescript bug but I'm not sure.
-  getLink: (id) -> (x[1..] for x in root.links when x[0] is id)[0]
-
-  genVertexBuffers: ->
-    tableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
-    @links = []
-    for id in tableRow.split(' ')
-      knots = (@tessKnot(component) for component in @getLink(id))
-      knots[0].color = [1,1,1,0.75]
-      knots[1].color = [0.25,0.5,1,0.75] if knots.length > 1
-      knots[2].color = [1,0.5,0.25,0.75] if knots.length > 2
-      knots.iconified = 1
-      knots.id = id
-      @links.push(knots)
-    @links[0].iconified = 0
-    root.UpdateLabels()
-
-  # Tessellate the given knot
+  # Tessellate the given knot and create VBOs
   tessKnot: (component) ->
 
     # Perform Bézier interpolation
@@ -380,8 +387,7 @@ class Renderer
     triangles.count = rawBuffer.length
 
     # Return metadata
-    knot =
-      centerline: component
+    vbos =
       tube: tube
       wireframe: wireframe
       triangles: triangles
@@ -417,8 +423,14 @@ class Renderer
     program[value] = @gl.getUniformLocation(program, key) for key, value of uniforms
     program
 
+# FILE SCOPE UTILITIES #
 root.Renderer = Renderer
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 TWOPI = 2 * Math.PI
+aabb = root.utility.aabb
+Style =
+  WIREFRAME: 0
+  SILHOUETTE: 1
+  RINGS: 2

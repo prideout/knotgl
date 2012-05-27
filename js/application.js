@@ -44,7 +44,7 @@
 
   root.UpdateLabels = UpdateLabels = function() {
     var labels;
-    labels = root.renderer.getCurrentLink();
+    labels = root.renderer.getCurrentLinkInfo();
     $("#crossings").text(labels.crossings);
     $("#subscript").text(labels.index);
     return $("#superscript").text(labels.numComponents);

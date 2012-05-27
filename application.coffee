@@ -26,7 +26,7 @@ root.MouseClick = ->
   renderer.click()
 
 root.UpdateLabels = UpdateLabels = ->
-  labels = root.renderer.getCurrentLink()
+  labels = root.renderer.getCurrentLinkInfo()
   $("#crossings").text(labels.crossings)
   $("#subscript").text(labels.index)
   $("#superscript").text(labels.numComponents)
