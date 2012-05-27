@@ -176,24 +176,15 @@ class Renderer
   setViewport: (box, projectionUniform) ->
     box = box.translated(window.pan.x,0)
     entireViewport = new aabb(0, 0, @width, @height)
-    box = aabb.intersect(box, entireViewport)
-
-    #cropRegion = new aabb(entireViewport.width()/2, entireViewport.height()/2, entireViewport.width(), entireViewport.height())
-    cropRegion = new aabb(0, 0, entireViewport.width(), entireViewport.height())
-
-    cropMatrix = aabb.cropMatrix(cropRegion, entireViewport)
-
+    clippedBox = aabb.intersect(box, entireViewport)
+    if clippedBox.degenerate()
+      @gl.viewport(0,0,1,1)
+      return
+    cropMatrix = aabb.cropMatrix(clippedBox, box)
     proj = mat4.create(@projection)
     mat4.multiply(proj, cropMatrix)
     @gl.uniformMatrix4fv(projectionUniform, false, proj)
-
-    entireViewport.viewport @gl
-    return
-
-    if box.degenerate()
-      @gl.viewport(0,0,1,1)
-    else
-      box.viewport @gl
+    clippedBox.viewport @gl
 
   renderKnot: (knot, link) ->
 

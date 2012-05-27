@@ -232,22 +232,19 @@
     };
 
     Renderer.prototype.setViewport = function(box, projectionUniform) {
-      var cropMatrix, cropRegion, entireViewport, proj;
+      var clippedBox, cropMatrix, entireViewport, proj;
       box = box.translated(window.pan.x, 0);
       entireViewport = new aabb(0, 0, this.width, this.height);
-      box = aabb.intersect(box, entireViewport);
-      cropRegion = new aabb(0, 0, entireViewport.width(), entireViewport.height());
-      cropMatrix = aabb.cropMatrix(cropRegion, entireViewport);
+      clippedBox = aabb.intersect(box, entireViewport);
+      if (clippedBox.degenerate()) {
+        this.gl.viewport(0, 0, 1, 1);
+        return;
+      }
+      cropMatrix = aabb.cropMatrix(clippedBox, box);
       proj = mat4.create(this.projection);
       mat4.multiply(proj, cropMatrix);
       this.gl.uniformMatrix4fv(projectionUniform, false, proj);
-      entireViewport.viewport(this.gl);
-      return;
-      if (box.degenerate()) {
-        return this.gl.viewport(0, 0, 1, 1);
-      } else {
-        return box.viewport(this.gl);
-      }
+      return clippedBox.viewport(this.gl);
     };
 
     Renderer.prototype.renderKnot = function(knot, link) {

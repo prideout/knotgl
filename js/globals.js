@@ -68,8 +68,9 @@ $(document).ready(function(e){
 
     $(".arrow").click(function(){
       panTarget = $(this).attr('id') == "leftarrow" ? window.pan.width : 0
+      swipeDuration = 1000
       tween = new TWEEN.Tween(window.pan)
-          .to({x: panTarget}, 1000)
+          .to({x: panTarget/2}, swipeDuration)
           .easing(TWEEN.Easing.Bounce.Out)
           .onUpdate(updateTween);
       tween.start()
