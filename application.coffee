@@ -18,6 +18,9 @@ root.AppInit = ->
   height = parseInt($("#overlay").css('height'))
   root.renderer = new root.Renderer gl, width, height
 
+root.MouseClick = ->
+  renderer.click()
+
 root.UpdateLabels = UpdateLabels = ->
   labels = root.renderer.getCurrentLink()
   $("#crossings").text(labels.crossings)
@@ -27,8 +30,8 @@ root.UpdateLabels = UpdateLabels = ->
 root.OnKeyDown = (keyname) ->
   dirty = false
   switch keyname
-    when 'left'  then dirty = root.renderer.changeSelection(-1)
-    when 'right' then dirty = root.renderer.changeSelection(+1)
+    when 'left'  then dirty = root.renderer.moveSelection(-1)
+    when 'right' then dirty = root.renderer.moveSelection(+1)
   return if not dirty
 
   root.collapse.stop() if root.collapse?

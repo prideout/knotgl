@@ -47,13 +47,15 @@ class Renderer
     L.numComponents = "" if L.numComponents == 1
     L
 
-  changeSelection: (increment) ->
-
-    # Leave early if the current selection is already leftmost or rightmost.
+  moveSelection: (increment) ->
     currentSelection = @selectionIndex
     nextSelection = currentSelection + increment
     return if nextSelection >= @links.length or nextSelection < 0
+    @changeSelection(nextSelection)
 
+  changeSelection: (nextSelection) ->
+
+    currentSelection = @selectionIndex
     @selectionIndex = nextSelection
 
     # Note that "iconified" is an animation percentange in [0,1]
@@ -129,11 +131,26 @@ class Renderer
     y = @height - tileHeight / 2
     x = tileWidth / 2
     bigBox = new aabb 0, 0, @width, @height
-    for p in [0...@links.length]
-      iconBox = @links[p].iconBox = aabb.createFromCenter [x,y], [w,h]
-      t = 1-@links[p].iconified
-      @links[p].centralBox = aabb.lerp iconBox, bigBox, t
+    mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
+    for link in @links
+      iconBox = aabb.createFromCenter [x,y], [w,h]
+      distance = vec2.dist([x,y], mouse)
+      if distance < w and link.iconified is 1
+        # 'd' is normalized proximity between mouse and icon center
+        d = 1 - distance / w
+        maxExpansion = w / 3
+        iconBox.inflate(d*d * maxExpansion)
+      link.iconBox = iconBox
+      t = 1-link.iconified
+      link.centralBox = aabb.lerp iconBox, bigBox, t
       x = x + w
+
+  click: ->
+    return if not @links? or @links.length is 0
+    mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
+    for link in @links
+      if link.iconBox.contains(mouse[0], mouse[1]) and link.iconified is 1
+        @changeSelection(@links.indexOf(link))
 
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
