@@ -77,12 +77,15 @@ utility.aabb = class aabb
   # See bottom of:
   #   http://github.prideout.net/barrel-distortion/
   @cropMatrix: (cropRegion, entireViewport) ->
+
     # TODO this can be simplified with high-school math skills!
-    cropRegion = cropRegion.translated cropRegion.width()/2, cropRegion.height()/2
+
     sx = entireViewport.width() / cropRegion.width()
     sy = entireViewport.height() / cropRegion.height()
-    tx = (entireViewport.width() + 2 * (entireViewport.left - cropRegion.left)) / cropRegion.width()
-    ty = (entireViewport.height() + 2 * (entireViewport.top - cropRegion.top)) / cropRegion.height()
+
+    tx = 2*(entireViewport.width() + 2 * (entireViewport.left - cropRegion.centerx())) / cropRegion.width()
+    ty = 2*(entireViewport.height() + 2 * (entireViewport.top - cropRegion.centery())) / cropRegion.height()
+
     m = mat4.create()
     m[0] = sx; m[1] = 0; m[2] = 0; m[3] = tx;
     m[4] = 0; m[5] = sy; m[6] = 0; m[7] = ty;
