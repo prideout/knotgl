@@ -130,13 +130,19 @@ class Renderer
     mat4.multiply(view, model, @modelview)
     @normalMatrix = mat4.toMat3(@modelview)
 
-    # This is where I'd normally do a glClear, doesn't seem necessary in WebGL (?)
-    #@gl.clearColor(1,0,0,1)
+    # Compute all viewports before starting the GL calls
+    @updateViewports()
+
+    # This is where I'd normally do a glClear, doesn't seem necessary in WebGL
+    #@gl.clearColor(0,0,0,0)
     #@gl.clear(@gl.COLOR_BUFFER_BIT)
 
-    # Draw each knot in its respective viewport
-    @updateViewports()
-    @renderKnot(knot, link) for knot in link for link in @links
+    # Draw each knot in its respective viewport, batching roughly
+    # according to currently to current shader and current VBO
+    @renderIconKnot(knot, link) for knot in link for link in @links
+    for pass in [0..1]
+      @renderBigKnot(knot, link, pass) for knot in link for link in @links
+
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
   # Annotates each link with 'iconBox' and 'centralBox', which are aabb objects.
@@ -186,13 +192,13 @@ class Renderer
     @gl.uniformMatrix4fv(projectionUniform, false, proj)
     clippedBox.viewport @gl
 
-  renderKnot: (knot, link) ->
+  renderIconKnot: (knot, link) ->
 
-    black = [0,0,0]
-    gray = [.1,.1,.1]
     alpha = 0.25 + 0.75 * link.iconified
 
-    # Draw the icon
+    # Draw the thick black outer line.
+    # Large values of lineWidth causes ugly fin gaps.
+    # Redraw with screen-space offsets to achieve extra thickness.
     program = @programs.wireframe
     @gl.useProgram(program)
     @setViewport link.iconBox, program.projection
@@ -203,85 +209,84 @@ class Renderer
     @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniform1f(program.scale, @tubeGen.scale)
-    @setColor(program.color, black, alpha)
+    @setColor(program.color, COLORS.black, alpha)
     [startVertex, vertexCount] = knot.centerline
     @gl.enable(@gl.DEPTH_TEST)
     @gl.lineWidth(2)
-
-    # Draw the thick black outer line.
-    # Large values of lineWidth causes ugly fin gaps.
-    # Redraw with screen-space offsets to achieve extra thickness.
     for x in [-1..1] by 2
       for y in [-1..1] by 2
         @gl.uniform2f(program.offset, x,y)
         @gl.uniform1f(program.depthOffset, 0)
         @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
 
-    # Draw a thinner center line down the spine for added depth.
-    @gl.enable(@gl.BLEND)
-    @gl.lineWidth(2)
+    # Draw a center line down the spine for added depth.
     @setColor(program.color, knot.color, alpha)
     @gl.uniform2f(program.offset, 0,0)
     @gl.uniform1f(program.depthOffset, -0.5)
     @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
     @gl.disableVertexAttribArray(POSITION)
 
+  renderBigKnot: (knot, link, pass) ->
+
+    return if link.iconified is 1
+
     # Draw the solid knot
-    program = @programs.solidmesh
-    @gl.enable(@gl.DEPTH_TEST)
-    @gl.useProgram(program)
-    @setViewport link.centralBox, program.projection
-    @setColor(program.color, knot.color, 1)
-    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
-    @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-    @gl.enableVertexAttribArray(POSITION)
-    @gl.enableVertexAttribArray(NORMAL)
-    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-    @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
-    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
-    if @style == Style.SILHOUETTE
-      @gl.enable(@gl.POLYGON_OFFSET_FILL)
-      @gl.polygonOffset(-1,12)
-    @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
-    @gl.disableVertexAttribArray(POSITION)
-    @gl.disableVertexAttribArray(NORMAL)
-    @gl.disable(@gl.POLYGON_OFFSET_FILL)
+    if pass is 0
+        program = @programs.solidmesh
+        @gl.enable(@gl.DEPTH_TEST)
+        @gl.useProgram(program)
+        @setViewport link.centralBox, program.projection
+        @setColor(program.color, knot.color, 1)
+        @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+        @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+        @gl.enableVertexAttribArray(POSITION)
+        @gl.enableVertexAttribArray(NORMAL)
+        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+        @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.triangles)
+        if @style == Style.SILHOUETTE
+          @gl.enable(@gl.POLYGON_OFFSET_FILL)
+          @gl.polygonOffset(-1,12)
+        @gl.drawElements(@gl.TRIANGLES, knot.triangles.count, @gl.UNSIGNED_SHORT, 0)
+        @gl.disableVertexAttribArray(POSITION)
+        @gl.disableVertexAttribArray(NORMAL)
+        @gl.disable(@gl.POLYGON_OFFSET_FILL)
 
     # Draw the wireframe
-    @gl.enable(@gl.BLEND)
-    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-    program = @programs.wireframe
-    @gl.useProgram(program)
-    @setViewport link.centralBox, program.projection
-    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
-    @gl.uniform1f(program.scale, 1)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
-    @gl.enableVertexAttribArray(POSITION)
-    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
-    if @style == Style.WIREFRAME
-      @gl.lineWidth(1)
-      @gl.uniform1f(program.depthOffset, -0.01)
-      @setColor(program.color, black, 0.75)
-      @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-    else if @style == Style.RINGS
-      @gl.lineWidth(1)
-      @gl.uniform1f(program.depthOffset, -0.01)
-      @setColor(program.color, black, 0.75)
-      @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
-    else
-      @gl.lineWidth(2)
-      @gl.uniform1f(program.depthOffset, 0.01)
-      @setColor(program.color, black, 1)
-      @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
-      if @sketchy
-        @gl.lineWidth(1)
-        @setColor(program.color, gray, 1)
-        @gl.uniform1f(program.depthOffset, -0.01)
-        @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
-
-    @gl.disableVertexAttribArray(POSITION)
+    if pass is 1
+        @gl.enable(@gl.BLEND)
+        @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+        program = @programs.wireframe
+        @gl.useProgram(program)
+        @setViewport link.centralBox, program.projection
+        @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+        @gl.uniform1f(program.scale, 1)
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, knot.tube)
+        @gl.enableVertexAttribArray(POSITION)
+        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, knot.wireframe)
+        if @style == Style.WIREFRAME
+          @gl.lineWidth(1)
+          @gl.uniform1f(program.depthOffset, -0.01)
+          @setColor(program.color, COLORS.black, 0.75)
+          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+        else if @style == Style.RINGS
+          @gl.lineWidth(1)
+          @gl.uniform1f(program.depthOffset, -0.01)
+          @setColor(program.color, COLORS.black, 0.75)
+          @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
+        else
+          @gl.lineWidth(2)
+          @gl.uniform1f(program.depthOffset, 0.01)
+          @setColor(program.color, COLORS.black, 1)
+          @gl.drawElements(@gl.LINES, knot.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+          if @sketchy
+            @gl.lineWidth(1)
+            @setColor(program.color, COLORS.darkgray, 1)
+            @gl.uniform1f(program.depthOffset, -0.01)
+            @gl.drawElements(@gl.LINES, knot.wireframe.count/2, @gl.UNSIGNED_SHORT, knot.wireframe.count)
+        @gl.disableVertexAttribArray(POSITION)
 
   # Returns a list of 'ranges' where each range is an [index, count] pair
   # The required [0] at the end seems like a coffeescript bug but I'm not sure.
