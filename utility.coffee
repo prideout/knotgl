@@ -69,3 +69,20 @@ utility.aabb = class aabb
     x = (1-t) * a.centerx() + t * b.centerx()
     y = (1-t) * a.centery() + t * b.centery()
     aabb.createFromCenter [x,y], [w,h]
+
+  # Generates a mat4 that can be multiplied with a projection matrix
+  # to "crop" the viewing frustum.
+  # See bottom of:
+  #   http://github.prideout.net/barrel-distortion/
+  @cropMatrix: (cropRegion, entireViewport) ->
+    sx = entireViewport.width() / cropRegion.width()
+    sy = entireViewport.height() / cropRegion.height()
+    tx = (entireViewport.width() + 2 * (entireViewport.left - cropRegion.left)) / cropRegion.width()
+    ty = (entireViewport.height() + 2 * (entireViewport.top - cropRegion.top)) / cropRegion.height()
+    m = mat4.create()
+    m[0] = sx; m[1] = 0; m[2] = 0; m[3] = tx;
+    m[4] = 0; m[5] = sy; m[6] = 0; m[7] = ty;
+    m[8] = 0; m[9] = 0; m[10] = 1; m[11] = 0;
+    m[12] = 0; m[13] = 0; m[14] = 0; m[15] = 1;
+    m
+  
