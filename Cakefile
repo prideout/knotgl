@@ -32,15 +32,16 @@ task 'build', 'Build single application file from source files', ->
           throw err if err and not graceful
         console.log 'Amalgam generated.'
         if doMinify
-          console.log 'Minifying...'
           invoke 'minify'
         else
           exec 'cp js/knotgl.js js/knotgl-min.js'
 
-# Uses Google Closure
+# Uses Google Closure.  This is nice because it generates warning that coffeescript doesn't.
+# eg, it catches suspicious statements that don't have side effects.
 task 'minify', 'Minify the resulting application file after build', ->
   e = if linux then '/usr/lib/jvm/java/bin/java' else 'java'
-  exec '#{e} -jar "./compiler.jar" --js js/knotgl.js --js_output_file js/knotgl-min.js', (err, stdout, stderr) ->
+  console.log 'Minifying...'
+  exec "#{e} -jar \"./compiler.jar\" --js js/knotgl.js --js_output_file js/knotgl-min.js", (err, stdout, stderr) ->
     throw err if err and not graceful
     console.log stdout + stderr
     console.log 'Done.'

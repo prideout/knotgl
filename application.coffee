@@ -18,28 +18,38 @@ root.AppInit = ->
   height = parseInt($("#overlay").css('height'))
   root.renderer = new root.Renderer gl, width, height
 
-root.UpdateLabels = ->
-  InitializeNumerals()
-  UpdateNumeralText()
+root.UpdateLabels = UpdateLabels = ->
+  labels = root.renderer.getCurrentLink()
+  $("#crossings").text(labels.crossings)
+  $("#subscript").text(labels.index)
+  $("#superscript").text(labels.numComponents)
 
 root.OnKeyDown = (keyname) ->
   dirty = false
-  if keyname is 'left'
-    dirty = root.renderer.changeSelection(-1)
-  if keyname is 'right'
-    dirty = root.renderer.changeSelection(+1)
-  InitializeNumerals()
+  switch keyname
+    when 'left'  then dirty = root.renderer.changeSelection(-1)
+    when 'right' then dirty = root.renderer.changeSelection(+1)
   return if not dirty
+
+  root.collapse.stop() if root.collapse?
+  root.expand.stop() if root.expand?
+
   duration = 0.25 * root.renderer.transitionMilliseconds
-  A = new TWEEN.Tween(Numerals.size)
+  root.collapse = A = new TWEEN.Tween(CurrentSizes)
     .to(CollapsedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
-    .onUpdate(UpdateNumeralSizes);
-  B = new TWEEN.Tween(Numerals.size)
+    .onUpdate(UpdateNumeralSizes)
+  root.expand = B = new TWEEN.Tween(CurrentSizes)
     .to(ExpandedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
-    .onUpdate(UpdateNumerals);
+    .onUpdate(UpdateNumeralSizes)
   A.chain(B)
+
+  # Turns off the continuous label update until after the collapse
+  root.UpdateLabels = null
+  root.collapse.onComplete ->
+    root.UpdateLabels = UpdateLabels
+
   A.start()
 
 ## PRIVATE ##
@@ -54,27 +64,9 @@ ExpandedSizes =
   numComponents: 50
   index: 50
 
-Numerals =
-  size: clone ExpandedSizes
-  text: {}
-  dirty: {}
-
-InitializeNumerals = ->
-  labels = root.renderer.getCurrentLink()
-  for key of labels
-    Numerals.dirty[key] = Numerals.text[key] isnt labels[key]
-    Numerals.text[key] = labels[key]
+CurrentSizes = clone ExpandedSizes
 
 UpdateNumeralSizes = ->
-  $("#crossings").css('font-size', Numerals.size.crossings)
-  $("#superscript").css('font-size', Numerals.size.numComponents)
-  $("#subscript").css('font-size', Numerals.size.index)
-
-UpdateNumerals = ->
-  UpdateNumeralSizes()
-  UpdateNumeralText()
-
-UpdateNumeralText = ->
-  $("#crossings").text(Numerals.text.crossings)
-  $("#subscript").text(Numerals.text.index)
-  $("#superscript").text(Numerals.text.numComponents)
+  $("#crossings").css('font-size', CurrentSizes.crossings)
+  $("#superscript").css('font-size', CurrentSizes.numComponents)
+  $("#subscript").css('font-size', CurrentSizes.index)

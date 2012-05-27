@@ -54,11 +54,12 @@ class Renderer
     nextSelection = currentSelection + increment
     return if nextSelection >= @links.length or nextSelection < 0
 
+    @selectionIndex = nextSelection
+
     # Note that "iconified" is an animation percentange in [0,1]
     # If the current selection has animation = 0, then start a new transition.
     iconified = @links[currentSelection].iconified
     if iconified is 0
-      @selectionIndex = nextSelection
       root.outgoing = new TWEEN.Tween(@links[currentSelection])
         .to({iconified: 1}, 0.5 * @transitionMilliseconds)
         .easing(TWEEN.Easing.Quartic.Out)
@@ -72,7 +73,6 @@ class Renderer
     # If we reached this point, we're interupting an in-progress transition.
     # We instantly snap the currently-incoming element back to the toolbar
     # by forcibly setting its percentage to 1.
-    @selectionIndex = nextSelection
     @links[currentSelection].iconified = 1
     @links[nextSelection].iconified = iconified
     root.incoming.replace(@links[nextSelection])
@@ -93,6 +93,7 @@ class Renderer
     r = -> root.renderer.render()
     window.requestAnimationFrame(r, $("canvas").get(0))
     TWEEN.update()
+    root.UpdateLabels() if root.UpdateLabels?
 
     # Update the spinning animation
     currentTime = new Date().getTime()
