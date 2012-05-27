@@ -73,6 +73,7 @@ class Renderer
         .easing(TWEEN.Easing.Bounce.Out)
       root.incoming.start()
       root.outgoing.start()
+      return
 
     # If we reached this point, we're interupting an in-progress transition.
     # We instantly snap the currently-incoming element back to the toolbar
@@ -159,8 +160,7 @@ class Renderer
         iconBox.inflate(d*d * maxExpansion)
         @hotMouse = true
       link.iconBox = iconBox
-      t = 1-link.iconified
-      link.centralBox = aabb.lerp iconBox, bigBox, t
+      link.centralBox = aabb.lerp bigBox, iconBox, link.iconified
       x = x + w
 
   click: ->

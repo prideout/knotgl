@@ -99,6 +99,7 @@
         }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
         root.incoming.start();
         root.outgoing.start();
+        return;
       }
       this.links[currentSelection].iconified = 1;
       this.links[nextSelection].iconified = iconified;
@@ -179,7 +180,7 @@
     };
 
     Renderer.prototype.updateViewports = function() {
-      var bigBox, d, distance, h, iconBox, link, maxExpansion, mouse, radius, t, tileHeight, tileWidth, w, x, y, _i, _len, _ref, _results;
+      var bigBox, d, distance, h, iconBox, link, maxExpansion, mouse, radius, tileHeight, tileWidth, w, x, y, _i, _len, _ref, _results;
       w = tileWidth = this.width / this.links.length;
       h = tileHeight = tileWidth * this.height / this.width;
       y = this.height - tileHeight / 2;
@@ -201,8 +202,7 @@
           this.hotMouse = true;
         }
         link.iconBox = iconBox;
-        t = 1 - link.iconified;
-        link.centralBox = aabb.lerp(iconBox, bigBox, t);
+        link.centralBox = aabb.lerp(bigBox, iconBox, link.iconified);
         _results.push(x = x + w);
       }
       return _results;
