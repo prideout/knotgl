@@ -2,14 +2,18 @@ root = exports ? this
 clone = root.utility.clone
 box = root.utility.box
 
-DevTips =
-  """
-  In Chrome, use Ctrl+Shift+J to see console, Alt+Cmd+J on a Mac.
-  To experiment with coffescript, try this from the console:
-  > coffee --require './js/gl-matrix-min.js'
-  """
+CollapsedSizes =
+  crossings: 10
+  numComponents: 5
+  index: 5
+
+ExpandedSizes =
+  crossings: 100
+  numComponents: 50
+  index: 50
 
 root.AppInit = ->
+  root.CurrentSizes = clone ExpandedSizes
   c = $("canvas").get(0)
   gl = c.getContext("experimental-webgl", { antialias: true } )
   glerr("Your browser does not support floating-point textures.") unless gl.getExtension("OES_texture_float")
@@ -36,11 +40,11 @@ root.AnimateNumerals = ->
   root.collapse.stop() if root.collapse?
   root.expand.stop() if root.expand?
   duration = 0.25 * root.renderer.transitionMilliseconds
-  root.collapse = A = new TWEEN.Tween(CurrentSizes)
+  root.collapse = A = new TWEEN.Tween(root.CurrentSizes)
     .to(CollapsedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(UpdateNumeralSizes)
-  root.expand = B = new TWEEN.Tween(CurrentSizes)
+  root.expand = B = new TWEEN.Tween(root.CurrentSizes)
     .to(ExpandedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(UpdateNumeralSizes)
@@ -53,21 +57,7 @@ root.AnimateNumerals = ->
 
   A.start()
 
-## PRIVATE ##
-
-CollapsedSizes =
-  crossings: 10
-  numComponents: 5
-  index: 5
-
-ExpandedSizes =
-  crossings: 100
-  numComponents: 50
-  index: 50
-
-CurrentSizes = clone ExpandedSizes
-
 UpdateNumeralSizes = ->
-  $("#crossings").css('font-size', CurrentSizes.crossings)
-  $("#superscript").css('font-size', CurrentSizes.numComponents)
-  $("#subscript").css('font-size', CurrentSizes.index)
+  $("#crossings").css('font-size', root.CurrentSizes.crossings)
+  $("#superscript").css('font-size', root.CurrentSizes.numComponents)
+  $("#subscript").css('font-size', root.CurrentSizes.index)

@@ -8,7 +8,7 @@ utility.clone = (obj) ->
     return obj
   newInstance = new obj.constructor()
   for key of obj
-    newInstance[key] = clone obj[key]
+    newInstance[key] = utility.clone obj[key]
   return newInstance
 
 # Axis-aligned bounding box.
@@ -85,4 +85,3 @@ utility.aabb = class aabb
     m[8] = 0; m[9] = 0; m[10] = 1; m[11] = 0;
     m[12] = 0; m[13] = 0; m[14] = 0; m[15] = 1;
     m
-  

@@ -1,6 +1,13 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
 
+DevTips =
+  """
+  To experiment with coffescript, try this from the console:
+  > coffee --require './js/gl-matrix-min.js'
+  """
+
+# The following list is *.coffee, but don't glob because order matters when creating the amalgam.
 appFiles  = [
   'utility'
   'application'
@@ -11,11 +18,14 @@ appFiles  = [
 ]
 
 graceful = true
-doMinify = true
-linux = false
+linux = true
+appname = 'knotgl'
 
-task 'build', 'Build single application file from source files', ->
-  appname = 'knotgl'
+task 'build', 'Compile CoffeeScript from *.coffee to js/*.js', ->
+  exec 'coffee --compile --output js/ ./'
+
+# I think coffee itself can do this, no?  If so, that'd be better for sensible error messages.
+task 'amalgam', 'Build single application file from source files', ->
   appContents = new Array remaining = appFiles.length
   for file, index in appFiles then do (file, index) ->
     fs.readFile "#{file}.coffee", 'utf8', (err, fileContents) ->
@@ -50,7 +60,7 @@ task 'watch', 'Watch prod source files and build changes', ->
   console.log "Watching for changes"
 
   for file in appFiles then do (file) ->
-    watch = if linux then fs.watchFile else fs.watch
+    watch = if linux then fs.watch else fs.watchFile
     watch "#{file}.coffee", (curr, prev) ->
       if +curr.mtime isnt +prev.mtime
         console.log "Saw change in #{file}.coffee"
