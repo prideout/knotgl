@@ -176,16 +176,19 @@ class Renderer
     #@gl.clearColor(0,0,0,0)
     #@gl.clear(@gl.COLOR_BUFFER_BIT)
 
+    # The currently-selected knot is faded out:
+    getAlpha = (link) -> 0.25 + 0.75 * link.iconified
+
     # Draw each knot in its respective viewport, batching roughly
-    # according to currently to current shader and current VBO
-    @renderIconLink(link, link.tableBox) for link in row for row in @links
-    @renderIconLink(link, link.iconBox) for link in @links[@selectedRow]
+    # according to currently to current shader and current VBO:
+    @renderIconLink(link, link.tableBox, alpha = 1) for link in row for row in @links
+    @renderIconLink(link, link.iconBox, getAlpha link) for link in @links[@selectedRow]
     for pass in [0..1]
       @renderBigLink(link, pass) for link in @links[@selectedRow]
 
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
-  renderIconLink: (link, viewbox) -> @renderIconKnot(knot, link, viewbox) for knot in link
+  renderIconLink: (link, viewbox, alpha) -> @renderIconKnot(knot, link, viewbox, alpha) for knot in link
   renderBigLink: (link, pass) -> @renderBigKnot(knot, link, pass) for knot in link
 
   # Annotates each link with aabb objects: iconBox, centralBox, and tableBox.
@@ -256,7 +259,7 @@ class Renderer
     clippedBox.viewport @gl
     return projection
 
-  renderIconKnot: (knot, link, viewbox) ->
+  renderIconKnot: (knot, link, viewbox, alpha) ->
     projection = @setViewport viewbox
     return if not projection
 
@@ -273,7 +276,6 @@ class Renderer
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix4fv(program.projection, false, projection)
     @gl.uniform1f(program.scale, @tubeGen.scale)
-    alpha = 0.25 + 0.75 * link.iconified
     @setColor(program.color, COLORS.black, alpha)
     [startVertex, vertexCount] = knot.range
     @gl.enable(@gl.DEPTH_TEST)

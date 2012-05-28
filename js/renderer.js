@@ -223,7 +223,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, cursor, elapsed, eye, far, fov, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _ref, _ref1, _ref2;
+      var alpha, aspect, currentTime, cursor, elapsed, eye, far, fov, getAlpha, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _ref, _ref1, _ref2;
       r = function() {
         return root.renderer.render();
       };
@@ -257,18 +257,21 @@
       mat4.multiply(view, model, this.modelview);
       this.normalMatrix = mat4.toMat3(this.modelview);
       this.updateViewports();
+      getAlpha = function(link) {
+        return 0.25 + 0.75 * link.iconified;
+      };
       _ref = this.links;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         row = _ref[_i];
         for (_j = 0, _len1 = row.length; _j < _len1; _j++) {
           link = row[_j];
-          this.renderIconLink(link, link.tableBox);
+          this.renderIconLink(link, link.tableBox, alpha = 1);
         }
       }
       _ref1 = this.links[this.selectedRow];
       for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
         link = _ref1[_k];
-        this.renderIconLink(link, link.iconBox);
+        this.renderIconLink(link, link.iconBox, getAlpha(link));
       }
       for (pass = _l = 0; _l <= 1; pass = ++_l) {
         _ref2 = this.links[this.selectedRow];
@@ -282,12 +285,12 @@
       }
     };
 
-    Renderer.prototype.renderIconLink = function(link, viewbox) {
+    Renderer.prototype.renderIconLink = function(link, viewbox, alpha) {
       var knot, _i, _len, _results;
       _results = [];
       for (_i = 0, _len = link.length; _i < _len; _i++) {
         knot = link[_i];
-        _results.push(this.renderIconKnot(knot, link, viewbox));
+        _results.push(this.renderIconKnot(knot, link, viewbox, alpha));
       }
       return _results;
     };
@@ -393,8 +396,8 @@
       return projection;
     };
 
-    Renderer.prototype.renderIconKnot = function(knot, link, viewbox) {
-      var alpha, program, projection, startVertex, stride, vertexCount, x, y, _i, _j, _ref;
+    Renderer.prototype.renderIconKnot = function(knot, link, viewbox, alpha) {
+      var program, projection, startVertex, stride, vertexCount, x, y, _i, _j, _ref;
       projection = this.setViewport(viewbox);
       if (!projection) {
         return;
@@ -409,7 +412,6 @@
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniformMatrix4fv(program.projection, false, projection);
       this.gl.uniform1f(program.scale, this.tubeGen.scale);
-      alpha = 0.25 + 0.75 * link.iconified;
       this.setColor(program.color, COLORS.black, alpha);
       _ref = knot.range, startVertex = _ref[0], vertexCount = _ref[1];
       this.gl.enable(this.gl.DEPTH_TEST);

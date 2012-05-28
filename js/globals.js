@@ -1,5 +1,3 @@
-var tween;
-
 // Vertex Attribute Semantics
 VERTEXID = 0;
 POSITION = 0;
@@ -14,12 +12,6 @@ COLORS = {
 // Global Utilities
 function glerr(msg) { $.gritter.add({ title: 'WebGL Error', text: msg }); }
 function toast(msg) { $.gritter.add({ title: 'Notice', text: msg }); }
-
-$(document).keydown(function(e){
-    if (e.keyCode == 37) window.OnKeyDown('left');
-    if (e.keyCode == 39) window.OnKeyDown('right');
-    if (e.keyCode == 32) swipePane(window.pan.x == 0 ? -1 : +1);
-});
 
 function swipePane(direction)
 {
@@ -37,10 +29,8 @@ function layout()
     height = parseInt($("#wideband").css('height'));
     width = height*768/1024;
     $("#wideband").css("width", width);
-
     bodyWidth = parseInt($("body").css('width'));
     $("#wideband").css("left", bodyWidth / 2 - width / 2);
-
     width = window.pan.width = parseInt($("#canvaspage").css('width'));
     height = parseInt($("#canvaspage").css('height'));
     c = $("canvas").get(0);
@@ -50,7 +40,6 @@ function layout()
     c.height = c.clientHeight;
     this.renderer.width = width;
     this.renderer.height = height;
-
     updateTween();
 }
 
@@ -73,8 +62,18 @@ $(document).ready(function(e){
     window.AppInit();
     layout();
 
+    $(document).keydown(function(e){
+      if (e.keyCode == 37) window.OnKeyDown('left');
+      if (e.keyCode == 39) window.OnKeyDown('right');
+      if (e.keyCode == 32) swipePane(window.pan.x == 0 ? -1 : +1);
+    });
+
+    $(window).resize(function(){
+      layout();
+    });
+
     $(".arrow").mouseover(function(){
-      $(this).css('color', '#cdf');
+      $(this).css('color', '#385fa2');
       window.mouse.hot = 1;
     });
 
