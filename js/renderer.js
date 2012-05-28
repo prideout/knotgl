@@ -171,40 +171,42 @@
       };
     };
 
-    Renderer.prototype.moveSelection = function(increment) {
-      var currentSelection, nextSelection;
-      currentSelection = this.selectedColumn;
-      nextSelection = currentSelection + increment;
-      if (nextSelection >= this.links[this.selectedRow].length || nextSelection < 0) {
+    Renderer.prototype.moveSelection = function(dx, dy) {
+      var nextX, nextY;
+      nextX = this.selectedColumn + dx;
+      nextY = this.selectedRow + dy;
+      if (nextY >= this.links.length || nextY < 0) {
         return;
       }
-      if (nextSelection === currentSelection) {
+      if (nextX >= this.links[nextY].length || nextX < 0) {
         return;
       }
-      return this.changeSelection(nextSelection);
+      return this.changeSelection(nextX, nextY);
     };
 
-    Renderer.prototype.changeSelection = function(nextSelection) {
-      var currentSelection, iconified, row;
-      currentSelection = this.selectedColumn;
-      this.selectedColumn = nextSelection;
+    Renderer.prototype.changeSelection = function(nextX, nextY) {
+      var iconified, previousColumn, row;
+      previousColumn = this.selectedColumn;
+      this.selectedColumn = nextX;
+      this.selectedRow = nextY;
+      root.UpdateSelectionRow();
       root.AnimateNumerals();
       row = this.links[this.selectedRow];
-      iconified = row[currentSelection].iconified;
+      iconified = row[previousColumn].iconified;
       if (iconified === 0) {
-        root.outgoing = new TWEEN.Tween(row[currentSelection]).to({
+        root.outgoing = new TWEEN.Tween(row[previousColumn]).to({
           iconified: 1
         }, 0.5 * this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
-        root.incoming = new TWEEN.Tween(row[nextSelection]).to({
+        root.incoming = new TWEEN.Tween(row[this.selectedColumn]).to({
           iconified: 0
         }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
         root.incoming.start();
         root.outgoing.start();
         return;
       }
-      row[currentSelection].iconified = 1;
-      row[nextSelection].iconified = iconified;
-      return root.incoming.replace(row[nextSelection]);
+      row[previousColumn].iconified = 1;
+      row[this.selectedColumn].iconified = iconified;
+      return root.incoming.replace(row[this.selectedColumn]);
     };
 
     Renderer.prototype.compileShaders = function() {
@@ -369,7 +371,7 @@
           continue;
         }
         if (link.iconBox.contains(mouse[0], mouse[1]) && link.iconified === 1) {
-          _results.push(this.changeSelection(row.indexOf(link)));
+          _results.push(this.changeSelection(row.indexOf(link), this.selectedRow));
         } else {
           _results.push(void 0);
         }

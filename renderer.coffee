@@ -93,27 +93,29 @@ class Renderer
     return {crossings:X[0], numComponents:"", index:X[1]} if X.length == 2
     {crossings:X[0], numComponents:X[1], index:X[2]}
 
-  moveSelection: (increment) ->
-    currentSelection = @selectedColumn
-    nextSelection = currentSelection + increment
-    return if nextSelection >= @links[@selectedRow].length or nextSelection < 0
-    return if nextSelection == currentSelection
-    @changeSelection(nextSelection)
+  moveSelection: (dx,dy) ->
+    nextX = @selectedColumn + dx
+    nextY = @selectedRow + dy
+    return if nextY >= @links.length or nextY < 0
+    return if nextX >= @links[nextY].length or nextX < 0
+    @changeSelection(nextX, nextY)
 
-  changeSelection: (nextSelection) ->
-    currentSelection = @selectedColumn
-    @selectedColumn = nextSelection
+  changeSelection: (nextX, nextY) ->
+    previousColumn = @selectedColumn
+    @selectedColumn = nextX
+    @selectedRow = nextY
+    root.UpdateSelectionRow()
     root.AnimateNumerals()
     row = @links[@selectedRow]
 
     # Note that "iconified" is an animation percentange in [0,1]
     # If the current selection has animation = 0, then start a new transition.
-    iconified = row[currentSelection].iconified
+    iconified = row[previousColumn].iconified
     if iconified is 0
-      root.outgoing = new TWEEN.Tween(row[currentSelection])
+      root.outgoing = new TWEEN.Tween(row[previousColumn])
         .to({iconified: 1}, 0.5 * @transitionMilliseconds)
         .easing(TWEEN.Easing.Quartic.Out)
-      root.incoming = new TWEEN.Tween(row[nextSelection])
+      root.incoming = new TWEEN.Tween(row[@selectedColumn])
         .to({iconified: 0}, @transitionMilliseconds)
         .easing(TWEEN.Easing.Bounce.Out)
       root.incoming.start()
@@ -123,9 +125,9 @@ class Renderer
     # If we reached this point, we're interupting an in-progress transition.
     # We instantly snap the currently-incoming element back to the toolbar
     # by forcibly setting its percentage to 1.
-    row[currentSelection].iconified = 1
-    row[nextSelection].iconified = iconified
-    root.incoming.replace(row[nextSelection])
+    row[previousColumn].iconified = 1
+    row[@selectedColumn].iconified = iconified
+    root.incoming.replace(row[@selectedColumn])
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -240,7 +242,7 @@ class Renderer
     for link in row
       continue if not link or not link.iconBox
       if link.iconBox.contains(mouse[0], mouse[1]) and link.iconified is 1
-        @changeSelection(row.indexOf(link))
+        @changeSelection(row.indexOf(link), @selectedRow)
 
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)

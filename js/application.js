@@ -66,16 +66,29 @@
     return A.start();
   };
 
+  root.UpdateSelectionRow = function() {
+    var r, top;
+    r = root.renderer;
+    top = r.selectedRow * r.height / r.links.length;
+    return $('#selectionrow').css('top', top);
+  };
+
   assignEventHandlers = function() {
     $(window).resize(function() {
       return layout();
     });
     $(document).keydown(function(e) {
+      if (e.keyCode === 38) {
+        root.renderer.moveSelection(0, -1);
+      }
+      if (e.keyCode === 40) {
+        root.renderer.moveSelection(0, +1);
+      }
       if (e.keyCode === 37) {
-        root.renderer.moveSelection(-1);
+        root.renderer.moveSelection(-1, 0);
       }
       if (e.keyCode === 39) {
-        root.renderer.moveSelection(+1);
+        root.renderer.moveSelection(+1, 0);
       }
       if (e.keyCode === 32) {
         return swipePane();
@@ -173,7 +186,8 @@
     this.renderer.width = width;
     this.renderer.height = height;
     root.pan.x = getPagePosition(root.pageIndex);
-    return updateSwipeAnimation();
+    updateSwipeAnimation();
+    return root.UpdateSelectionRow();
   };
 
   clone = root.utility.clone;

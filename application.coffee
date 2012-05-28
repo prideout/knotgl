@@ -48,6 +48,11 @@ root.AnimateNumerals = ->
 
   A.start()
 
+root.UpdateSelectionRow = ->
+  r = root.renderer
+  top = r.selectedRow * r.height / r.links.length
+  $('#selectionrow').css('top', top)
+
 # PRIVATE UTILITIES #
 
 assignEventHandlers = ->
@@ -55,8 +60,10 @@ assignEventHandlers = ->
   $(window).resize -> layout()
 
   $(document).keydown (e) ->
-    root.renderer.moveSelection(-1) if e.keyCode is 37
-    root.renderer.moveSelection(+1) if e.keyCode is 39
+    root.renderer.moveSelection(0,-1) if e.keyCode is 38
+    root.renderer.moveSelection(0,+1) if e.keyCode is 40
+    root.renderer.moveSelection(-1,0) if e.keyCode is 37
+    root.renderer.moveSelection(+1,0) if e.keyCode is 39
     swipePane() if e.keyCode is 32
 
   $('.arrow').mouseover ->
@@ -132,6 +139,7 @@ layout = ->
   this.renderer.height = height
   root.pan.x = getPagePosition(root.pageIndex)
   updateSwipeAnimation()
+  root.UpdateSelectionRow()
 
 clone = root.utility.clone
 box = root.utility.box
