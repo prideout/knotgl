@@ -14,10 +14,8 @@
       this.height = height;
       this.radiansPerSecond = 0.0003;
       this.transitionMilliseconds = 750;
-      this.spinning = true;
       this.style = Style.SILHOUETTE;
       this.sketchy = true;
-      this.theta = 0;
       this.vbos = {};
       this.programs = {};
       this.selectedColumn = 0;
@@ -87,6 +85,7 @@
       this.links = [];
       for (row = _i = 0; _i < 12; row = ++_i) {
         this.links[row] = [];
+        this.links[row].theta = 0;
         if (!Table[row]) {
           continue;
         }
@@ -206,7 +205,9 @@
       }
       row[previousColumn].iconified = 1;
       row[this.selectedColumn].iconified = iconified;
-      return root.incoming.replace(row[this.selectedColumn]);
+      if (root.incoming != null) {
+        return root.incoming.replace(row[this.selectedColumn]);
+      }
     };
 
     Renderer.prototype.compileShaders = function() {
@@ -225,7 +226,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var alpha, aspect, currentTime, cursor, elapsed, eye, far, fov, getAlpha, h, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _ref, _ref1, _ref2;
+      var alpha, aspect, currentTime, cursor, dt, elapsed, eye, far, fov, getAlpha, h, link, model, near, pass, r, row, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _ref, _ref1;
       r = function() {
         return root.renderer.render();
       };
@@ -252,42 +253,53 @@
       currentTime = new Date().getTime();
       if (this.previousTime != null) {
         elapsed = currentTime - this.previousTime;
-        if (this.spinning) {
-          this.theta += this.radiansPerSecond * elapsed;
+        dt = this.radiansPerSecond * elapsed;
+        if (root.pageIndex === 0) {
+          dt = dt * 32;
+        }
+        spinningRow = this.highlightRow != null ? this.links[this.highlightRow] : null;
+        _ref = this.links;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          row = _ref[_i];
+          if (row === spinningRow || Math.abs(row.theta % TWOPI) > dt) {
+            row.theta += dt;
+          } else {
+            row.theta = 0;
+          }
         }
       }
       this.previousTime = currentTime;
       this.projection = mat4.perspective(fov = 45, aspect = this.width / this.height, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
-      model = mat4.create();
-      this.modelview = mat4.create();
-      mat4.identity(model);
-      mat4.rotateX(model, 3.14 / 4);
-      mat4.rotateY(model, this.theta);
-      mat4.multiply(view, model, this.modelview);
-      this.normalMatrix = mat4.toMat3(this.modelview);
       this.updateViewports();
       getAlpha = function(link) {
         return 0.25 + 0.75 * link.iconified;
       };
-      _ref = this.links;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        row = _ref[_i];
-        for (_j = 0, _len1 = row.length; _j < _len1; _j++) {
-          link = row[_j];
+      _ref1 = this.links;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        row = _ref1[_j];
+        model = mat4.create();
+        this.modelview = mat4.create();
+        mat4.identity(model);
+        mat4.rotateX(model, 3.14 / 4);
+        mat4.rotateY(model, row.theta);
+        mat4.multiply(view, model, this.modelview);
+        this.normalMatrix = mat4.toMat3(this.modelview);
+        for (_k = 0, _len2 = row.length; _k < _len2; _k++) {
+          link = row[_k];
           this.renderIconLink(link, link.tableBox, alpha = 1);
         }
-      }
-      _ref1 = this.links[this.selectedRow];
-      for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-        link = _ref1[_k];
-        this.renderIconLink(link, link.iconBox, getAlpha(link));
-      }
-      for (pass = _l = 0; _l <= 1; pass = ++_l) {
-        _ref2 = this.links[this.selectedRow];
-        for (_m = 0, _len3 = _ref2.length; _m < _len3; _m++) {
-          link = _ref2[_m];
-          this.renderBigLink(link, pass);
+        if (this.links.indexOf(row) === this.selectedRow) {
+          for (_l = 0, _len3 = row.length; _l < _len3; _l++) {
+            link = row[_l];
+            this.renderIconLink(link, link.iconBox, getAlpha(link));
+          }
+          for (pass = _m = 0; _m <= 1; pass = ++_m) {
+            for (_n = 0, _len4 = row.length; _n < _len4; _n++) {
+              link = row[_n];
+              this.renderBigLink(link, pass);
+            }
+          }
         }
       }
       if (this.gl.getError() !== this.gl.NO_ERROR) {

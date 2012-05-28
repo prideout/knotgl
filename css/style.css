@@ -16,8 +16,8 @@ canvas {
     margin:0px;
     width:100%;
     height:100%;
-    background-image: -webkit-radial-gradient(center center, circle cover, #fff, #ddd);
-    background-image: -moz-radial-gradient(center center, circle cover, #fff, #ddd);
+    /*background-image: -webkit-radial-gradient(center center, circle cover, #fff, #ddd);
+    background-image: -moz-radial-gradient(center center, circle cover, #fff, #ddd);*/
 }
 
 #highlight-row {
@@ -26,9 +26,10 @@ canvas {
     position:absolute;
     top:16.6%;
     margin:0;
-    background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
-    background-image: -moz-radial-gradient(center center, circle cover, #dd2e72, #d22854);
     text-align:right;
+    color:#385fa2;
+    /*background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
+    background-image: -moz-radial-gradient(center center, circle cover, #dd2e72, #d22854);*/
 }
 
 #selection-row {
@@ -37,8 +38,8 @@ canvas {
     position:absolute;
     top:16.6%;
     margin:0;
-    /*background-color: #ffc;*/
     text-align:right;
+    /*background-color: #ffc;*/
 }
 
 h1 {

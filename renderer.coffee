@@ -6,10 +6,8 @@ class Renderer
   constructor: (@gl, @width, @height) ->
     @radiansPerSecond = 0.0003
     @transitionMilliseconds = 750
-    @spinning = true
     @style = Style.SILHOUETTE
     @sketchy = true
-    @theta = 0
     @vbos = {}
     @programs = {}
     @selectedColumn = 0
@@ -53,6 +51,7 @@ class Renderer
     @links = []
     for row in [0...12]
         @links[row] = []
+        @links[row].theta = 0
         continue if not Table[row]
         for id in Table[row].split(' ')
           link = []
@@ -127,7 +126,7 @@ class Renderer
     # by forcibly setting its percentage to 1.
     row[previousColumn].iconified = 1
     row[@selectedColumn].iconified = iconified
-    root.incoming.replace(row[@selectedColumn])
+    root.incoming.replace(row[@selectedColumn]) if root.incoming?
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -164,19 +163,19 @@ class Renderer
     currentTime = new Date().getTime()
     if @previousTime?
       elapsed = currentTime - @previousTime
-      @theta += @radiansPerSecond * elapsed if @spinning
+      dt = @radiansPerSecond * elapsed
+      dt = dt * 32 if root.pageIndex is 0
+      spinningRow = if @highlightRow? then @links[@highlightRow] else null
+      for row in @links
+        if row is spinningRow or Math.abs(row.theta % TWOPI) > dt
+          row.theta += dt
+        else
+          row.theta = 0
     @previousTime = currentTime
 
-    # Adjust the camera and compute various transforms.
+    # Compute projection and view matrices now.  We'll compute the model matrix later.
     @projection = mat4.perspective(fov = 45, aspect = @width/@height, near = 5, far = 90)
     view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
-    model = mat4.create()
-    @modelview = mat4.create()
-    mat4.identity(model)
-    mat4.rotateX(model, 3.14/4)
-    mat4.rotateY(model, @theta)
-    mat4.multiply(view, model, @modelview)
-    @normalMatrix = mat4.toMat3(@modelview)
 
     # Compute all viewports before starting the GL calls
     @updateViewports()
@@ -190,10 +189,25 @@ class Renderer
 
     # Draw each knot in its respective viewport, batching roughly
     # according to currently to current shader and current VBO:
-    @renderIconLink(link, link.tableBox, alpha = 1) for link in row for row in @links
-    @renderIconLink(link, link.iconBox, getAlpha link) for link in @links[@selectedRow]
-    for pass in [0..1]
-      @renderBigLink(link, pass) for link in @links[@selectedRow]
+    for row in @links
+
+      # Each row has a unique spin theta, so compute the model matrix here.
+      model = mat4.create()
+      @modelview = mat4.create()
+      mat4.identity(model)
+      mat4.rotateX(model, 3.14/4)
+      mat4.rotateY(model, row.theta)
+      mat4.multiply(view, model, @modelview)
+      @normalMatrix = mat4.toMat3(@modelview)
+
+      # Render the row in the table on the west page.
+      @renderIconLink(link, link.tableBox, alpha = 1) for link in row
+
+      # Now, render the east page.
+      if @links.indexOf(row) is @selectedRow
+        @renderIconLink(link, link.iconBox, getAlpha link) for link in row
+        for pass in [0..1]
+          @renderBigLink(link, pass) for link in row
 
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 

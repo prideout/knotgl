@@ -63,6 +63,7 @@ root.UpdateHighlightRow = ->
   $('#highlight-row').css('top', top)
 
 root.SwipePane = ->
+  return if root.swipeTween?
   root.pageIndex = 1 - root.pageIndex
   panTarget = getPagePosition(root.pageIndex)
   swipeDuration = 1000
@@ -70,6 +71,7 @@ root.SwipePane = ->
       .to({x: panTarget}, swipeDuration)
       .easing(TWEEN.Easing.Bounce.Out)
       .onUpdate(updateSwipeAnimation)
+      .onComplete(-> root.swipeTween = null)
   root.swipeTween.start()
 
 # PRIVATE UTILITIES #

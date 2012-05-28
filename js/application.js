@@ -87,12 +87,17 @@
 
   root.SwipePane = function() {
     var panTarget, swipeDuration;
+    if (root.swipeTween != null) {
+      return;
+    }
     root.pageIndex = 1 - root.pageIndex;
     panTarget = getPagePosition(root.pageIndex);
     swipeDuration = 1000;
     root.swipeTween = new TWEEN.Tween(root.pan).to({
       x: panTarget
-    }, swipeDuration).easing(TWEEN.Easing.Bounce.Out).onUpdate(updateSwipeAnimation);
+    }, swipeDuration).easing(TWEEN.Easing.Bounce.Out).onUpdate(updateSwipeAnimation).onComplete(function() {
+      return root.swipeTween = null;
+    });
     return root.swipeTween.start();
   };
 
