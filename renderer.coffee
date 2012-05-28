@@ -468,7 +468,7 @@ class Renderer
     program[value] = @gl.getUniformLocation(program, key) for key, value of uniforms
     program
 
-# FILE SCOPE UTILITIES #
+# PRIVATE UTILITIES #
 root.Renderer = Renderer
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot
