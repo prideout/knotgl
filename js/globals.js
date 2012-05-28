@@ -34,42 +34,4 @@ function updateTween()
     $("#rightpage").css("width", w - 40);
 }
 
-$(document).ready(function(e){
-    window.AppInit();
-
-    $(".arrow").mouseover(function(){
-      $(this).css('color', '#385fa2');
-      window.mouse.hot = 1;
-    });
-
-    $(".arrow").mouseout(function(){
-      $(this).css({'color' : ''});
-      window.mouse.hot = false;
-    });
-
-    $(".arrow").click(function(){
-      var swipeDirection = $(this).attr('id') == "leftarrow" ? -1 : +1;
-      swipePane(swipeDirection)
-    });
-
-    $("#wideband").mousemove(function(e){
-        var p = $(this).position();
-        var x = window.mouse.position.x = e.clientX - p.left;
-        var y = window.mouse.position.y = e.clientY - p.top;
-        window.mouse.within = 1;
-    });
-
-    $("#wideband").click(function(e){
-        var p = $(this).position();
-        var x = window.mouse.position.x = e.clientX - p.left;
-        var y = window.mouse.position.y = e.clientY - p.top;
-        window.mouse.within = 1;
-        window.MouseClick();
-    });
-
-    $("#wideband").mouseout(function(e){
-        window.mouse.position.x = -1;
-        window.mouse.position.y = -1;
-        window.mouse.within = false;
-    });
-});
+$(document).ready(function(e) { window.AppInit(); });

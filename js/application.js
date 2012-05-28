@@ -56,24 +56,24 @@
 
   root.AppInit = function() {
     var c, gl, height, width;
-    c = $("canvas").get(0);
-    gl = c.getContext("experimental-webgl", {
+    c = $('canvas').get(0);
+    gl = c.getContext('experimental-webgl', {
       antialias: true
     });
-    if (!gl.getExtension("OES_texture_float")) {
-      glerr("Your browser does not support floating-point textures.");
+    if (!gl.getExtension('OES_texture_float')) {
+      glerr('Your browser does not support floating-point textures.');
     }
-    if (!gl.getExtension("OES_standard_derivatives")) {
-      glerr("Your browser does not support GLSL derivatives.");
+    if (!gl.getExtension('OES_standard_derivatives')) {
+      glerr('Your browser does not support GLSL derivatives.');
     }
-    width = parseInt($("#overlay").css('width'));
-    height = parseInt($("#overlay").css('height'));
+    width = parseInt($('#overlay').css('width'));
+    height = parseInt($('#overlay').css('height'));
     root.renderer = new root.Renderer(gl, width, height);
     layout();
     $(window).resize(function() {
       return layout();
     });
-    return $(document).keydown(function(e) {
+    $(document).keydown(function(e) {
       var showingRight, swipeDirection;
       if (e.keyCode === 37) {
         root.OnKeyDown('left');
@@ -87,18 +87,50 @@
         return swipePane(swipeDirection);
       }
     });
-  };
-
-  root.MouseClick = function() {
-    return renderer.click();
+    $('.arrow').mouseover(function() {
+      $(this).css('color', '#385fa2');
+      return window.mouse.hot = 1;
+    });
+    $('.arrow').mouseout(function() {
+      $(this).css({
+        'color': ''
+      });
+      return window.mouse.hot = false;
+    });
+    $('.arrow').click(function() {
+      var isLeft, swipeDirection;
+      isLeft = $(this).attr('id') === 'leftarrow';
+      swipeDirection = isLeft ? -1 : +1;
+      return swipePane(swipeDirection);
+    });
+    $('#wideband').mousemove(function(e) {
+      var p, x, y;
+      p = $(this).position();
+      x = window.mouse.position.x = e.clientX - p.left;
+      y = window.mouse.position.y = e.clientY - p.top;
+      return window.mouse.within = 1;
+    });
+    $('#wideband').click(function(e) {
+      var p, x, y;
+      p = $(this).position();
+      x = window.mouse.position.x = e.clientX - p.left;
+      y = window.mouse.position.y = e.clientY - p.top;
+      window.mouse.within = 1;
+      return renderer.click();
+    });
+    return $('#wideband').mouseout(function() {
+      window.mouse.position.x = -1;
+      window.mouse.position.y = -1;
+      return window.mouse.within = false;
+    });
   };
 
   root.UpdateLabels = UpdateLabels = function() {
     var labels;
     labels = root.renderer.getCurrentLinkInfo();
-    $("#crossings").text(labels.crossings);
-    $("#subscript").text(labels.index);
-    return $("#superscript").text(labels.numComponents);
+    $('#crossings').text(labels.crossings);
+    $('#subscript').text(labels.index);
+    return $('#superscript').text(labels.numComponents);
   };
 
   root.OnKeyDown = function(keyname) {
@@ -131,9 +163,9 @@
   };
 
   UpdateNumeralSizes = function() {
-    $("#crossings").css('font-size', CurrentSizes.crossings);
-    $("#superscript").css('font-size', CurrentSizes.numComponents);
-    return $("#subscript").css('font-size', CurrentSizes.index);
+    $('#crossings').css('font-size', CurrentSizes.crossings);
+    $('#superscript').css('font-size', CurrentSizes.numComponents);
+    return $('#subscript').css('font-size', CurrentSizes.index);
   };
 
 }).call(this);

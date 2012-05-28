@@ -38,12 +38,12 @@ layout = ->
   updateTween()
 
 root.AppInit = ->
-  c = $("canvas").get(0)
-  gl = c.getContext("experimental-webgl", { antialias: true } )
-  glerr("Your browser does not support floating-point textures.") unless gl.getExtension("OES_texture_float")
-  glerr("Your browser does not support GLSL derivatives.") unless gl.getExtension("OES_standard_derivatives")
-  width = parseInt($("#overlay").css('width'))
-  height = parseInt($("#overlay").css('height'))
+  c = $('canvas').get(0)
+  gl = c.getContext('experimental-webgl', { antialias: true } )
+  glerr('Your browser does not support floating-point textures.') unless gl.getExtension('OES_texture_float')
+  glerr('Your browser does not support GLSL derivatives.') unless gl.getExtension('OES_standard_derivatives')
+  width = parseInt($('#overlay').css('width'))
+  height = parseInt($('#overlay').css('height'))
   root.renderer = new root.Renderer gl, width, height
   layout()
 
@@ -57,14 +57,42 @@ root.AppInit = ->
       swipeDirection = if showingRight then -1 else +1
       swipePane(swipeDirection)
 
-root.MouseClick = ->
-  renderer.click()
+  $('.arrow').mouseover ->
+    $(this).css('color', '#385fa2')
+    window.mouse.hot = 1
+
+  $('.arrow').mouseout ->
+    $(this).css({'color' : ''})
+    window.mouse.hot = false
+
+  $('.arrow').click ->
+    isLeft = $(this).attr('id') is 'leftarrow'
+    swipeDirection = if isLeft then -1 else +1
+    swipePane(swipeDirection)
+
+  $('#wideband').mousemove (e) ->
+    p = $(this).position()
+    x = window.mouse.position.x = e.clientX - p.left
+    y = window.mouse.position.y = e.clientY - p.top
+    window.mouse.within = 1
+
+  $('#wideband').click (e) ->
+    p = $(this).position()
+    x = window.mouse.position.x = e.clientX - p.left
+    y = window.mouse.position.y = e.clientY - p.top
+    window.mouse.within = 1
+    renderer.click()
+
+  $('#wideband').mouseout ->
+    window.mouse.position.x = -1
+    window.mouse.position.y = -1
+    window.mouse.within = false;
 
 root.UpdateLabels = UpdateLabels = ->
   labels = root.renderer.getCurrentLinkInfo()
-  $("#crossings").text(labels.crossings)
-  $("#subscript").text(labels.index)
-  $("#superscript").text(labels.numComponents)
+  $('#crossings').text(labels.crossings)
+  $('#subscript').text(labels.index)
+  $('#superscript').text(labels.numComponents)
 
 root.OnKeyDown = (keyname) ->
   switch keyname
@@ -95,6 +123,6 @@ root.AnimateNumerals = ->
   A.start()
 
 UpdateNumeralSizes = ->
-  $("#crossings").css('font-size', CurrentSizes.crossings)
-  $("#superscript").css('font-size', CurrentSizes.numComponents)
-  $("#subscript").css('font-size', CurrentSizes.index)
+  $('#crossings').css('font-size', CurrentSizes.crossings)
+  $('#superscript').css('font-size', CurrentSizes.numComponents)
+  $('#subscript').css('font-size', CurrentSizes.index)
