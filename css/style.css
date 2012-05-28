@@ -3,13 +3,32 @@ body {
 }
 
 canvas {
-//    background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
-//    background-image: -moz-radial-gradient(center center, circle cover, #dd2e72, #d22854);
-    background-image: -webkit-radial-gradient(center center, circle cover, #fff, #ddd);
-    background-image: -moz-radial-gradient(center center, circle cover, #fff, #ddd);
+    position:absolute;
+    top:0px;
     margin:0px;
     width:100%;
     height:100%;
+}
+
+#background {
+    position:absolute;
+    top:0px;
+    margin:0px;
+    width:100%;
+    height:100%;
+    background-image: -webkit-radial-gradient(center center, circle cover, #fff, #ddd);
+    background-image: -moz-radial-gradient(center center, circle cover, #fff, #ddd);
+}
+
+#selectionrow {
+    height:8.3%;
+    width:100%;
+    position:absolute;
+    top:16.6%;
+    margin:0%;
+    background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
+    //background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
+    //background-image: -moz-radial-gradient(center center, circle cover, #dd2e72, #d22854);
 }
 
 h1 {
@@ -45,7 +64,7 @@ p {
     position:absolute;
     height:100%;
     top:0;
-    margin-left:20px;
+    margin:0px;
 }
 
 #canvaspage {

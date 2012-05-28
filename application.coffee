@@ -1,5 +1,6 @@
 root = exports ? this
 
+root.pageIndex = 0
 root.pan = {x: 0}
 
 root.mouse =
@@ -56,10 +57,7 @@ assignEventHandlers = ->
   $(document).keydown (e) ->
     root.renderer.moveSelection(-1) if e.keyCode is 37
     root.renderer.moveSelection(+1) if e.keyCode is 39
-    if e.keyCode is 32
-      showingRight = root.pan.x is 0
-      swipeDirection = if showingRight then -1 else +1
-      swipePane(swipeDirection)
+    swipePane() if e.keyCode is 32
 
   $('.arrow').mouseover ->
     $(this).css('color', '#385fa2')
@@ -69,10 +67,7 @@ assignEventHandlers = ->
     $(this).css({'color' : ''})
     root.mouse.hot = false
 
-  $('.arrow').click ->
-    isLeft = $(this).attr('id') is 'leftarrow'
-    swipeDirection = if isLeft then -1 else +1
-    swipePane(swipeDirection)
+  $('.arrow').click -> swipePane()
 
   $('#wideband').mousemove (e) ->
     p = $(this).position()
@@ -97,22 +92,27 @@ updateNumeralSizes = ->
   $('#superscript').css('font-size', CurrentSizes.numComponents)
   $('#subscript').css('font-size', CurrentSizes.index)
 
-swipePane = (direction) ->
-  panTarget = if direction is -1 then root.pan.width else 0
+getPagePosition = (pageIndex) ->
+  pageWidth = parseInt($('#canvaspage').css('width'))
+  if pageIndex is 1 then 0 else pageWidth
+
+swipePane = ->
+  root.pageIndex = 1 - root.pageIndex
+  panTarget = getPagePosition(root.pageIndex)
   swipeDuration = 1000
-  tween = new TWEEN.Tween(root.pan)
+  root.swipeTween = new TWEEN.Tween(root.pan)
       .to({x: panTarget}, swipeDuration)
       .easing(TWEEN.Easing.Bounce.Out)
-      .onUpdate(updateTween)
-  tween.start()
+      .onUpdate(updateSwipeAnimation)
+  root.swipeTween.start()
 
-updateTween = ->
+updateSwipeAnimation = ->
   w = parseInt($('#canvaspage').css('width'))
   h = parseInt($('#canvaspage').css('height'))
   $('#leftpage').css('left', -w + root.pan.x)
-  $('#leftpage').css('width', w - 40)
+  $('#leftpage').css('width', w)
   $('#rightpage').css('left', 0 + root.pan.x)
-  $('#rightpage').css('width', w - 40)
+  $('#rightpage').css('width', w)
 
 layout = ->
   height = parseInt($('#wideband').css('height'))
@@ -120,7 +120,8 @@ layout = ->
   $('#wideband').css 'width', width
   bodyWidth = parseInt($('body').css('width'))
   $('#wideband').css 'left', bodyWidth / 2 - width / 2
-  width = root.pan.width = parseInt($('#canvaspage').css('width'))
+  width = parseInt($('#canvaspage').css('width'))
+  root.swipeTween.stop() if root.swipeTween?
   height = parseInt($('#canvaspage').css('height'))
   c = $('canvas').get 0
   c.clientWidth = width
@@ -129,7 +130,8 @@ layout = ->
   c.height = c.clientHeight
   this.renderer.width = width
   this.renderer.height = height
-  updateTween()
+  root.pan.x = getPagePosition(root.pageIndex)
+  updateSwipeAnimation()
 
 clone = root.utility.clone
 box = root.utility.box
