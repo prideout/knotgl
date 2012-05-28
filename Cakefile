@@ -22,7 +22,8 @@ linux = true
 appname = 'knotgl'
 
 task 'build', 'Compile CoffeeScript from *.coffee to js/*.js', ->
-  exec 'coffee --compile --output js/ ./'
+  exec 'coffee --compile --output js/ ./', (err, stdout, stderr) ->
+    console.log stdout + stderr
 
 # I think coffee itself can do this, no?  If so, that'd be better for sensible error messages.
 task 'amalgam', 'Build single application file from source files', ->

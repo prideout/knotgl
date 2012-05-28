@@ -24,25 +24,6 @@ function swipePane(direction)
     tween.start();
 }
 
-function layout()
-{
-    height = parseInt($("#wideband").css('height'));
-    width = height*768/1024;
-    $("#wideband").css("width", width);
-    bodyWidth = parseInt($("body").css('width'));
-    $("#wideband").css("left", bodyWidth / 2 - width / 2);
-    width = window.pan.width = parseInt($("#canvaspage").css('width'));
-    height = parseInt($("#canvaspage").css('height'));
-    c = $("canvas").get(0);
-    c.clientWidth = width;
-    c.width = c.clientWidth;
-    c.clientHeight = height;
-    c.height = c.clientHeight;
-    this.renderer.width = width;
-    this.renderer.height = height;
-    updateTween();
-}
-
 function updateTween()
 {
     w = parseInt($("#canvaspage").css('width'));
@@ -54,23 +35,7 @@ function updateTween()
 }
 
 $(document).ready(function(e){
-    window.mouse = {}
-    window.mouse.position = {x: -1, y: -1};
-    window.mouse.within = false;
-    window.mouse.hot = false;
-    window.pan = {x: 0};
     window.AppInit();
-    layout();
-
-    $(document).keydown(function(e){
-      if (e.keyCode == 37) window.OnKeyDown('left');
-      if (e.keyCode == 39) window.OnKeyDown('right');
-      if (e.keyCode == 32) swipePane(window.pan.x == 0 ? -1 : +1);
-    });
-
-    $(window).resize(function(){
-      layout();
-    });
 
     $(".arrow").mouseover(function(){
       $(this).css('color', '#385fa2');

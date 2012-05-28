@@ -12,8 +12,32 @@ ExpandedSizes =
   numComponents: 50
   index: 50
 
+CurrentSizes = clone ExpandedSizes
+
+root.pan = {x: 0}
+root.mouse =
+  position: {x: -1, y: -1}
+  within: false
+  hot: false
+
+layout = ->
+  height = parseInt($('#wideband').css('height'))
+  width = height*768/1024
+  $('#wideband').css 'width', width
+  bodyWidth = parseInt($('body').css('width'))
+  $('#wideband').css 'left', bodyWidth / 2 - width / 2
+  width = window.pan.width = parseInt($('#canvaspage').css('width'))
+  height = parseInt($('#canvaspage').css('height'))
+  c = $('canvas').get 0
+  c.clientWidth = width
+  c.width = c.clientWidth
+  c.clientHeight = height
+  c.height = c.clientHeight
+  this.renderer.width = width
+  this.renderer.height = height
+  updateTween()
+
 root.AppInit = ->
-  root.CurrentSizes = clone ExpandedSizes
   c = $("canvas").get(0)
   gl = c.getContext("experimental-webgl", { antialias: true } )
   glerr("Your browser does not support floating-point textures.") unless gl.getExtension("OES_texture_float")
@@ -21,6 +45,17 @@ root.AppInit = ->
   width = parseInt($("#overlay").css('width'))
   height = parseInt($("#overlay").css('height'))
   root.renderer = new root.Renderer gl, width, height
+  layout()
+
+  $(window).resize -> layout()
+
+  $(document).keydown (e) ->
+    root.OnKeyDown('left') if e.keyCode is 37
+    root.OnKeyDown('right') if e.keyCode is 39
+    if e.keyCode is 32
+      showingRight = root.pan.x is 0
+      swipeDirection = if showingRight then -1 else +1
+      swipePane(swipeDirection)
 
 root.MouseClick = ->
   renderer.click()
@@ -39,11 +74,11 @@ root.OnKeyDown = (keyname) ->
 root.AnimateNumerals = ->
   return if root.collapse? or root.expand?
   duration = 0.25 * root.renderer.transitionMilliseconds
-  root.collapse = A = new TWEEN.Tween(root.CurrentSizes)
+  root.collapse = A = new TWEEN.Tween(CurrentSizes)
     .to(CollapsedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(UpdateNumeralSizes)
-  root.expand = B = new TWEEN.Tween(root.CurrentSizes)
+  root.expand = B = new TWEEN.Tween(CurrentSizes)
     .to(ExpandedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(UpdateNumeralSizes)
@@ -60,6 +95,6 @@ root.AnimateNumerals = ->
   A.start()
 
 UpdateNumeralSizes = ->
-  $("#crossings").css('font-size', root.CurrentSizes.crossings)
-  $("#superscript").css('font-size', root.CurrentSizes.numComponents)
-  $("#subscript").css('font-size', root.CurrentSizes.index)
+  $("#crossings").css('font-size', CurrentSizes.crossings)
+  $("#superscript").css('font-size', CurrentSizes.numComponents)
+  $("#subscript").css('font-size', CurrentSizes.index)
