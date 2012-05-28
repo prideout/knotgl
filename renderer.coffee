@@ -37,18 +37,18 @@ class Renderer
       [1,0.5,0.25,0.75]
     ]
     Table = [
-      ""
-      ""
-      ""
-      ""
-      ""
-      ""
-      ""
-      ""
-      ""
-      "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
-      "8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1"
-      "6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5"
+      '0.1 3.1 4.1 5.1 5.2 6.1 6.2 6.3 7.1'
+      '7.2 7.3 7.4 7.5 7.6 7.7 8.1 8.2 8.3'
+      ("8.#{i}" for i in [4..12]).join(' ')
+      ("8.#{i}" for i in [13..21]).join(' ')
+      ("9.#{i}" for i in [1..9]).join(' ')
+      ("9.#{i}" for i in [10..18]).join(' ')
+      ("9.#{i}" for i in [19..27]).join(' ')
+      ("9.#{i}" for i in [28..36]).join(' ')
+      '0.2.1 2.2.1 4.2.1 5.2.1 6.2.1 6.2.2 6.2.3 7.2.1 7.2.2'
+      '7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3'
+      '8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1'
+      '6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5'
     ]
     @links = []
     for row in [0...12]
@@ -90,9 +90,8 @@ class Renderer
 
   getCurrentLinkInfo: ->
     X = @links[@selectedRow][@selectedColumn].id.split '.'
-    L = {crossings:X[0], numComponents:X[1], index:X[2]}
-    L.numComponents = "" if L.numComponents == 1
-    L
+    return {crossings:X[0], numComponents:"", index:X[1]} if X.length == 2
+    {crossings:X[0], numComponents:X[1], index:X[2]}
 
   moveSelection: (increment) ->
     currentSelection = @selectedColumn
@@ -198,15 +197,23 @@ class Renderer
     @hotMouse = false
     for rowIndex in [0...@links.length]
       row = @links[rowIndex]
-      w = tileWidth = @width / row.length
-      h = tileHeight = tileWidth * @height / @width
+
+      # First populate the tableBox array.
+      h = tileHeight = @height / @links.length
+      w = tileHeight * @width / @height
+      tileWidth = @width / (row.length + 0.5) # <----add some right-hand margin for the arrow icon
       x = -@width + tileWidth / 2
-      y = @height - tileHeight / 2 - (rowIndex-3) * tileHeight
+      y = @height - tileHeight / 2 - tileHeight * rowIndex
       for link in row
         link.tableBox = aabb.createFromCenter [x,y], [w,h]
-        x = x + w
+        link.tableBox.inflate(w/5,h/5) # @tileWidth / 10, @tileHeight / 10)
+        x = x + tileWidth
       continue if rowIndex isnt @selectedRow
 
+      # Next compute iconBox and centralBox.
+      # 'd' is normalized proximity between mouse and icon center.
+      w = tileWidth = @width / row.length
+      h = tileHeight = tileWidth * @height / @width
       x = tileWidth / 2
       y = @height - tileHeight / 2
       for link in row
@@ -214,7 +221,6 @@ class Renderer
         distance = vec2.dist([x,y], mouse)
         radius = h/2
         if distance < radius and link.iconified is 1
-          # 'd' is normalized proximity between mouse and icon center
           d = 1 - distance / radius
           maxExpansion = radius / 3
           iconBox.inflate(d*d * maxExpansion)

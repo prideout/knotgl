@@ -37,9 +37,53 @@
     }
 
     Renderer.prototype.parseMetadata = function() {
-      var KnotColors, Table, id, knot, link, range, ranges, row, x, _i, _j, _k, _len, _len1, _ref;
+      var KnotColors, Table, i, id, knot, link, range, ranges, row, x, _i, _j, _k, _len, _len1, _ref;
       KnotColors = [[1, 1, 1, 0.75], [0.25, 0.5, 1, 0.75], [1, 0.5, 0.25, 0.75]];
-      Table = ["", "", "", "", "", "", "", "", "", "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3", "8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1", "6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5"];
+      Table = [
+        '0.1 3.1 4.1 5.1 5.2 6.1 6.2 6.3 7.1', '7.2 7.3 7.4 7.5 7.6 7.7 8.1 8.2 8.3', ((function() {
+          var _i, _results;
+          _results = [];
+          for (i = _i = 4; _i <= 12; i = ++_i) {
+            _results.push("8." + i);
+          }
+          return _results;
+        })()).join(' '), ((function() {
+          var _i, _results;
+          _results = [];
+          for (i = _i = 13; _i <= 21; i = ++_i) {
+            _results.push("8." + i);
+          }
+          return _results;
+        })()).join(' '), ((function() {
+          var _i, _results;
+          _results = [];
+          for (i = _i = 1; _i <= 9; i = ++_i) {
+            _results.push("9." + i);
+          }
+          return _results;
+        })()).join(' '), ((function() {
+          var _i, _results;
+          _results = [];
+          for (i = _i = 10; _i <= 18; i = ++_i) {
+            _results.push("9." + i);
+          }
+          return _results;
+        })()).join(' '), ((function() {
+          var _i, _results;
+          _results = [];
+          for (i = _i = 19; _i <= 27; i = ++_i) {
+            _results.push("9." + i);
+          }
+          return _results;
+        })()).join(' '), ((function() {
+          var _i, _results;
+          _results = [];
+          for (i = _i = 28; _i <= 36; i = ++_i) {
+            _results.push("9." + i);
+          }
+          return _results;
+        })()).join(' '), '0.2.1 2.2.1 4.2.1 5.2.1 6.2.1 6.2.2 6.2.3 7.2.1 7.2.2', '7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3', '8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1', '6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5'
+      ];
       this.links = [];
       for (row = _i = 0; _i < 12; row = ++_i) {
         this.links[row] = [];
@@ -111,17 +155,20 @@
     };
 
     Renderer.prototype.getCurrentLinkInfo = function() {
-      var L, X;
+      var X;
       X = this.links[this.selectedRow][this.selectedColumn].id.split('.');
-      L = {
+      if (X.length === 2) {
+        return {
+          crossings: X[0],
+          numComponents: "",
+          index: X[1]
+        };
+      }
+      return {
         crossings: X[0],
         numComponents: X[1],
         index: X[2]
       };
-      if (L.numComponents === 1) {
-        L.numComponents = "";
-      }
-      return L;
     };
 
     Renderer.prototype.moveSelection = function(increment) {
@@ -263,18 +310,22 @@
       _results = [];
       for (rowIndex = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; rowIndex = 0 <= _ref ? ++_i : --_i) {
         row = this.links[rowIndex];
-        w = tileWidth = this.width / row.length;
-        h = tileHeight = tileWidth * this.height / this.width;
+        h = tileHeight = this.height / this.links.length;
+        w = tileHeight * this.width / this.height;
+        tileWidth = this.width / (row.length + 0.5);
         x = -this.width + tileWidth / 2;
-        y = this.height - tileHeight / 2 - (rowIndex - 3) * tileHeight;
+        y = this.height - tileHeight / 2 - tileHeight * rowIndex;
         for (_j = 0, _len = row.length; _j < _len; _j++) {
           link = row[_j];
           link.tableBox = aabb.createFromCenter([x, y], [w, h]);
-          x = x + w;
+          link.tableBox.inflate(w / 5, h / 5);
+          x = x + tileWidth;
         }
         if (rowIndex !== this.selectedRow) {
           continue;
         }
+        w = tileWidth = this.width / row.length;
+        h = tileHeight = tileWidth * this.height / this.width;
         x = tileWidth / 2;
         y = this.height - tileHeight / 2;
         _results.push((function() {
