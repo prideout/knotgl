@@ -176,7 +176,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, cursor, elapsed, eye, far, fov, knot, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _p, _ref, _ref1, _ref2;
+      var aspect, currentTime, cursor, elapsed, eye, far, fov, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _ref, _ref1, _ref2;
       r = function() {
         return root.renderer.render();
       };
@@ -215,33 +215,44 @@
         row = _ref[_i];
         for (_j = 0, _len1 = row.length; _j < _len1; _j++) {
           link = row[_j];
-          for (_k = 0, _len2 = link.length; _k < _len2; _k++) {
-            knot = link[_k];
-            this.renderIconKnot(knot, link, link.tableBox);
-          }
+          this.renderIconLink(link, link.tableBox);
         }
       }
       _ref1 = this.links[this.selectedRow];
-      for (_l = 0, _len3 = _ref1.length; _l < _len3; _l++) {
-        link = _ref1[_l];
-        for (_m = 0, _len4 = link.length; _m < _len4; _m++) {
-          knot = link[_m];
-          this.renderIconKnot(knot, link, link.iconBox);
-        }
+      for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+        link = _ref1[_k];
+        this.renderIconLink(link, link.iconBox);
       }
-      for (pass = _n = 0; _n <= 1; pass = ++_n) {
+      for (pass = _l = 0; _l <= 1; pass = ++_l) {
         _ref2 = this.links[this.selectedRow];
-        for (_o = 0, _len5 = _ref2.length; _o < _len5; _o++) {
-          link = _ref2[_o];
-          for (_p = 0, _len6 = link.length; _p < _len6; _p++) {
-            knot = link[_p];
-            this.renderBigKnot(knot, link, pass);
-          }
+        for (_m = 0, _len3 = _ref2.length; _m < _len3; _m++) {
+          link = _ref2[_m];
+          this.renderBigLink(link, pass);
         }
       }
       if (this.gl.getError() !== this.gl.NO_ERROR) {
         return glerr("Render");
       }
+    };
+
+    Renderer.prototype.renderIconLink = function(link, viewbox) {
+      var knot, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        _results.push(this.renderIconKnot(knot, link, viewbox));
+      }
+      return _results;
+    };
+
+    Renderer.prototype.renderBigLink = function(link, pass) {
+      var knot, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        _results.push(this.renderBigKnot(knot, link, pass));
+      }
+      return _results;
     };
 
     Renderer.prototype.updateViewports = function() {

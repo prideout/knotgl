@@ -179,12 +179,15 @@ class Renderer
 
     # Draw each knot in its respective viewport, batching roughly
     # according to currently to current shader and current VBO
-    @renderIconKnot(knot, link, link.tableBox) for knot in link for link in row for row in @links
-    @renderIconKnot(knot, link, link.iconBox) for knot in link for link in @links[@selectedRow]
+    @renderIconLink(link, link.tableBox) for link in row for row in @links
+    @renderIconLink(link, link.iconBox) for link in @links[@selectedRow]
     for pass in [0..1]
-      @renderBigKnot(knot, link, pass) for knot in link for link in @links[@selectedRow]
+      @renderBigLink(link, pass) for link in @links[@selectedRow]
 
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
+
+  renderIconLink: (link, viewbox) -> @renderIconKnot(knot, link, viewbox) for knot in link
+  renderBigLink: (link, pass) -> @renderBigKnot(knot, link, pass) for knot in link
 
   # Annotates each link with aabb objects: iconBox, centralBox, and tableBox.
   # If a transition animation is underway, centralBox is an interpolated result.
@@ -197,14 +200,11 @@ class Renderer
       row = @links[rowIndex]
       w = tileWidth = @width / row.length
       h = tileHeight = tileWidth * @height / @width
-
-      # TODO the following block only needs to execute when the layout changes
       x = -@width + tileWidth / 2
       y = @height - tileHeight / 2 - (rowIndex-3) * tileHeight
       for link in row
         link.tableBox = aabb.createFromCenter [x,y], [w,h]
         x = x + w
-
       continue if rowIndex isnt @selectedRow
 
       x = tileWidth / 2
