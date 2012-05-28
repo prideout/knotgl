@@ -22,11 +22,11 @@ class Renderer
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
     @parseMetadata()
-    @downloadSpines()
+    @downloadSpineData()
 
   # Read the metadata table (see knots.coffee) and arrange it into a "links" array.
   # Each "link" is an annotated array of "knot" objects.
-  # Link properties: id, iconified, iconBox, centralBox.
+  # Link properties: id, iconified, iconBox, centralBox, tableBox.
   # Knot properties: range, vbos, color.
   # Each "range" is an [index, count] pair that defines a window into the raw spine data.
   parseMetadata: ->
@@ -50,7 +50,7 @@ class Renderer
       @links.push(link)
     @links[@selectedColumn].iconified = 0
 
-  downloadSpines: ->
+  downloadSpineData: ->
     worker = new Worker 'js/downloader.js'
     worker.renderer = this
     worker.onmessage = (response) -> @renderer.onDownloadComplete(response.data)
@@ -161,7 +161,7 @@ class Renderer
 
     # Draw each knot in its respective viewport, batching roughly
     # according to currently to current shader and current VBO
-    @renderIconKnot(knot, link) for knot in link for link in @links
+    @renderIconKnot(knot, link, link.iconBox) for knot in link for link in @links
     for pass in [0..1]
       @renderBigKnot(knot, link, pass) for knot in link for link in @links
 
@@ -202,35 +202,36 @@ class Renderer
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
 
-  # Issues a gl.viewport and update the projection matrix according to the given aabb.
-  # The viewing aabb is clipped against the canvas size.
-  setViewport: (box, projectionUniform) ->
+  # Issues a gl.viewport and returns the projection matrix according
+  # to the given viewbox.  The viewbox is clipped against the canvas.
+  setViewport: (box) ->
     box = box.translated(window.pan.x,0)
     entireViewport = new aabb(0, 0, @width, @height)
     clippedBox = aabb.intersect(box, entireViewport)
     if clippedBox.degenerate()
-      @gl.viewport(0,0,1,1)
-      return
+      return null
     cropMatrix = aabb.cropMatrix(clippedBox, box)
-    proj = mat4.create(@projection)
-    mat4.multiply(proj, cropMatrix)
-    @gl.uniformMatrix4fv(projectionUniform, false, proj)
+    projection = mat4.create(@projection)
+    mat4.multiply(projection, cropMatrix)
     clippedBox.viewport @gl
+    return projection
 
-  renderIconKnot: (knot, link) ->
+  renderIconKnot: (knot, link, viewbox) ->
+    projection = @setViewport viewbox
+    return if not projection
 
     # Draw the thick black outer line.
     # Large values of lineWidth causes ugly fin gaps.
     # Redraw with screen-space offsets to achieve extra thickness.
     program = @programs.wireframe
     @gl.useProgram(program)
-    @setViewport link.iconBox, program.projection
     @gl.enable(@gl.BLEND)
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
     @gl.enableVertexAttribArray(POSITION)
     @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+    @gl.uniformMatrix4fv(program.projection, false, projection)
     @gl.uniform1f(program.scale, @tubeGen.scale)
     alpha = 0.25 + 0.75 * link.iconified
     @setColor(program.color, COLORS.black, alpha)
@@ -253,6 +254,8 @@ class Renderer
   renderBigKnot: (knot, link, pass) ->
     return if link.iconified is 1
     return if not knot.vbos?
+    projection = @setViewport link.centralBox
+    return if not projection
     vbos = knot.vbos
 
     # Draw the solid knot
@@ -260,10 +263,10 @@ class Renderer
         program = @programs.solidmesh
         @gl.enable(@gl.DEPTH_TEST)
         @gl.useProgram(program)
-        @setViewport link.centralBox, program.projection
         @setColor(program.color, knot.color, 1)
         @gl.uniformMatrix4fv(program.modelview, false, @modelview)
         @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
+        @gl.uniformMatrix4fv(program.projection, false, projection)
         @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
         @gl.enableVertexAttribArray(POSITION)
         @gl.enableVertexAttribArray(NORMAL)
@@ -284,8 +287,8 @@ class Renderer
         @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
         program = @programs.wireframe
         @gl.useProgram(program)
-        @setViewport link.centralBox, program.projection
         @gl.uniformMatrix4fv(program.modelview, false, @modelview)
+        @gl.uniformMatrix4fv(program.projection, false, projection)
         @gl.uniform1f(program.scale, 1)
         @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
         @gl.enableVertexAttribArray(POSITION)

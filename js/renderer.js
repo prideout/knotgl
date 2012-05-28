@@ -32,7 +32,7 @@
         glerr("OpenGL error during init");
       }
       this.parseMetadata();
-      this.downloadSpines();
+      this.downloadSpineData();
     }
 
     Renderer.prototype.parseMetadata = function() {
@@ -70,7 +70,7 @@
       return this.links[this.selectedColumn].iconified = 0;
     };
 
-    Renderer.prototype.downloadSpines = function() {
+    Renderer.prototype.downloadSpineData = function() {
       var worker;
       worker = new Worker('js/downloader.js');
       worker.renderer = this;
@@ -207,7 +207,7 @@
         link = _ref[_i];
         for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
           knot = link[_j];
-          this.renderIconKnot(knot, link);
+          this.renderIconKnot(knot, link, link.iconBox);
         }
       }
       for (pass = _k = 0; _k <= 1; pass = ++_k) {
@@ -277,33 +277,36 @@
       return this.gl.uniform4f(loc, c[0], c[1], c[2], α);
     };
 
-    Renderer.prototype.setViewport = function(box, projectionUniform) {
-      var clippedBox, cropMatrix, entireViewport, proj;
+    Renderer.prototype.setViewport = function(box) {
+      var clippedBox, cropMatrix, entireViewport, projection;
       box = box.translated(window.pan.x, 0);
       entireViewport = new aabb(0, 0, this.width, this.height);
       clippedBox = aabb.intersect(box, entireViewport);
       if (clippedBox.degenerate()) {
-        this.gl.viewport(0, 0, 1, 1);
-        return;
+        return null;
       }
       cropMatrix = aabb.cropMatrix(clippedBox, box);
-      proj = mat4.create(this.projection);
-      mat4.multiply(proj, cropMatrix);
-      this.gl.uniformMatrix4fv(projectionUniform, false, proj);
-      return clippedBox.viewport(this.gl);
+      projection = mat4.create(this.projection);
+      mat4.multiply(projection, cropMatrix);
+      clippedBox.viewport(this.gl);
+      return projection;
     };
 
-    Renderer.prototype.renderIconKnot = function(knot, link) {
-      var alpha, program, startVertex, stride, vertexCount, x, y, _i, _j, _ref;
+    Renderer.prototype.renderIconKnot = function(knot, link, viewbox) {
+      var alpha, program, projection, startVertex, stride, vertexCount, x, y, _i, _j, _ref;
+      projection = this.setViewport(viewbox);
+      if (!projection) {
+        return;
+      }
       program = this.programs.wireframe;
       this.gl.useProgram(program);
-      this.setViewport(link.iconBox, program.projection);
       this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
       this.gl.enableVertexAttribArray(POSITION);
       this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
+      this.gl.uniformMatrix4fv(program.projection, false, projection);
       this.gl.uniform1f(program.scale, this.tubeGen.scale);
       alpha = 0.25 + 0.75 * link.iconified;
       this.setColor(program.color, COLORS.black, alpha);
@@ -325,11 +328,15 @@
     };
 
     Renderer.prototype.renderBigKnot = function(knot, link, pass) {
-      var offset, program, stride, vbos;
+      var offset, program, projection, stride, vbos;
       if (link.iconified === 1) {
         return;
       }
       if (!(knot.vbos != null)) {
+        return;
+      }
+      projection = this.setViewport(link.centralBox);
+      if (!projection) {
         return;
       }
       vbos = knot.vbos;
@@ -337,10 +344,10 @@
         program = this.programs.solidmesh;
         this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.useProgram(program);
-        this.setViewport(link.centralBox, program.projection);
         this.setColor(program.color, knot.color, 1);
         this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
         this.gl.uniformMatrix3fv(program.normalmatrix, false, this.normalMatrix);
+        this.gl.uniformMatrix4fv(program.projection, false, projection);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbos.tube);
         this.gl.enableVertexAttribArray(POSITION);
         this.gl.enableVertexAttribArray(NORMAL);
@@ -361,8 +368,8 @@
         this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
         program = this.programs.wireframe;
         this.gl.useProgram(program);
-        this.setViewport(link.centralBox, program.projection);
         this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
+        this.gl.uniformMatrix4fv(program.projection, false, projection);
         this.gl.uniform1f(program.scale, 1);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbos.tube);
         this.gl.enableVertexAttribArray(POSITION);
