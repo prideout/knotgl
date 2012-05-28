@@ -225,7 +225,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var alpha, aspect, currentTime, cursor, elapsed, eye, far, fov, getAlpha, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _ref, _ref1, _ref2;
+      var alpha, aspect, currentTime, cursor, elapsed, eye, far, fov, getAlpha, h, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _ref, _ref1, _ref2;
       r = function() {
         return root.renderer.render();
       };
@@ -234,7 +234,15 @@
       if (root.UpdateLabels != null) {
         root.UpdateLabels();
       }
-      cursor = this.hotMouse || window.mouse.hot ? 'pointer' : '';
+      if (root.pageIndex === 0) {
+        h = this.height / this.links.length;
+        this.highlightRow = Math.floor(root.mouse.position.y / h);
+        if (this.highlightRow >= this.links.length) {
+          this.highlightRow = null;
+        }
+        root.UpdateHighlightRow();
+      }
+      cursor = this.hotMouse || root.mouse.hot || root.pageIndex === 0 ? 'pointer' : '';
       $('#rightpage').css({
         'cursor': cursor
       });
@@ -359,6 +367,14 @@
 
     Renderer.prototype.click = function() {
       var link, mouse, row, _i, _len, _results;
+      if (root.pageIndex === 0) {
+        if (!(this.highlightRow != null)) {
+          return;
+        }
+        this.changeSelection(this.selectedColumn, this.highlightRow);
+        root.SwipePane();
+        return;
+      }
       if (!(this.links != null)) {
         return;
       }

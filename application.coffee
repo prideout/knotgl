@@ -51,7 +51,26 @@ root.AnimateNumerals = ->
 root.UpdateSelectionRow = ->
   r = root.renderer
   top = r.selectedRow * r.height / r.links.length
-  $('#selectionrow').css('top', top)
+  $('#selection-row').css('top', top)
+
+root.UpdateHighlightRow = ->
+  r = root.renderer
+  if not r.highlightRow?
+    $('#highlight-row').css('visibility', 'hidden')
+    return
+  $('#highlight-row').css('visibility', 'visible')
+  top = r.highlightRow * r.height / r.links.length
+  $('#highlight-row').css('top', top)
+
+root.SwipePane = ->
+  root.pageIndex = 1 - root.pageIndex
+  panTarget = getPagePosition(root.pageIndex)
+  swipeDuration = 1000
+  root.swipeTween = new TWEEN.Tween(root.pan)
+      .to({x: panTarget}, swipeDuration)
+      .easing(TWEEN.Easing.Bounce.Out)
+      .onUpdate(updateSwipeAnimation)
+  root.swipeTween.start()
 
 # PRIVATE UTILITIES #
 
@@ -64,7 +83,7 @@ assignEventHandlers = ->
     root.renderer.moveSelection(0,+1) if e.keyCode is 40
     root.renderer.moveSelection(-1,0) if e.keyCode is 37
     root.renderer.moveSelection(+1,0) if e.keyCode is 39
-    swipePane() if e.keyCode is 32
+    root.SwipePane() if e.keyCode is 32
 
   $('.arrow').mouseover ->
     $(this).css('color', '#385fa2')
@@ -74,7 +93,7 @@ assignEventHandlers = ->
     $(this).css({'color' : ''})
     root.mouse.hot = false
 
-  $('.arrow').click -> swipePane()
+  $('.arrow').click -> root.SwipePane()
 
   $('#wideband').mousemove (e) ->
     p = $(this).position()
@@ -102,16 +121,6 @@ updateNumeralSizes = ->
 getPagePosition = (pageIndex) ->
   pageWidth = parseInt($('#canvaspage').css('width'))
   if pageIndex is 1 then 0 else pageWidth
-
-swipePane = ->
-  root.pageIndex = 1 - root.pageIndex
-  panTarget = getPagePosition(root.pageIndex)
-  swipeDuration = 1000
-  root.swipeTween = new TWEEN.Tween(root.pan)
-      .to({x: panTarget}, swipeDuration)
-      .easing(TWEEN.Easing.Bounce.Out)
-      .onUpdate(updateSwipeAnimation)
-  root.swipeTween.start()
 
 updateSwipeAnimation = ->
   w = parseInt($('#canvaspage').css('width'))

@@ -20,15 +20,25 @@ canvas {
     background-image: -moz-radial-gradient(center center, circle cover, #fff, #ddd);
 }
 
-#selectionrow {
+#highlight-row {
     height:8.3%;
     width:100%;
     position:absolute;
     top:16.6%;
-    margin:0%;
+    margin:0;
     background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
-    //background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
-    //background-image: -moz-radial-gradient(center center, circle cover, #dd2e72, #d22854);
+    background-image: -moz-radial-gradient(center center, circle cover, #dd2e72, #d22854);
+    text-align:right;
+}
+
+#selection-row {
+    height:8.3%;
+    width:100%;
+    position:absolute;
+    top:16.6%;
+    margin:0;
+    /*background-color: #ffc;*/
+    text-align:right;
 }
 
 h1 {

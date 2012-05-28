@@ -147,9 +147,16 @@ class Renderer
     # Update the Alexander-Briggs labels unless they're collapse-animating.
     root.UpdateLabels() if root.UpdateLabels?
 
+    # If we're on the gallery page, update the mouse-over row.
+    if root.pageIndex is 0
+      h = @height / @links.length
+      @highlightRow = Math.floor(root.mouse.position.y / h)
+      @highlightRow = null if @highlightRow >= @links.length
+      root.UpdateHighlightRow()
+
     # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
     # or the coffeescript logic can make it hot (this.hotMouse).
-    cursor = if @hotMouse or window.mouse.hot then 'pointer' else ''
+    cursor = if @hotMouse or root.mouse.hot or root.pageIndex is 0 then 'pointer' else ''
     $('#rightpage').css({'cursor' : cursor})
     $('#leftpage').css({'cursor' : cursor})
 
@@ -236,6 +243,11 @@ class Renderer
 
   # Responds to a mouse click by checking to see if a knot icon was selected.
   click: ->
+    if root.pageIndex is 0
+      return if not @highlightRow?
+      @changeSelection(@selectedColumn, @highlightRow)
+      root.SwipePane()
+      return
     return if not @links?
     row = @links[@selectedRow]
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
