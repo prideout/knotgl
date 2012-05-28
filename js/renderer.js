@@ -21,6 +21,7 @@
       this.vbos = {};
       this.programs = {};
       this.selectedColumn = 0;
+      this.selectedRow = 9;
       this.hotMouse = false;
       this.tubeGen = new root.TubeGenerator;
       this.tubeGen.polygonSides = 10;
@@ -36,38 +37,44 @@
     }
 
     Renderer.prototype.parseMetadata = function() {
-      var KnotColors, TableRow, id, knot, link, range, ranges, x, _i, _j, _len, _len1, _ref;
+      var KnotColors, Table, id, knot, link, range, ranges, row, x, _i, _j, _k, _len, _len1, _ref;
       KnotColors = [[1, 1, 1, 0.75], [0.25, 0.5, 1, 0.75], [1, 0.5, 0.25, 0.75]];
-      TableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3";
+      Table = ["", "", "", "", "", "", "", "", "", "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3", "8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1", "6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5"];
       this.links = [];
-      _ref = TableRow.split(' ');
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        id = _ref[_i];
-        link = [];
-        ranges = ((function() {
-          var _j, _len1, _ref1, _results;
-          _ref1 = root.links;
-          _results = [];
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            x = _ref1[_j];
-            if (x[0] === id) {
-              _results.push(x.slice(1));
-            }
-          }
-          return _results;
-        })())[0];
-        for (_j = 0, _len1 = ranges.length; _j < _len1; _j++) {
-          range = ranges[_j];
-          knot = {};
-          knot.range = range;
-          knot.color = KnotColors[ranges.indexOf(range)];
-          link.push(knot);
+      for (row = _i = 0; _i < 12; row = ++_i) {
+        this.links[row] = [];
+        if (!Table[row]) {
+          continue;
         }
-        link.iconified = 1;
-        link.id = id;
-        this.links.push(link);
+        _ref = Table[row].split(' ');
+        for (_j = 0, _len = _ref.length; _j < _len; _j++) {
+          id = _ref[_j];
+          link = [];
+          ranges = ((function() {
+            var _k, _len1, _ref1, _results;
+            _ref1 = root.links;
+            _results = [];
+            for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
+              x = _ref1[_k];
+              if (x[0] === id) {
+                _results.push(x.slice(1));
+              }
+            }
+            return _results;
+          })())[0];
+          for (_k = 0, _len1 = ranges.length; _k < _len1; _k++) {
+            range = ranges[_k];
+            knot = {};
+            knot.range = range;
+            knot.color = KnotColors[ranges.indexOf(range)];
+            link.push(knot);
+          }
+          link.iconified = 1;
+          link.id = id;
+          this.links[row].push(link);
+        }
       }
-      return this.links[this.selectedColumn].iconified = 0;
+      return this.links[this.selectedRow][this.selectedColumn].iconified = 0;
     };
 
     Renderer.prototype.downloadSpineData = function() {
@@ -91,7 +98,7 @@
         glerr("Error when trying to create spine VBO");
       }
       toast("downloaded " + (this.spines.length / 3) + " verts of spine data");
-      _ref = this.links;
+      _ref = this.links[this.selectedRow];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         link = _ref[_i];
         for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
@@ -105,7 +112,7 @@
 
     Renderer.prototype.getCurrentLinkInfo = function() {
       var L, X;
-      X = this.links[this.selectedColumn].id.split('.');
+      X = this.links[this.selectedRow][this.selectedColumn].id.split('.');
       L = {
         crossings: X[0],
         numComponents: X[1],
@@ -121,7 +128,7 @@
       var currentSelection, nextSelection;
       currentSelection = this.selectedColumn;
       nextSelection = currentSelection + increment;
-      if (nextSelection >= this.links.length || nextSelection < 0) {
+      if (nextSelection >= this.links[this.selectedRow].length || nextSelection < 0) {
         return;
       }
       if (nextSelection === currentSelection) {
@@ -131,25 +138,26 @@
     };
 
     Renderer.prototype.changeSelection = function(nextSelection) {
-      var currentSelection, iconified;
+      var currentSelection, iconified, row;
       currentSelection = this.selectedColumn;
       this.selectedColumn = nextSelection;
       root.AnimateNumerals();
-      iconified = this.links[currentSelection].iconified;
+      row = this.links[this.selectedRow];
+      iconified = row[currentSelection].iconified;
       if (iconified === 0) {
-        root.outgoing = new TWEEN.Tween(this.links[currentSelection]).to({
+        root.outgoing = new TWEEN.Tween(row[currentSelection]).to({
           iconified: 1
         }, 0.5 * this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
-        root.incoming = new TWEEN.Tween(this.links[nextSelection]).to({
+        root.incoming = new TWEEN.Tween(row[nextSelection]).to({
           iconified: 0
         }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
         root.incoming.start();
         root.outgoing.start();
         return;
       }
-      this.links[currentSelection].iconified = 1;
-      this.links[nextSelection].iconified = iconified;
-      return root.incoming.replace(this.links[nextSelection]);
+      row[currentSelection].iconified = 1;
+      row[nextSelection].iconified = iconified;
+      return root.incoming.replace(row[nextSelection]);
     };
 
     Renderer.prototype.compileShaders = function() {
@@ -168,7 +176,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, cursor, elapsed, eye, far, fov, knot, link, model, near, pass, r, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _m, _ref, _ref1;
+      var aspect, currentTime, cursor, elapsed, eye, far, fov, knot, link, model, near, pass, r, row, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _p, _ref, _ref1, _ref2;
       r = function() {
         return root.renderer.render();
       };
@@ -204,18 +212,29 @@
       this.updateViewports();
       _ref = this.links;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        link = _ref[_i];
-        for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
-          knot = link[_j];
+        row = _ref[_i];
+        for (_j = 0, _len1 = row.length; _j < _len1; _j++) {
+          link = row[_j];
+          for (_k = 0, _len2 = link.length; _k < _len2; _k++) {
+            knot = link[_k];
+            this.renderIconKnot(knot, link, link.tableBox);
+          }
+        }
+      }
+      _ref1 = this.links[this.selectedRow];
+      for (_l = 0, _len3 = _ref1.length; _l < _len3; _l++) {
+        link = _ref1[_l];
+        for (_m = 0, _len4 = link.length; _m < _len4; _m++) {
+          knot = link[_m];
           this.renderIconKnot(knot, link, link.iconBox);
         }
       }
-      for (pass = _k = 0; _k <= 1; pass = ++_k) {
-        _ref1 = this.links;
-        for (_l = 0, _len2 = _ref1.length; _l < _len2; _l++) {
-          link = _ref1[_l];
-          for (_m = 0, _len3 = link.length; _m < _len3; _m++) {
-            knot = link[_m];
+      for (pass = _n = 0; _n <= 1; pass = ++_n) {
+        _ref2 = this.links[this.selectedRow];
+        for (_o = 0, _len5 = _ref2.length; _o < _len5; _o++) {
+          link = _ref2[_o];
+          for (_p = 0, _len6 = link.length; _p < _len6; _p++) {
+            knot = link[_p];
             this.renderBigKnot(knot, link, pass);
           }
         }
@@ -226,46 +245,66 @@
     };
 
     Renderer.prototype.updateViewports = function() {
-      var bigBox, d, distance, h, iconBox, link, maxExpansion, mouse, radius, tileHeight, tileWidth, w, x, y, _i, _len, _ref, _results;
-      w = tileWidth = this.width / this.links.length;
-      h = tileHeight = tileWidth * this.height / this.width;
-      y = this.height - tileHeight / 2;
-      x = tileWidth / 2;
+      var bigBox, d, distance, h, iconBox, link, maxExpansion, mouse, radius, row, rowIndex, tileHeight, tileWidth, w, x, y, _i, _j, _len, _ref, _results;
       bigBox = new aabb(0, 0, this.width, this.height);
       mouse = vec2.create([root.mouse.position.x, this.height - root.mouse.position.y]);
       this.hotMouse = false;
-      _ref = this.links;
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        link = _ref[_i];
-        iconBox = aabb.createFromCenter([x, y], [w, h]);
-        distance = vec2.dist([x, y], mouse);
-        radius = h / 2;
-        if (distance < radius && link.iconified === 1) {
-          d = 1 - distance / radius;
-          maxExpansion = radius / 3;
-          iconBox.inflate(d * d * maxExpansion);
-          this.hotMouse = true;
+      for (rowIndex = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; rowIndex = 0 <= _ref ? ++_i : --_i) {
+        row = this.links[rowIndex];
+        w = tileWidth = this.width / row.length;
+        h = tileHeight = tileWidth * this.height / this.width;
+        x = -this.width + tileWidth / 2;
+        y = this.height - tileHeight / 2 - (rowIndex - 3) * tileHeight;
+        for (_j = 0, _len = row.length; _j < _len; _j++) {
+          link = row[_j];
+          link.tableBox = aabb.createFromCenter([x, y], [w, h]);
+          x = x + w;
         }
-        link.iconBox = iconBox;
-        link.centralBox = aabb.lerp(bigBox, iconBox, link.iconified);
-        _results.push(x = x + w);
+        if (rowIndex !== this.selectedRow) {
+          continue;
+        }
+        x = tileWidth / 2;
+        y = this.height - tileHeight / 2;
+        _results.push((function() {
+          var _k, _len1, _results1;
+          _results1 = [];
+          for (_k = 0, _len1 = row.length; _k < _len1; _k++) {
+            link = row[_k];
+            iconBox = aabb.createFromCenter([x, y], [w, h]);
+            distance = vec2.dist([x, y], mouse);
+            radius = h / 2;
+            if (distance < radius && link.iconified === 1) {
+              d = 1 - distance / radius;
+              maxExpansion = radius / 3;
+              iconBox.inflate(d * d * maxExpansion);
+              this.hotMouse = true;
+            }
+            link.iconBox = iconBox;
+            link.centralBox = aabb.lerp(bigBox, iconBox, link.iconified);
+            _results1.push(x = x + w);
+          }
+          return _results1;
+        }).call(this));
       }
       return _results;
     };
 
     Renderer.prototype.click = function() {
-      var link, mouse, _i, _len, _ref, _results;
-      if (!(this.links != null) || this.links.length === 0) {
+      var link, mouse, row, _i, _len, _results;
+      if (!(this.links != null)) {
         return;
       }
+      row = this.links[this.selectedRow];
       mouse = vec2.create([root.mouse.position.x, this.height - root.mouse.position.y]);
-      _ref = this.links;
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        link = _ref[_i];
+      for (_i = 0, _len = row.length; _i < _len; _i++) {
+        link = row[_i];
+        if (!link || !link.iconBox) {
+          continue;
+        }
         if (link.iconBox.contains(mouse[0], mouse[1]) && link.iconified === 1) {
-          _results.push(this.changeSelection(this.links.indexOf(link)));
+          _results.push(this.changeSelection(row.indexOf(link)));
         } else {
           _results.push(void 0);
         }

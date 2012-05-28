@@ -13,6 +13,7 @@ class Renderer
     @vbos = {}
     @programs = {}
     @selectedColumn = 0
+    @selectedRow = 9
     @hotMouse = false
     @tubeGen = new root.TubeGenerator
     @tubeGen.polygonSides = 10
@@ -35,20 +36,36 @@ class Renderer
       [0.25,0.5,1,0.75]
       [1,0.5,0.25,0.75]
     ]
-    TableRow = "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
+    Table = [
+      ""
+      ""
+      ""
+      ""
+      ""
+      ""
+      ""
+      ""
+      ""
+      "7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3"
+      "8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1"
+      "6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5"
+    ]
     @links = []
-    for id in TableRow.split(' ')
-      link = []
-      ranges = (x[1..] for x in root.links when x[0] is id)[0]
-      for range in ranges
-        knot = {}
-        knot.range = range
-        knot.color = KnotColors[ranges.indexOf(range)]
-        link.push(knot)
-      link.iconified = 1
-      link.id = id
-      @links.push(link)
-    @links[@selectedColumn].iconified = 0
+    for row in [0...12]
+        @links[row] = []
+        continue if not Table[row]
+        for id in Table[row].split(' ')
+          link = []
+          ranges = (x[1..] for x in root.links when x[0] is id)[0]
+          for range in ranges
+            knot = {}
+            knot.range = range
+            knot.color = KnotColors[ranges.indexOf(range)]
+            link.push(knot)
+          link.iconified = 1
+          link.id = id
+          @links[row].push(link)
+    @links[@selectedRow][@selectedColumn].iconified = 0
 
   downloadSpineData: ->
     worker = new Worker 'js/downloader.js'
@@ -64,7 +81,7 @@ class Renderer
     @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
     glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
     toast("downloaded #{@spines.length / 3} verts of spine data")
-    for link in @links
+    for link in @links[@selectedRow]
       for knot in link
         knot.vbos = @tessKnot(knot.range)
 
@@ -72,7 +89,7 @@ class Renderer
     @render()
 
   getCurrentLinkInfo: ->
-    X = @links[@selectedColumn].id.split '.'
+    X = @links[@selectedRow][@selectedColumn].id.split '.'
     L = {crossings:X[0], numComponents:X[1], index:X[2]}
     L.numComponents = "" if L.numComponents == 1
     L
@@ -80,7 +97,7 @@ class Renderer
   moveSelection: (increment) ->
     currentSelection = @selectedColumn
     nextSelection = currentSelection + increment
-    return if nextSelection >= @links.length or nextSelection < 0
+    return if nextSelection >= @links[@selectedRow].length or nextSelection < 0
     return if nextSelection == currentSelection
     @changeSelection(nextSelection)
 
@@ -88,15 +105,16 @@ class Renderer
     currentSelection = @selectedColumn
     @selectedColumn = nextSelection
     root.AnimateNumerals()
+    row = @links[@selectedRow]
 
     # Note that "iconified" is an animation percentange in [0,1]
     # If the current selection has animation = 0, then start a new transition.
-    iconified = @links[currentSelection].iconified
+    iconified = row[currentSelection].iconified
     if iconified is 0
-      root.outgoing = new TWEEN.Tween(@links[currentSelection])
+      root.outgoing = new TWEEN.Tween(row[currentSelection])
         .to({iconified: 1}, 0.5 * @transitionMilliseconds)
         .easing(TWEEN.Easing.Quartic.Out)
-      root.incoming = new TWEEN.Tween(@links[nextSelection])
+      root.incoming = new TWEEN.Tween(row[nextSelection])
         .to({iconified: 0}, @transitionMilliseconds)
         .easing(TWEEN.Easing.Bounce.Out)
       root.incoming.start()
@@ -106,9 +124,9 @@ class Renderer
     # If we reached this point, we're interupting an in-progress transition.
     # We instantly snap the currently-incoming element back to the toolbar
     # by forcibly setting its percentage to 1.
-    @links[currentSelection].iconified = 1
-    @links[nextSelection].iconified = iconified
-    root.incoming.replace(@links[nextSelection])
+    row[currentSelection].iconified = 1
+    row[nextSelection].iconified = iconified
+    root.incoming.replace(row[nextSelection])
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -161,43 +179,59 @@ class Renderer
 
     # Draw each knot in its respective viewport, batching roughly
     # according to currently to current shader and current VBO
-    @renderIconKnot(knot, link, link.iconBox) for knot in link for link in @links
+    @renderIconKnot(knot, link, link.tableBox) for knot in link for link in row for row in @links
+    @renderIconKnot(knot, link, link.iconBox) for knot in link for link in @links[@selectedRow]
     for pass in [0..1]
-      @renderBigKnot(knot, link, pass) for knot in link for link in @links
+      @renderBigKnot(knot, link, pass) for knot in link for link in @links[@selectedRow]
 
     glerr "Render" unless @gl.getError() == @gl.NO_ERROR
 
-  # Annotates each link with 'iconBox' and 'centralBox', which are aabb objects.
+  # Annotates each link with aabb objects: iconBox, centralBox, and tableBox.
   # If a transition animation is underway, centralBox is an interpolated result.
+  # The iconBox is inflated if the mouse is nearby, to simulate a Mac Dock effect.
   updateViewports: ->
-    w = tileWidth = @width / @links.length
-    h = tileHeight = tileWidth * @height / @width
-    y = @height - tileHeight / 2
-    x = tileWidth / 2
     bigBox = new aabb 0, 0, @width, @height
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
     @hotMouse = false
-    for link in @links
-      iconBox = aabb.createFromCenter [x,y], [w,h]
-      distance = vec2.dist([x,y], mouse)
-      radius = h/2
-      if distance < radius and link.iconified is 1
-        # 'd' is normalized proximity between mouse and icon center
-        d = 1 - distance / radius
-        maxExpansion = radius / 3
-        iconBox.inflate(d*d * maxExpansion)
-        @hotMouse = true
-      link.iconBox = iconBox
-      link.centralBox = aabb.lerp bigBox, iconBox, link.iconified
-      x = x + w
+    for rowIndex in [0...@links.length]
+      row = @links[rowIndex]
+      w = tileWidth = @width / row.length
+      h = tileHeight = tileWidth * @height / @width
+
+      # TODO the following block only needs to execute when the layout changes
+      x = -@width + tileWidth / 2
+      y = @height - tileHeight / 2 - (rowIndex-3) * tileHeight
+      for link in row
+        link.tableBox = aabb.createFromCenter [x,y], [w,h]
+        x = x + w
+
+      continue if rowIndex isnt @selectedRow
+
+      x = tileWidth / 2
+      y = @height - tileHeight / 2
+      for link in row
+        iconBox = aabb.createFromCenter [x,y], [w,h]
+        distance = vec2.dist([x,y], mouse)
+        radius = h/2
+        if distance < radius and link.iconified is 1
+          # 'd' is normalized proximity between mouse and icon center
+          d = 1 - distance / radius
+          maxExpansion = radius / 3
+          iconBox.inflate(d*d * maxExpansion)
+          @hotMouse = true
+        link.iconBox = iconBox
+        link.centralBox = aabb.lerp bigBox, iconBox, link.iconified
+        x = x + w
 
   # Responds to a mouse click by checking to see if a knot icon was selected.
   click: ->
-    return if not @links? or @links.length is 0
+    return if not @links?
+    row = @links[@selectedRow]
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
-    for link in @links
+    for link in row
+      continue if not link or not link.iconBox
       if link.iconBox.contains(mouse[0], mouse[1]) and link.iconified is 1
-        @changeSelection(@links.indexOf(link))
+        @changeSelection(row.indexOf(link))
 
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
