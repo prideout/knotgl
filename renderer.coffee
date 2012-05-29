@@ -145,7 +145,6 @@ class Renderer
 
   changeSelection: (nextX, nextY) ->
     previousColumn = @selectedColumn
-
     if nextY isnt @selectedRow
       for link in @links[nextY]
         link.iconified = 1
@@ -311,7 +310,7 @@ class Renderer
 
   # Responds to a mouse click by checking to see if a knot icon was selected.
   click: ->
-    if root.pageIndex is 0
+    if root.pageIndex is 0 and not root.swipeTween?
       return if not @highlightRow?
       @changeSelection(@selectedColumn, @highlightRow)
       root.SwipePane()

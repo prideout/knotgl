@@ -165,8 +165,7 @@
     return $('#wideband').mouseout(function() {
       root.mouse.position.x = -1;
       root.mouse.position.y = -1;
-      root.mouse.within = false;
-      return grasshopperLeave();
+      return root.mouse.within = false;
     });
   };
 

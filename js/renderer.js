@@ -450,7 +450,7 @@
 
     Renderer.prototype.click = function() {
       var link, mouse, row, _i, _len, _results;
-      if (root.pageIndex === 0) {
+      if (root.pageIndex === 0 && !(root.swipeTween != null)) {
         if (!(this.highlightRow != null)) {
           return;
         }

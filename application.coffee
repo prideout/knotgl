@@ -125,8 +125,7 @@ assignEventHandlers = ->
   $('#wideband').mouseout ->
     root.mouse.position.x = -1
     root.mouse.position.y = -1
-    root.mouse.within = false;
-    grasshopperLeave()
+    root.mouse.within = false
 
 updateNumeralSizes = ->
   $('#crossings').css('font-size', CurrentSizes.crossings)
