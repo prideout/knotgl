@@ -132,7 +132,7 @@ assignEventHandlers = ->
     y = root.mouse.position.y = e.clientY - p.top
     if grasshopperTest x,y
       grasshopperClick()
-      renderer()
+      return
     root.mouse.within = 1
     renderer.click()
 
