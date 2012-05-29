@@ -130,7 +130,9 @@ assignEventHandlers = ->
     p = $(this).position()
     x = root.mouse.position.x = e.clientX - p.left
     y = root.mouse.position.y = e.clientY - p.top
-    grasshopperClick() if grasshopperTest x,y
+    if grasshopperTest x,y
+      grasshopperClick()
+      renderer()
     root.mouse.within = 1
     renderer.click()
 

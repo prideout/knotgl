@@ -158,6 +158,25 @@
       row.loading = true;
       row.loadCount = 0;
       onComplete = function(event) {
+        var knot, link, vbo, _i, _len;
+        link = event.data;
+        for (_i = 0, _len = link.length; _i < _len; _i++) {
+          knot = link[_i];
+          vbo = _this.gl.createBuffer();
+          _this.gl.bindBuffer(_this.gl.ARRAY_BUFFER, vbo);
+          _this.gl.bufferData(_this.gl.ARRAY_BUFFER, knot.vbos.tube, _this.gl.STATIC_DRAW);
+          knot.vbos.tube = vbo;
+          vbo = _this.gl.createBuffer();
+          _this.gl.bindBuffer(_this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+          _this.gl.bufferData(_this.gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, _this.gl.STATIC_DRAW);
+          vbo.count = knot.vbos.wireframe.count;
+          knot.vbos.wireframe = vbo;
+          vbo = _this.gl.createBuffer();
+          _this.gl.bindBuffer(_this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+          _this.gl.bufferData(_this.gl.ELEMENT_ARRAY_BUFFER, knot.vbos.triangles, _this.gl.STATIC_DRAW);
+          vbo.count = knot.vbos.triangles.count;
+          knot.vbos.triangles = vbo;
+        }
         ++row.loadCount;
         if (row.loadCount === row.length) {
           row.loaded = true;
@@ -170,9 +189,11 @@
         link = row[_i];
         if (!useWorkers) {
           this.tessLink(link);
-          _results.push(onComplete(null));
+          _results.push(onComplete({
+            data: link
+          }));
         } else {
-          worker = new Worker('js/tess.js');
+          worker = new Worker('js/tess-worker.js');
           msg = {
             renderer: this,
             link: link
@@ -585,17 +606,13 @@
     };
 
     Renderer.prototype.tessKnot = function(component) {
-      var byteOffset, centerline, faceCount, i, j, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbo, vbos, wireframe, _ref, _ref1, _ref2, _ref3;
+      var byteOffset, centerline, faceCount, i, j, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbos, wireframe, _ref, _ref1, _ref2, _ref3;
       byteOffset = component[0] * 3 * 4;
       numFloats = component[1] * 3;
       segmentData = this.spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3);
       centerline = this.tubeGen.getKnotPath(segmentData);
       rawBuffer = this.tubeGen.generateTube(centerline);
-      vbo = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-      console.log("Tube positions has " + (rawBuffer.length / 3) + " verts.");
-      tube = vbo;
+      tube = rawBuffer;
       polygonCount = centerline.length / 3 - 1;
       sides = this.tubeGen.polygonSides;
       lineCount = polygonCount * sides * 2;
@@ -622,12 +639,8 @@
         }
         i += sides + 1;
       }
-      vbo = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-      wireframe = vbo;
+      wireframe = rawBuffer;
       wireframe.count = rawBuffer.length;
-      console.log("Tube wireframe has " + rawBuffer.length + " indices for " + sides + " sides and " + (centerline.length / 3 - 1) + " polygons.");
       faceCount = centerline.length / 3 * sides * 2;
       rawBuffer = new Uint16Array(faceCount * 3);
       _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
@@ -647,10 +660,7 @@
         }
         v += sides + 1;
       }
-      vbo = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, rawBuffer, this.gl.STATIC_DRAW);
-      triangles = vbo;
+      triangles = rawBuffer;
       triangles.count = rawBuffer.length;
       return vbos = {
         tube: tube,

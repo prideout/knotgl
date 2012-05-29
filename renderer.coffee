@@ -93,20 +93,35 @@ class Renderer
     row.loadCount = 0
 
     onComplete = (event) =>
+      link = event.data
+      for knot in link
+        # Convert Float32Array objects into WebGL VBO's
+        vbo = @gl.createBuffer()
+        @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
+        @gl.bufferData(@gl.ARRAY_BUFFER, knot.vbos.tube, @gl.STATIC_DRAW)
+        knot.vbos.tube = vbo
+        vbo = @gl.createBuffer()
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
+        @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, @gl.STATIC_DRAW)
+        vbo.count = knot.vbos.wireframe.count
+        knot.vbos.wireframe = vbo
+        vbo = @gl.createBuffer()
+        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
+        @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.triangles, @gl.STATIC_DRAW)
+        vbo.count = knot.vbos.triangles.count
+        knot.vbos.triangles = vbo
       ++row.loadCount
       if row.loadCount is row.length
         row.loaded = true
         row.loading = false
 
     useWorkers = false
-
     for link in row
-
       if not useWorkers
         @tessLink(link)
-        onComplete(null)
+        onComplete({data:link})
       else
-        worker = new Worker 'js/tess.js'
+        worker = new Worker 'js/tess-worker.js'
         msg =
           renderer: this
           link: link
@@ -434,11 +449,7 @@ class Renderer
 
     # Create a positions buffer for a swept octagon
     rawBuffer = @tubeGen.generateTube(centerline)
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    console.log "Tube positions has #{rawBuffer.length/3} verts."
-    tube = vbo
+    tube = rawBuffer
 
     # Create the index buffer for the tube wireframe
     # TODO This can be re-used from one knot to another
@@ -464,12 +475,8 @@ class Renderer
         polygonEdge[1] = i+j+1
         [ptr, j] = [ptr+2, j+1]
       i += sides+1
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    wireframe = vbo
+    wireframe = rawBuffer
     wireframe.count = rawBuffer.length
-    console.log "Tube wireframe has #{rawBuffer.length} indices for #{sides} sides and #{centerline.length/3-1} polygons."
 
     # Create the index buffer for the solid tube
     # TODO This can be be re-used from one knot to another
@@ -490,10 +497,7 @@ class Renderer
         tri[2] = v+next+sides+1
         ptr += 6
       v += sides+1
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
-    @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, rawBuffer, @gl.STATIC_DRAW)
-    triangles = vbo
+    triangles = rawBuffer
     triangles.count = rawBuffer.length
 
     # Return metadata

@@ -169,6 +169,7 @@
       y = root.mouse.position.y = e.clientY - p.top;
       if (grasshopperTest(x, y)) {
         grasshopperClick();
+        renderer();
       }
       root.mouse.within = 1;
       return renderer.click();
