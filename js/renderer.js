@@ -141,25 +141,57 @@
         glerr("Error when trying to create spine VBO");
       }
       toast("downloaded " + (this.spines.length / 3) + " verts of spine data");
-      this.tessRow(this.selectedRow);
+      this.tessRow(this.links[this.selectedRow]);
       root.UpdateLabels();
       return this.render();
     };
 
     Renderer.prototype.tessRow = function(row) {
-      var knot, link, _i, _j, _len, _len1, _ref;
-      if (this.links[row].loaded != null) {
+      var link, msg, onComplete, useWorkers, worker, _i, _len, _results,
+        _this = this;
+      if (row.loaded != null) {
         return;
       }
-      _ref = this.links[row];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        link = _ref[_i];
-        for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
-          knot = link[_j];
-          knot.vbos = this.tessKnot(knot.range);
+      if (row.loading != null) {
+        return;
+      }
+      row.loading = true;
+      row.loadCount = 0;
+      onComplete = function(event) {
+        ++row.loadCount;
+        if (row.loadCount === row.length) {
+          row.loaded = true;
+          return row.loading = false;
+        }
+      };
+      useWorkers = false;
+      _results = [];
+      for (_i = 0, _len = row.length; _i < _len; _i++) {
+        link = row[_i];
+        if (!useWorkers) {
+          this.tessLink(link);
+          _results.push(onComplete(null));
+        } else {
+          worker = new Worker('js/tess.js');
+          msg = {
+            renderer: this,
+            link: link
+          };
+          worker.onmessage = onComplete;
+          _results.push(worker.postMessage(msg));
         }
       }
-      return this.links[row].loaded = true;
+      return _results;
+    };
+
+    Renderer.prototype.tessLink = function(link) {
+      var knot, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        _results.push(knot.vbos = this.tessKnot(knot.range));
+      }
+      return _results;
     };
 
     Renderer.prototype.getCurrentLinkInfo = function() {
@@ -206,7 +238,7 @@
       this.selectedColumn = nextX;
       this.selectedRow = nextY;
       root.UpdateSelectionRow();
-      this.tessRow(this.selectedRow);
+      this.tessRow(this.links[this.selectedRow]);
       root.AnimateNumerals();
       row = this.links[this.selectedRow];
       iconified = row[previousColumn].iconified;

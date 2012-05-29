@@ -80,16 +80,42 @@ class Renderer
     @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
     glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
     toast("downloaded #{@spines.length / 3} verts of spine data")
-    @tessRow(@selectedRow)
+    @tessRow(@links[@selectedRow])
     root.UpdateLabels()
     @render()
 
   tessRow: (row) ->
-    return if @links[row].loaded?
-    for link in @links[row]
-      for knot in link
-        knot.vbos = @tessKnot(knot.range)
-    @links[row].loaded = true
+
+    return if row.loaded?
+    return if row.loading?
+
+    row.loading = true
+    row.loadCount = 0
+
+    onComplete = (event) =>
+      ++row.loadCount
+      if row.loadCount is row.length
+        row.loaded = true
+        row.loading = false
+
+    useWorkers = false
+
+    for link in row
+
+      if not useWorkers
+        @tessLink(link)
+        onComplete(null)
+      else
+        worker = new Worker 'js/tess.js'
+        msg =
+          renderer: this
+          link: link
+        worker.onmessage = onComplete
+        worker.postMessage msg
+
+  tessLink: (link) ->
+    for knot in link
+      knot.vbos = @tessKnot(knot.range)
 
   getCurrentLinkInfo: ->
     X = @links[@selectedRow][@selectedColumn].id.split '.'
@@ -114,7 +140,7 @@ class Renderer
     @selectedColumn = nextX
     @selectedRow = nextY
     root.UpdateSelectionRow()
-    @tessRow(@selectedRow)
+    @tessRow(@links[@selectedRow])
     root.AnimateNumerals()
     row = @links[@selectedRow]
 
