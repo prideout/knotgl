@@ -8,16 +8,8 @@ canvas {
     margin:0px;
     width:100%;
     height:100%;
-}
-
-#background {
-    position:absolute;
-    top:0px;
-    margin:0px;
-    width:100%;
-    height:100%;
-    /*background-image: -webkit-radial-gradient(center center, circle cover, #fff, #ddd);
-    background-image: -moz-radial-gradient(center center, circle cover, #fff, #ddd);*/
+    background-image: -webkit-radial-gradient(center center, circle cover, #fff, #ddd);
+    background-image: -moz-radial-gradient(center center, circle cover, #fff, #ddd);
 }
 
 #highlight-row {
@@ -28,8 +20,6 @@ canvas {
     margin:0;
     text-align:right;
     color:#385fa2;
-    /*background-image: -webkit-radial-gradient(center center, circle cover, #dd2e72, #d22854);
-    background-image: -moz-radial-gradient(center center, circle cover, #dd2e72, #d22854);*/
 }
 
 #selection-row {
@@ -39,7 +29,6 @@ canvas {
     top:16.6%;
     margin:0;
     text-align:right;
-    /*background-color: #ffc;*/
 }
 
 h1 {
@@ -58,13 +47,11 @@ p {
     font-family: 'Nobile', sans-serif;
     font-weight:700;
     font-size:100px;
-    /*color:#74BBFB;*/
     color:#385fa2;
     position:absolute;
     bottom: 5px;
     right: -5px;
     text-shadow:
-/*      3px 3px 0 #000, /* <-- inc these 2 #'s for a bigger drop shadow */
       -1px -1px 0 #000,
       1px -1px 0 #000,
       -1px 1px 0 #000,
@@ -112,15 +99,11 @@ p {
     left:0;
     margin-left:2.5%;
     height:8.3%;
-
     -webkit-transition: width 0.2s;
     -moz-transition: width 0.2s;
     -o-transition: width 0.2s;
     transition: width 0.2s;
     width:10%;
-
-    cursor: pointer;
-
     background-image: url(../images/grasshopper.svg);
     background-size: 100% 100%;
     -webkit-background-size: 100% 100%;

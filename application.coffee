@@ -1,6 +1,6 @@
 root = exports ? this
 
-root.pageIndex = 0
+root.pageIndex = 1
 root.pan = {x: 0}
 
 root.mouse =
@@ -109,7 +109,7 @@ assignEventHandlers = ->
     window.location.href = 'http://prideout.net'
 
   grasshopperTest = (x,y) ->
-    y < $('#grasshopper').height() and x < $('#grasshopper').width()
+    root.pageIndex is 0 and y < $('#grasshopper').height() and x < $('#grasshopper').width()
 
   $('#wideband').mousemove (e) ->
     p = $(this).position()

@@ -79,7 +79,6 @@ class Renderer
     @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.spines
     @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
     glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
-    toast("downloaded #{@spines.length / 3} verts of spine data")
     @tessRow(@links[@selectedRow])
     root.UpdateLabels()
     @render()
@@ -151,6 +150,7 @@ class Renderer
       for link in @links[nextY]
         link.iconified = 1
       @links[nextY][nextX].iconified = 0
+      @highlightRow = nextY
 
     @selectedColumn = nextX
     @selectedRow = nextY
@@ -204,6 +204,8 @@ class Renderer
       @highlightRow = Math.floor(root.mouse.position.y / h)
       @highlightRow = null if @highlightRow >= @links.length
       root.UpdateHighlightRow()
+    else
+      @highlightRow = @selectedRow
 
     # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
     # or the coffeescript logic can make it hot (this.hotMouse).
