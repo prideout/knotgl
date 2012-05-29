@@ -97,19 +97,17 @@ assignEventHandlers = ->
 
   $('.arrow').click -> root.SwipePane()
 
-  grasshopperEnter = ->
+  $('#grasshopper').mouseover ->
     $('#grasshopper').css 'width', '12%'
     $('#wideband').css 'cursor', 'pointer'
 
-  grasshopperLeave = ->
+  $('#grasshopper').mouseout ->
     $('#grasshopper').css 'width', '10%'
     $('#wideband').css 'cursor', ''
 
-  grasshopperClick = ->
+  $('#grasshopper').click (e) ->
     window.location.href = 'http://prideout.net'
-
-  grasshopperTest = (x,y) ->
-    root.pageIndex is 0 and y < $('#grasshopper').height() and x < $('#grasshopper').width()
+    e.stopPropagation()
 
   $('#wideband').mousemove (e) ->
     p = $(this).position()
@@ -117,22 +115,10 @@ assignEventHandlers = ->
     y = root.mouse.position.y = e.clientY - p.top
     root.mouse.within = 1
 
-    # Workaround: my understanding of HTML events
-    # isn't deep enough to understand why I can't
-    # attach the mouseover event directly to the
-    # grasshopper element, or change the cursor.  Oh well.
-    if grasshopperTest x,y
-      grasshopperEnter()
-    else
-      grasshopperLeave()
-
   $('#wideband').click (e) ->
     p = $(this).position()
     x = root.mouse.position.x = e.clientX - p.left
     y = root.mouse.position.y = e.clientY - p.top
-    if grasshopperTest x,y
-      grasshopperClick()
-      return
     root.mouse.within = 1
     renderer.click()
 

@@ -102,7 +102,6 @@
   };
 
   assignEventHandlers = function() {
-    var grasshopperClick, grasshopperEnter, grasshopperLeave, grasshopperTest;
     $(window).resize(function() {
       return layout();
     });
@@ -136,41 +135,30 @@
     $('.arrow').click(function() {
       return root.SwipePane();
     });
-    grasshopperEnter = function() {
+    $('#grasshopper').mouseover(function() {
       $('#grasshopper').css('width', '12%');
       return $('#wideband').css('cursor', 'pointer');
-    };
-    grasshopperLeave = function() {
+    });
+    $('#grasshopper').mouseout(function() {
       $('#grasshopper').css('width', '10%');
       return $('#wideband').css('cursor', '');
-    };
-    grasshopperClick = function() {
-      return window.location.href = 'http://prideout.net';
-    };
-    grasshopperTest = function(x, y) {
-      return root.pageIndex === 0 && y < $('#grasshopper').height() && x < $('#grasshopper').width();
-    };
+    });
+    $('#grasshopper').click(function(e) {
+      window.location.href = 'http://prideout.net';
+      return e.stopPropagation();
+    });
     $('#wideband').mousemove(function(e) {
       var p, x, y;
       p = $(this).position();
       x = root.mouse.position.x = e.clientX - p.left;
       y = root.mouse.position.y = e.clientY - p.top;
-      root.mouse.within = 1;
-      if (grasshopperTest(x, y)) {
-        return grasshopperEnter();
-      } else {
-        return grasshopperLeave();
-      }
+      return root.mouse.within = 1;
     });
     $('#wideband').click(function(e) {
       var p, x, y;
       p = $(this).position();
       x = root.mouse.position.x = e.clientX - p.left;
       y = root.mouse.position.y = e.clientY - p.top;
-      if (grasshopperTest(x, y)) {
-        grasshopperClick();
-        return;
-      }
       root.mouse.within = 1;
       return renderer.click();
     });
