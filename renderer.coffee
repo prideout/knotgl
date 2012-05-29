@@ -80,12 +80,16 @@ class Renderer
     @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
     glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
     toast("downloaded #{@spines.length / 3} verts of spine data")
-    for link in @links[@selectedRow]
-      for knot in link
-        knot.vbos = @tessKnot(knot.range)
-
+    @tessRow(@selectedRow)
     root.UpdateLabels()
     @render()
+
+  tessRow: (row) ->
+    return if @links[row].loaded?
+    for link in @links[row]
+      for knot in link
+        knot.vbos = @tessKnot(knot.range)
+    @links[row].loaded = true
 
   getCurrentLinkInfo: ->
     X = @links[@selectedRow][@selectedColumn].id.split '.'
@@ -101,9 +105,16 @@ class Renderer
 
   changeSelection: (nextX, nextY) ->
     previousColumn = @selectedColumn
+
+    if nextY isnt @selectedRow
+      for link in @links[nextY]
+        link.iconified = 1
+      @links[nextY][nextX].iconified = 0
+
     @selectedColumn = nextX
     @selectedRow = nextY
     root.UpdateSelectionRow()
+    @tessRow(@selectedRow)
     root.AnimateNumerals()
     row = @links[@selectedRow]
 

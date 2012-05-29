@@ -131,7 +131,7 @@
     };
 
     Renderer.prototype.onDownloadComplete = function(data) {
-      var knot, link, rawVerts, _i, _j, _len, _len1, _ref;
+      var rawVerts;
       rawVerts = data['centerlines'];
       this.spines = new Float32Array(rawVerts);
       this.vbos.spines = this.gl.createBuffer();
@@ -141,7 +141,17 @@
         glerr("Error when trying to create spine VBO");
       }
       toast("downloaded " + (this.spines.length / 3) + " verts of spine data");
-      _ref = this.links[this.selectedRow];
+      this.tessRow(this.selectedRow);
+      root.UpdateLabels();
+      return this.render();
+    };
+
+    Renderer.prototype.tessRow = function(row) {
+      var knot, link, _i, _j, _len, _len1, _ref;
+      if (this.links[row].loaded != null) {
+        return;
+      }
+      _ref = this.links[row];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         link = _ref[_i];
         for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
@@ -149,8 +159,7 @@
           knot.vbos = this.tessKnot(knot.range);
         }
       }
-      root.UpdateLabels();
-      return this.render();
+      return this.links[row].loaded = true;
     };
 
     Renderer.prototype.getCurrentLinkInfo = function() {
@@ -184,11 +193,20 @@
     };
 
     Renderer.prototype.changeSelection = function(nextX, nextY) {
-      var iconified, previousColumn, row;
+      var iconified, link, previousColumn, row, _i, _len, _ref;
       previousColumn = this.selectedColumn;
+      if (nextY !== this.selectedRow) {
+        _ref = this.links[nextY];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          link = _ref[_i];
+          link.iconified = 1;
+        }
+        this.links[nextY][nextX].iconified = 0;
+      }
       this.selectedColumn = nextX;
       this.selectedRow = nextY;
       root.UpdateSelectionRow();
+      this.tessRow(this.selectedRow);
       root.AnimateNumerals();
       row = this.links[this.selectedRow];
       iconified = row[previousColumn].iconified;
