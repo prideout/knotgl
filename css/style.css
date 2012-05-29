@@ -105,3 +105,23 @@ p {
     position:absolute;
     bottom: 5px
 }
+
+#grasshopper {
+    position:absolute;
+    top:0;
+    left:0;
+    margin-left:2.5%;
+    height:8.3%;
+
+    -webkit-transition: width 0.2s;
+    -moz-transition: width 0.2s;
+    -o-transition: width 0.2s;
+    transition: width 0.2s;
+    width:10%;
+
+    cursor: pointer;
+
+    background-image: url(../images/grasshopper.svg);
+    background-size: 100% 100%;
+    -webkit-background-size: 100% 100%;
+}

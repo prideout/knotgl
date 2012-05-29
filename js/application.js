@@ -102,6 +102,7 @@
   };
 
   assignEventHandlers = function() {
+    var grasshopperClick, grasshopperEnter, grasshopperLeave, grasshopperTest;
     $(window).resize(function() {
       return layout();
     });
@@ -124,7 +125,7 @@
     });
     $('.arrow').mouseover(function() {
       $(this).css('color', '#385fa2');
-      return root.mouse.hot = 1;
+      return root.mouse.hot = true;
     });
     $('.arrow').mouseout(function() {
       $(this).css({
@@ -135,25 +136,48 @@
     $('.arrow').click(function() {
       return root.SwipePane();
     });
+    grasshopperEnter = function() {
+      $('#grasshopper').css('width', '12%');
+      return $('#wideband').css('cursor', 'pointer');
+    };
+    grasshopperLeave = function() {
+      $('#grasshopper').css('width', '10%');
+      return $('#wideband').css('cursor', '');
+    };
+    grasshopperClick = function() {
+      return window.location.href = 'http://prideout.net';
+    };
+    grasshopperTest = function(x, y) {
+      return y < $('#grasshopper').height() && x < $('#grasshopper').width();
+    };
     $('#wideband').mousemove(function(e) {
       var p, x, y;
       p = $(this).position();
       x = root.mouse.position.x = e.clientX - p.left;
       y = root.mouse.position.y = e.clientY - p.top;
-      return root.mouse.within = 1;
+      root.mouse.within = 1;
+      if (grasshopperTest(x, y)) {
+        return grasshopperEnter();
+      } else {
+        return grasshopperLeave();
+      }
     });
     $('#wideband').click(function(e) {
       var p, x, y;
       p = $(this).position();
       x = root.mouse.position.x = e.clientX - p.left;
       y = root.mouse.position.y = e.clientY - p.top;
+      if (grasshopperTest(x, y)) {
+        grasshopperClick();
+      }
       root.mouse.within = 1;
       return renderer.click();
     });
     return $('#wideband').mouseout(function() {
       root.mouse.position.x = -1;
       root.mouse.position.y = -1;
-      return root.mouse.within = false;
+      root.mouse.within = false;
+      return grasshopperLeave();
     });
   };
 
