@@ -81,11 +81,12 @@ assignEventHandlers = ->
   $(window).resize -> layout()
 
   $(document).keydown (e) ->
-    root.renderer.moveSelection(0,-1) if e.keyCode is 38
-    root.renderer.moveSelection(0,+1) if e.keyCode is 40
-    root.renderer.moveSelection(-1,0) if e.keyCode is 37
-    root.renderer.moveSelection(+1,0) if e.keyCode is 39
-    root.SwipePane() if e.keyCode is 32
+    root.renderer.moveSelection(0,-1) if e.keyCode is 38 # up
+    root.renderer.moveSelection(0,+1) if e.keyCode is 40 # down
+    root.renderer.moveSelection(-1,0) if e.keyCode is 37 # left
+    root.renderer.moveSelection(+1,0) if e.keyCode is 39 # right
+    root.SwipePane() if e.keyCode is 32 # space
+    exportScreenshot() if e.keyCode is 83 # s
 
   $('.arrow').mouseover ->
     $(this).css('color', '#385fa2')
@@ -126,6 +127,13 @@ assignEventHandlers = ->
     root.mouse.position.x = -1
     root.mouse.position.y = -1
     root.mouse.within = false
+
+exportScreenshot = ->
+  c = $('canvas').get 0
+  root.renderer.render()
+  imgUrl = c.toDataURL("image/png")
+  window.open(imgUrl, '_blank')
+  window.focus()
 
 updateNumeralSizes = ->
   $('#crossings').css('font-size', CurrentSizes.crossings)

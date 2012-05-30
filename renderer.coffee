@@ -95,21 +95,26 @@ class Renderer
       link = event.data
       for knot in link
         # Convert Float32Array objects into WebGL VBO's
+        # Annotate each VBO with a byte count
+
         vbo = @gl.createBuffer()
         @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
         @gl.bufferData(@gl.ARRAY_BUFFER, knot.vbos.tube, @gl.STATIC_DRAW)
+        vbo.count = knot.vbos.tube.length
         knot.vbos.tube = vbo
+
         vbo = @gl.createBuffer()
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
         @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, @gl.STATIC_DRAW)
-        vbo.count = knot.vbos.wireframe.count
+        vbo.count = knot.vbos.wireframe.length
         knot.vbos.wireframe = vbo
+
         vbo = @gl.createBuffer()
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
         @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.triangles, @gl.STATIC_DRAW)
-        vbo.count = knot.vbos.triangles.count
+        vbo.count = knot.vbos.triangles.length
         knot.vbos.triangles = vbo
-      ++row.loadCount
+
       if row.loadCount is row.length
         row.loaded = true
         row.loading = false
@@ -477,7 +482,6 @@ class Renderer
         [ptr, j] = [ptr+2, j+1]
       i += sides+1
     wireframe = rawBuffer
-    wireframe.count = rawBuffer.length
 
     # Create the index buffer for the solid tube
     # TODO This can be be re-used from one knot to another
@@ -499,7 +503,6 @@ class Renderer
         ptr += 6
       v += sides+1
     triangles = rawBuffer
-    triangles.count = rawBuffer.length
 
     # Return metadata
     vbos =
