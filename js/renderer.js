@@ -276,7 +276,6 @@
       }
       this.selectedColumn = nextX;
       this.selectedRow = nextY;
-      root.UpdateSelectionRow();
       this.tessRow(this.links[this.selectedRow]);
       root.AnimateNumerals();
       row = this.links[this.selectedRow];

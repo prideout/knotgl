@@ -48,11 +48,6 @@ root.AnimateNumerals = ->
 
   A.start()
 
-root.UpdateSelectionRow = ->
-  r = root.renderer
-  top = r.selectedRow * r.height / r.links.length
-  $('#selection-row').css('top', top)
-
 root.UpdateHighlightRow = ->
   r = root.renderer
   if not r.highlightRow?
@@ -160,7 +155,6 @@ layout = ->
   this.renderer.height = height
   root.pan.x = getPagePosition(root.pageIndex)
   updateSwipeAnimation()
-  root.UpdateSelectionRow()
 
 clone = root.utility.clone
 box = root.utility.box

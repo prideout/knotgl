@@ -186,7 +186,6 @@ class Renderer
 
     @selectedColumn = nextX
     @selectedRow = nextY
-    root.UpdateSelectionRow()
     @tessRow(@links[@selectedRow])
     root.AnimateNumerals()
     row = @links[@selectedRow]

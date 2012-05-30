@@ -66,13 +66,6 @@
     return A.start();
   };
 
-  root.UpdateSelectionRow = function() {
-    var r, top;
-    r = root.renderer;
-    top = r.selectedRow * r.height / r.links.length;
-    return $('#selection-row').css('top', top);
-  };
-
   root.UpdateHighlightRow = function() {
     var r, top;
     r = root.renderer;
@@ -218,8 +211,7 @@
     this.renderer.width = width;
     this.renderer.height = height;
     root.pan.x = getPagePosition(root.pageIndex);
-    updateSwipeAnimation();
-    return root.UpdateSelectionRow();
+    return updateSwipeAnimation();
   };
 
   clone = root.utility.clone;
