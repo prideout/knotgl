@@ -79,6 +79,7 @@ class Renderer
     trivialLink = @links[8][0]
     trivialLink.push(clone trivialKnot)
     trivialLink.push(clone trivialKnot)
+    trivialLink[0].offset = vec3.create([0,0,0])
     trivialLink[1].color = KnotColors[1]
     trivialLink[1].offset = vec3.create([0.5,0,0])
 
@@ -87,6 +88,7 @@ class Renderer
     trivialLink.push(clone trivialKnot)
     trivialLink.push(clone trivialKnot)
     trivialLink.push(clone trivialKnot)
+    trivialLink[0].offset = vec3.create([0,0,0])
     trivialLink[1].color = KnotColors[1]
     trivialLink[1].offset = vec3.create([0.5,0,0])
     trivialLink[2].color = KnotColors[2]

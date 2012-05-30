@@ -3,6 +3,7 @@ root.utility = {}
 utility = root.utility
 
 # Deep copy (why doesn't JS have this natively?)
+# Caution: doesn't seem to work with glmatrix types in Firefox, but works in Chrome.
 utility.clone = (obj) ->
   if not obj? or typeof obj isnt 'object'
     return obj
