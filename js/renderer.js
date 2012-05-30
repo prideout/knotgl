@@ -36,7 +36,7 @@
 
     Renderer.prototype.parseMetadata = function() {
       var KnotColors, Table, i, id, knot, link, range, ranges, row, x, _i, _j, _k, _len, _len1, _ref;
-      KnotColors = [[1, 1, 1, 0.75], [0.25, 0.5, 1, 0.75], [1, 0.5, 0.25, 0.75]];
+      KnotColors = [[1, 0.5, 0.25, 0.75], [0.25, 0.5, 1, 0.75], [1, 1, 1, 0.75]];
       Table = [
         '0.1 3.1 4.1 5.1 5.2 6.1 6.2 6.3 7.1', '7.2 7.3 7.4 7.5 7.6 7.7 8.1 8.2 8.3', ((function() {
           var _i, _results;
