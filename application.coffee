@@ -98,17 +98,7 @@ assignEventHandlers = ->
 
   $('.arrow').click -> root.SwipePane()
 
-  $('#grasshopper').mouseover ->
-    $('#grasshopper').css 'width', '12%'
-    $('#wideband').css 'cursor', 'pointer'
-
-  $('#grasshopper').mouseout ->
-    $('#grasshopper').css 'width', '10%'
-    $('#wideband').css 'cursor', ''
-
-  $('#grasshopper').click (e) ->
-    window.location.href = 'http://prideout.net'
-    e.stopPropagation()
+  $('#grasshopper').click (e) -> e.stopPropagation()
 
   $('#wideband').mousemove (e) ->
     p = $(this).position()

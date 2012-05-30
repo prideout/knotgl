@@ -69,6 +69,12 @@ class Renderer
 
     trivialKnot = @links[8][1][0]
 
+    # Hack for the 0.1.1 knot
+    trivialLink = @links[0][0]
+    trivialLink.push(clone trivialKnot)
+    trivialLink[0].offset = vec3.create([0.5,-0.25,0])
+    trivialLink.hidden = true
+
     # Hack for the 0.2.1 knot
     trivialLink = @links[8][0]
     trivialLink.push(clone trivialKnot)
@@ -281,7 +287,7 @@ class Renderer
       @normalMatrix = mat4.toMat3(@modelview)
 
       # Render the row in the table on the west page.
-      @renderIconLink(link, link.tableBox, alpha = 1) for link in row
+      (@renderIconLink link, link.tableBox, 1 if not link.hidden?) for link in row
 
       # Now, render the east page.
       if @links.indexOf(row) is @selectedRow

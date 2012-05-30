@@ -1,5 +1,6 @@
 body {
-    background-color: #eee;
+    background-color: #ccc;
+    margin:0;
 }
 
 canvas {
@@ -13,13 +14,15 @@ canvas {
 }
 
 #highlight-row {
+    color:#385fa2;
+
     height:8.3%;
     width:100%;
     position:absolute;
     top:16.6%;
     margin:0;
     text-align:right;
-    color:#385fa2;
+    display:table;
 }
 
 #selection-row {
@@ -29,6 +32,14 @@ canvas {
     top:16.6%;
     margin:0;
     text-align:right;
+    display:table;
+}
+
+.selection-gutter {
+    display:table-cell;
+    vertical-align:middle;
+    padding-right:15px;
+    font-size:24px;
 }
 
 h1 {
@@ -97,14 +108,19 @@ p {
     position:absolute;
     top:0;
     left:0;
-    margin-left:2.5%;
     height:8.3%;
-    -webkit-transition: width 0.2s;
-    -moz-transition: width 0.2s;
-    -o-transition: width 0.2s;
-    transition: width 0.2s;
+    -webkit-transition: width 0.2s, margin-left 0.2s;
+    -moz-transition: width 0.2s, margin-left 0.2s;
+    -o-transition: width 0.2s, margin-left 0.2s;
+    transition: width 0.2s, margin-left 0.2s;
     width:10%;
+    margin-left:2.5%;
     background-image: url(../images/grasshopper.svg);
     background-size: 100% 100%;
     -webkit-background-size: 100% 100%;
+}
+
+#grasshopper:hover {
+    width:12%;
+    margin-left:1%;
 }
