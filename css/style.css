@@ -47,10 +47,11 @@ p {
     font-family: 'Nobile', sans-serif;
     font-weight:700;
     font-size:100px;
-    color:#385fa2;
     position:absolute;
     bottom: 5px;
     right: -5px;
+    color:#777;
+    /*color:#385fa2;*/
     text-shadow:
       -1px -1px 0 #000,
       1px -1px 0 #000,

@@ -30,9 +30,9 @@ class Renderer
   # Each "range" is an [index, count] pair that defines a window into the raw spine data.
   parseMetadata: ->
     KnotColors = [
-      [1,0.5,0.25,0.75]
-      [0.25,0.5,1,0.75]
-      [1,1,1,0.75]
+      [0.5,0.75,1,0.75]
+      [0.9,1,0.9,0.75]
+      [1,0.75,0.5,0.75]
     ]
     Table = [
       '0.1 3.1 4.1 5.1 5.2 6.1 6.2 6.3 7.1'
