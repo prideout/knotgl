@@ -11,6 +11,7 @@ root.shaders =
       Modelview: 'modelview'
       NormalMatrix: 'normalmatrix'
       Color: 'color'
+      WorldOffset: 'worldOffset'
 
   wireframe:
     keys: ["VS-Wireframe", "FS-Wireframe"]
@@ -21,6 +22,7 @@ root.shaders =
       Modelview: 'modelview'
       DepthOffset: 'depthOffset'
       Offset: 'offset'
+      WorldOffset: 'worldOffset'
       Color: 'color'
       Scale: 'scale'
 
@@ -39,13 +41,15 @@ attribute vec3 Normal;
 uniform mat4 Modelview;
 uniform mat4 Projection;
 uniform mat3 NormalMatrix;
+uniform vec3 WorldOffset;
 varying vec3 vPosition;
 varying vec3 vNormal;
 void main(void)
 {
-    vPosition = Position.xyz;
+    vPosition = Position.xyz + WorldOffset;
     vNormal = NormalMatrix * Normal;
-    gl_Position = Projection * Modelview * Position;
+    vec4 p = vec4(vPosition, 1);
+    gl_Position = Projection * Modelview * p;
 }
 """
 
@@ -57,10 +61,12 @@ uniform mat4 Projection;
 uniform float DepthOffset;
 uniform float Scale;
 uniform vec2 Offset;
+uniform vec3 WorldOffset;
 void main(void)
 {
     vec4 p = Position;
     p.xyz *= Scale;
+    p.xyz += WorldOffset;
     gl_Position = Projection * Modelview * p;
     gl_Position.z += DepthOffset;
     gl_Position.xy += Offset * 0.15;

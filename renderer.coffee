@@ -56,14 +56,36 @@ class Renderer
         for id in Table[row].split(' ')
           link = []
           ranges = (x[1..] for x in root.links when x[0] is id)[0]
+          c = 0
           for range in ranges
             knot = {}
             knot.range = range
-            knot.color = KnotColors[ranges.indexOf(range)]
+            knot.offset = vec3.create([0,0,0])
+            knot.color = KnotColors[c++]
             link.push(knot)
           link.iconified = 1
           link.id = id
           @links[row].push(link)
+
+    trivialKnot = @links[8][1][0]
+
+    # Hack for the 0.2.1 knot
+    trivialLink = @links[8][0]
+    trivialLink.push(clone trivialKnot)
+    trivialLink.push(clone trivialKnot)
+    trivialLink[1].color = KnotColors[1]
+    trivialLink[1].offset = vec3.create([0.5,0,0])
+
+    # Hack for the 0.3.1 knot
+    trivialLink = @links[10][8]
+    trivialLink.push(clone trivialKnot)
+    trivialLink.push(clone trivialKnot)
+    trivialLink.push(clone trivialKnot)
+    trivialLink[1].color = KnotColors[1]
+    trivialLink[1].offset = vec3.create([0.5,0,0])
+    trivialLink[2].color = KnotColors[2]
+    trivialLink[2].offset = vec3.create([1.0,0,0])
+
     @links[@selectedRow][@selectedColumn].iconified = 0
 
   downloadSpineData: ->
@@ -354,6 +376,7 @@ class Renderer
     # Redraw with screen-space offsets to achieve extra thickness.
     program = @programs.wireframe
     @gl.useProgram(program)
+    @gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
     @gl.enable(@gl.BLEND)
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
@@ -392,6 +415,7 @@ class Renderer
         @gl.enable(@gl.DEPTH_TEST)
         @gl.useProgram(program)
         @setColor(program.color, knot.color, 1)
+        @gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
         @gl.uniformMatrix4fv(program.modelview, false, @modelview)
         @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
         @gl.uniformMatrix4fv(program.projection, false, projection)
@@ -415,6 +439,7 @@ class Renderer
         @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
         program = @programs.wireframe
         @gl.useProgram(program)
+        @gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
         @gl.uniformMatrix4fv(program.modelview, false, @modelview)
         @gl.uniformMatrix4fv(program.projection, false, projection)
         @gl.uniform1f(program.scale, 1)
@@ -543,6 +568,7 @@ class Renderer
 
 # PRIVATE UTILITIES #
 root.Renderer = Renderer
+clone = root.utility.clone
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)

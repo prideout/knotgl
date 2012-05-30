@@ -15,7 +15,8 @@
         Projection: 'projection',
         Modelview: 'modelview',
         NormalMatrix: 'normalmatrix',
-        Color: 'color'
+        Color: 'color',
+        WorldOffset: 'worldOffset'
       }
     },
     wireframe: {
@@ -28,6 +29,7 @@
         Modelview: 'modelview',
         DepthOffset: 'depthOffset',
         Offset: 'offset',
+        WorldOffset: 'worldOffset',
         Color: 'color',
         Scale: 'scale'
       }
@@ -45,9 +47,9 @@
 
   root.shaders.source = {};
 
-  root.shaders.source["VS-Scene"] = "attribute vec4 Position;\nattribute vec3 Normal;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform mat3 NormalMatrix;\nvarying vec3 vPosition;\nvarying vec3 vNormal;\nvoid main(void)\n{\n    vPosition = Position.xyz;\n    vNormal = NormalMatrix * Normal;\n    gl_Position = Projection * Modelview * Position;\n}";
+  root.shaders.source["VS-Scene"] = "attribute vec4 Position;\nattribute vec3 Normal;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform mat3 NormalMatrix;\nuniform vec3 WorldOffset;\nvarying vec3 vPosition;\nvarying vec3 vNormal;\nvoid main(void)\n{\n    vPosition = Position.xyz + WorldOffset;\n    vNormal = NormalMatrix * Normal;\n    vec4 p = vec4(vPosition, 1);\n    gl_Position = Projection * Modelview * p;\n}";
 
-  root.shaders.source["VS-Wireframe"] = "attribute vec4 Position;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform float DepthOffset;\nuniform float Scale;\nuniform vec2 Offset;\nvoid main(void)\n{\n    vec4 p = Position;\n    p.xyz *= Scale;\n    gl_Position = Projection * Modelview * p;\n    gl_Position.z += DepthOffset;\n    gl_Position.xy += Offset * 0.15;\n}";
+  root.shaders.source["VS-Wireframe"] = "attribute vec4 Position;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform float DepthOffset;\nuniform float Scale;\nuniform vec2 Offset;\nuniform vec3 WorldOffset;\nvoid main(void)\n{\n    vec4 p = Position;\n    p.xyz *= Scale;\n    p.xyz += WorldOffset;\n    gl_Position = Projection * Modelview * p;\n    gl_Position.z += DepthOffset;\n    gl_Position.xy += Offset * 0.15;\n}";
 
   root.shaders.source["FS-Wireframe"] = "precision highp float;\nprecision highp vec3;\nuniform vec4 Color;\nvoid main()\n{\n    gl_FragColor = Color;\n}";
 
