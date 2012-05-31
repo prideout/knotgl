@@ -15,6 +15,8 @@ appFiles  = [
   'renderer'
   'shaders'
   'tube'
+  'worker-download'
+  'worker-tess'
 ]
 
 graceful = true

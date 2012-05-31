@@ -142,7 +142,7 @@
 
     Renderer.prototype.downloadSpineData = function() {
       var worker;
-      worker = new Worker('js/downloader.js');
+      worker = new Worker('js/worker-download.js');
       worker.renderer = this;
       worker.onmessage = function(response) {
         return this.renderer.onDownloadComplete(response.data);

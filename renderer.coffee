@@ -97,7 +97,7 @@ class Renderer
     @links[@selectedRow][@selectedColumn].iconified = 0
 
   downloadSpineData: ->
-    worker = new Worker 'js/downloader.js'
+    worker = new Worker 'js/worker-download.js'
     worker.renderer = this
     worker.onmessage = (response) -> @renderer.onDownloadComplete(response.data)
     worker.postMessage(document.URL + 'data/centerlines.bin')
