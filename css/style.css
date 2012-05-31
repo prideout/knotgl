@@ -76,8 +76,8 @@ p {
 #wideband {
     display:inline;
     position:absolute;
-    top:5%;
-    bottom:5%;
+    top:0;
+    bottom:0;
     width:100px;
     margin:0;
     color:#222;
