@@ -22,13 +22,13 @@ appname = 'knotgl'
 
 workerCoffee = [
   'tube'
-  'worker-download'
+  'worker-core'
 ]
 
 workerArtifacts = [
   'js/gl-matrix.js'
   'js/tube.js'
-  'js/worker-download.js'
+  'js/worker-core.js'
 ]
 
 task 'worker', 'Build a monolithic worker from a collection of javascript and coffeescript files.', ->
