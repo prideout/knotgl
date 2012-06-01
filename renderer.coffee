@@ -236,6 +236,7 @@ class Renderer
       h = @height / @links.length
       @highlightRow = Math.floor(root.mouse.position.y / h)
       @highlightRow = null if @highlightRow >= @links.length
+      @highlightRow = -1 if $('#grasshopper').data 'hover'
       root.UpdateHighlightRow()
     else
       @highlightRow = @selectedRow
