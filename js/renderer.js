@@ -9,6 +9,7 @@
     Renderer.name = 'Renderer';
 
     function Renderer(gl, width, height) {
+      var _this = this;
       this.gl = gl;
       this.width = width;
       this.height = height;
@@ -31,6 +32,10 @@
         glerr("OpenGL error during init");
       }
       this.parseMetadata();
+      this.worker = new Worker('js/worker.js');
+      this.worker.onmessage = function(response) {
+        return _this.onWorkerMessage(response.data);
+      };
       this.downloadSpineData();
     }
 
@@ -143,16 +148,15 @@
     };
 
     Renderer.prototype.downloadSpineData = function() {
-      var worker;
-      worker = new Worker('js/worker-download.js');
-      worker.renderer = this;
-      worker.onmessage = function(response) {
-        return this.renderer.onDownloadComplete(response.data);
+      var msg;
+      msg = {
+        command: 'download',
+        url: document.URL + 'data/centerlines.bin'
       };
-      return worker.postMessage(document.URL + 'data/centerlines.bin');
+      return this.worker.postMessage(msg);
     };
 
-    Renderer.prototype.onDownloadComplete = function(data) {
+    Renderer.prototype.onWorkerMessage = function(data) {
       var rawVerts;
       rawVerts = data['centerlines'];
       this.spines = new Float32Array(rawVerts);

@@ -21,6 +21,8 @@ class Renderer
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
     @parseMetadata()
+    @worker = new Worker 'js/worker.js'
+    @worker.onmessage = (response) => @onWorkerMessage(response.data)
     @downloadSpineData()
 
   # Read the metadata table (see knots.coffee) and arrange it into a "links" array.
@@ -97,12 +99,12 @@ class Renderer
     @links[@selectedRow][@selectedColumn].iconified = 0
 
   downloadSpineData: ->
-    worker = new Worker 'js/worker-download.js'
-    worker.renderer = this
-    worker.onmessage = (response) -> @renderer.onDownloadComplete(response.data)
-    worker.postMessage(document.URL + 'data/centerlines.bin')
+    msg =
+      command: 'download'
+      url: document.URL + 'data/centerlines.bin'
+    @worker.postMessage(msg)
 
-  onDownloadComplete: (data) ->
+  onWorkerMessage: (data) ->
     rawVerts = data['centerlines']
     @spines = new Float32Array(rawVerts)
     @vbos.spines = @gl.createBuffer()
