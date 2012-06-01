@@ -150,29 +150,32 @@
     Renderer.prototype.downloadSpineData = function() {
       var msg;
       msg = {
-        command: 'download',
+        command: 'download-spines',
         url: document.URL + 'data/centerlines.bin'
       };
       return this.worker.postMessage(msg);
     };
 
-    Renderer.prototype.onWorkerMessage = function(data) {
-      var rawVerts;
-      rawVerts = data['centerlines'];
-      this.spines = new Float32Array(rawVerts);
-      this.vbos.spines = this.gl.createBuffer();
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, this.spines, this.gl.STATIC_DRAW);
-      if (this.gl.getError() !== this.gl.NO_ERROR) {
-        glerr("Error when trying to create spine VBO");
+    Renderer.prototype.onWorkerMessage = function(msg) {
+      switch (msg.command) {
+        case 'centerlines':
+          this.spines = new Float32Array(msg.centerlines);
+          this.vbos.spines = this.gl.createBuffer();
+          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+          this.gl.bufferData(this.gl.ARRAY_BUFFER, this.spines, this.gl.STATIC_DRAW);
+          if (this.gl.getError() !== this.gl.NO_ERROR) {
+            glerr("Error when trying to create spine VBO");
+          }
+          this.tessRow(this.links[this.selectedRow]);
+          root.UpdateLabels();
+          return this.render();
+        case 'mesh-link':
+          return toast("Received mesh for " + msg.id);
       }
-      this.tessRow(this.links[this.selectedRow]);
-      root.UpdateLabels();
-      return this.render();
     };
 
     Renderer.prototype.tessRow = function(row) {
-      var link, msg, onComplete, useWorkers, worker, _i, _len, _results,
+      var link, msg, onComplete, _i, _len, _results,
         _this = this;
       if (row.loaded != null) {
         return;
@@ -208,24 +211,19 @@
           return row.loading = false;
         }
       };
-      useWorkers = false;
       _results = [];
       for (_i = 0, _len = row.length; _i < _len; _i++) {
         link = row[_i];
-        if (!useWorkers) {
-          this.tessLink(link);
-          _results.push(onComplete({
-            data: link
-          }));
-        } else {
-          worker = new Worker('js/tess-worker.js');
-          msg = {
-            renderer: this,
-            link: link
-          };
-          worker.onmessage = onComplete;
-          _results.push(worker.postMessage(msg));
-        }
+        this.tessLink(link);
+        onComplete({
+          data: link
+        });
+        _results.push(msg = {
+          command: 'tessellate-link',
+          renderer: this,
+          id: link.id,
+          link: link.ranges
+        });
       }
       return _results;
     };

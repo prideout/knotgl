@@ -22,7 +22,7 @@ class Renderer
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
     @parseMetadata()
     @worker = new Worker 'js/worker.js'
-    @worker.onmessage = (response) => @onWorkerMessage(response.data)
+    @worker.onmessage = (response) => @onWorkerMessage response.data
     @downloadSpineData()
 
   # Read the metadata table (see knots.coffee) and arrange it into a "links" array.
@@ -100,20 +100,23 @@ class Renderer
 
   downloadSpineData: ->
     msg =
-      command: 'download'
+      command: 'download-spines'
       url: document.URL + 'data/centerlines.bin'
     @worker.postMessage(msg)
 
-  onWorkerMessage: (data) ->
-    rawVerts = data['centerlines']
-    @spines = new Float32Array(rawVerts)
-    @vbos.spines = @gl.createBuffer()
-    @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.spines
-    @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
-    glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
-    @tessRow(@links[@selectedRow])
-    root.UpdateLabels()
-    @render()
+  onWorkerMessage: (msg) ->
+    switch msg.command
+      when 'centerlines'
+        @spines = new Float32Array msg.centerlines
+        @vbos.spines = @gl.createBuffer()
+        @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.spines
+        @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
+        glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
+        @tessRow(@links[@selectedRow])
+        root.UpdateLabels()
+        @render()
+      when 'mesh-link'
+        toast "Received mesh for #{msg.id}"
 
   tessRow: (row) ->
 
@@ -151,18 +154,15 @@ class Renderer
         row.loaded = true
         row.loading = false
 
-    useWorkers = false
     for link in row
-      if not useWorkers
-        @tessLink(link)
-        onComplete({data:link})
-      else
-        worker = new Worker 'js/tess-worker.js'
-        msg =
-          renderer: this
-          link: link
-        worker.onmessage = onComplete
-        worker.postMessage msg
+      @tessLink(link)
+      onComplete(data:link)
+      msg =
+        command: 'tessellate-link'
+        renderer: this
+        id: link.id
+        link: link.ranges
+      #@worker.postMessage msg
 
   tessLink: (link) ->
     for knot in link

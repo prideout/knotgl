@@ -3350,17 +3350,21 @@
 # should travel in.
 #
 # ---------------------------
-#   command: 'download'
+#   command: 'download-spines'
 #      type: client -> worker
 #       url: <STRING>
 # ---------------------------
-#   command: 'tessellate'
+#   command: 'tessellate-link'
 #      type: client -> worker
+#        id: <anything>
 #      link: <Array of RANGE>
 #            where RANGE = [INTEGER, INTEGER]
 # ---------------------------
-#   command: 'mesh'
+#   command: 'mesh-link'
 #      type: worker -> client
+#        id: <anything>
+#    meshes: <Array of MESH>
+#            where MESH =
 #      tube: <Float32Array>
 # wireframe: <Uint16Array>
 # triangles: <Uint16Array>
@@ -3374,11 +3378,56 @@
 
 
 (function() {
-  var download, initialize, initialized, tubeGen;
+  var download, initialize, initialized, spines, tessellate, tubeGen;
 
   tubeGen = null;
 
   initialized = null;
+
+  spines = null;
+
+  this.onmessage = function(e) {
+    var knot, meshes, msg, rawdata, response;
+    if (!(initialized != null)) {
+      initialize();
+    }
+    msg = e.data;
+    switch (msg.command) {
+      case 'download-spines':
+        rawdata = download(msg.url);
+        spines = new Float32Array(rawdata);
+        response = {
+          command: 'centerlines',
+          centerlines: rawdata
+        };
+        return this.postMessage(response);
+      case 'tessellate-link':
+        meshes = (function() {
+          var _i, _len, _ref, _results;
+          _ref = msg.link;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            knot = _ref[_i];
+            _results.push(tessellate(knot));
+          }
+          return _results;
+        })();
+        response = {
+          command: 'mesh-link',
+          id: msg.id,
+          meshes: meshes
+        };
+        return this.postMessage(response);
+    }
+  };
+
+  initialize = function() {
+    tubeGen = new TubeGenerator;
+    tubeGen.polygonSides = 10;
+    tubeGen.bézierSlices = 3;
+    tubeGen.tangentSmoothness = 3;
+    return initialized = true;
+  };
 
   download = function(url) {
     var hasResponseType, xhr;
@@ -3400,27 +3449,66 @@
     }
   };
 
-  initialize = function() {
-    tubeGen = new TubeGenerator;
-    tubeGen.polygonSides = 10;
-    tubeGen.bézierSlices = 3;
-    tubeGen.tangentSmoothness = 3;
-    return initialized = true;
-  };
-
-  this.onmessage = function(e) {
-    var centerlines, msg, response;
-    if (!(initialized != null)) {
-      initialize();
+  tessellate = function(component) {
+    var byteOffset, centerline, faceCount, i, j, lineCount, mesh, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, wireframe, _ref, _ref1, _ref2, _ref3;
+    byteOffset = component[0] * 3 * 4;
+    numFloats = component[1] * 3;
+    segmentData = spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3);
+    centerline = tubeGen.getKnotPath(segmentData);
+    rawBuffer = tubeGen.generateTube(centerline);
+    tube = rawBuffer;
+    polygonCount = centerline.length / 3 - 1;
+    sides = tubeGen.polygonSides;
+    lineCount = polygonCount * sides * 2;
+    rawBuffer = new Uint16Array(lineCount * 2);
+    _ref = [0, 0], i = _ref[0], ptr = _ref[1];
+    while (i < polygonCount * (sides + 1)) {
+      j = 0;
+      while (j < sides) {
+        sweepEdge = rawBuffer.subarray(ptr + 2, ptr + 4);
+        sweepEdge[0] = i + j;
+        sweepEdge[1] = i + j + sides + 1;
+        _ref1 = [ptr + 2, j + 1], ptr = _ref1[0], j = _ref1[1];
+      }
+      i += sides + 1;
     }
-    msg = e.data;
-    if (msg.command === 'download') {
-      centerlines = download(msg.url);
-      response = {
-        centerlines: centerlines
-      };
-      return this.postMessage(response);
+    i = 0;
+    while (i < polygonCount * (sides + 1)) {
+      j = 0;
+      while (j < sides) {
+        polygonEdge = rawBuffer.subarray(ptr + 0, ptr + 2);
+        polygonEdge[0] = i + j;
+        polygonEdge[1] = i + j + 1;
+        _ref2 = [ptr + 2, j + 1], ptr = _ref2[0], j = _ref2[1];
+      }
+      i += sides + 1;
     }
+    wireframe = rawBuffer;
+    faceCount = centerline.length / 3 * sides * 2;
+    rawBuffer = new Uint16Array(faceCount * 3);
+    _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
+    while (++i < centerline.length / 3) {
+      j = -1;
+      while (++j < sides) {
+        next = (j + 1) % sides;
+        tri = rawBuffer.subarray(ptr + 0, ptr + 3);
+        tri[0] = v + next + sides + 1;
+        tri[1] = v + next;
+        tri[2] = v + j;
+        tri = rawBuffer.subarray(ptr + 3, ptr + 6);
+        tri[0] = v + j;
+        tri[1] = v + j + sides + 1;
+        tri[2] = v + next + sides + 1;
+        ptr += 6;
+      }
+      v += sides + 1;
+    }
+    triangles = rawBuffer;
+    return mesh = {
+      tube: tube,
+      wireframe: wireframe,
+      triangles: triangles
+    };
   };
 
 }).call(this);
