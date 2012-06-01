@@ -95,12 +95,6 @@ assignEventHandlers = ->
 
   $('#grasshopper').click (e) -> e.stopPropagation()
 
-  # Trick to annotate the jquery element with hover status:
-  $('#grasshopper').hover(
-      -> $.data this, 'hover', true
-      -> $.data this,  'hover', false
-  ).data 'hover', false
-
   $('#wideband').mousemove (e) ->
     p = $(this).position()
     x = root.mouse.position.x = e.clientX - p.left

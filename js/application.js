@@ -134,11 +134,6 @@
     $('#grasshopper').click(function(e) {
       return e.stopPropagation();
     });
-    $('#grasshopper').hover(function() {
-      return $.data(this, 'hover', true);
-    }, function() {
-      return $.data(this, 'hover', false);
-    }).data('hover', false);
     $('#wideband').mousemove(function(e) {
       var p, x, y;
       p = $(this).position();

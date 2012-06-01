@@ -333,7 +333,7 @@
         if (this.highlightRow >= this.links.length) {
           this.highlightRow = null;
         }
-        if ($('#grasshopper').data('hover')) {
+        if ($('#grasshopper').is(':hover')) {
           this.highlightRow = -1;
         }
         root.UpdateHighlightRow();
