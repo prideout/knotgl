@@ -12,7 +12,7 @@ coffeeFiles = [
   'utility'
   'application'
   'metadata/knots'
-  'renderer'
+  'display'
   'shaders'
   'tube'
   'worker-core'

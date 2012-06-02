@@ -18,14 +18,14 @@ $ ->
   glerr('Your browser does not support GLSL derivatives.') unless gl.getExtension('OES_standard_derivatives')
   width = parseInt($('#overlay').css('width'))
   height = parseInt($('#overlay').css('height'))
-  root.renderer = new root.Renderer gl, width, height
+  root.display = new root.Display gl, width, height
   layout()
   assignEventHandlers()
   window.requestAnimationFrame(tick, c)
 
 root.AnimateNumerals = ->
   return if collapsing or expanding
-  duration = 0.25 * root.renderer.transitionMilliseconds
+  duration = 0.25 * root.display.transitionMilliseconds
   collapse = new TWEEN.Tween(CurrentSizes)
     .to(metadata.CollapsedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
@@ -54,7 +54,7 @@ root.SwipePane = ->
 
 tick = ->
 
-  r = root.renderer
+  r = root.display
 
   # Request the next tick cycle on vertical refresh (vsync).
   window.requestAnimationFrame(tick, $("canvas").get 0)
@@ -83,11 +83,11 @@ tick = ->
 
   # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
   # or the coffeescript logic can make it hot (this.hotMouse).
-  cursor = if root.renderer.hotMouse or root.mouse.hot or root.pageIndex is 0 then 'pointer' else ''
+  cursor = if root.display.hotMouse or root.mouse.hot or root.pageIndex is 0 then 'pointer' else ''
   $('#rightpage').css {'cursor' : cursor}
   $('#leftpage').css {'cursor' : cursor}
 
-  # Lastly, ask the renderer to do its magic.
+  # Lastly, ask the display to do its magic.
   r.render() if r.ready
   root.mouse.moved = false
 
@@ -96,10 +96,10 @@ assignEventHandlers = ->
   $(window).resize -> layout()
 
   $(document).keydown (e) ->
-    root.renderer.moveSelection(0,-1) if e.keyCode is 38 # up
-    root.renderer.moveSelection(0,+1) if e.keyCode is 40 # down
-    root.renderer.moveSelection(-1,0) if e.keyCode is 37 # left
-    root.renderer.moveSelection(+1,0) if e.keyCode is 39 # right
+    root.display.moveSelection(0,-1) if e.keyCode is 38 # up
+    root.display.moveSelection(0,+1) if e.keyCode is 40 # down
+    root.display.moveSelection(-1,0) if e.keyCode is 37 # left
+    root.display.moveSelection(+1,0) if e.keyCode is 39 # right
     root.SwipePane() if e.keyCode is 32 # space
     exportScreenshot() if e.keyCode is 83 # s
 
@@ -127,7 +127,7 @@ assignEventHandlers = ->
     x = root.mouse.position.x = e.clientX - p.left
     y = root.mouse.position.y = e.clientY - p.top
     root.mouse.within = 1
-    renderer.click()
+    display.click()
 
   $('#wideband').mouseout ->
     root.mouse.position.x = -1
@@ -136,7 +136,7 @@ assignEventHandlers = ->
 
 exportScreenshot = ->
   c = $('canvas').get 0
-  root.renderer.render()
+  root.display.render()
   imgUrl = c.toDataURL("image/png")
   window.open(imgUrl, '_blank')
   window.focus()
@@ -172,8 +172,8 @@ layout = ->
   c.width = c.clientWidth
   c.clientHeight = height
   c.height = c.clientHeight
-  this.renderer.width = width
-  this.renderer.height = height
+  this.display.width = width
+  this.display.height = height
   root.pan.x = getPagePosition(root.pageIndex)
   updateSwipeAnimation()
 

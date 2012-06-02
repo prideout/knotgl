@@ -38,7 +38,7 @@
     }
     width = parseInt($('#overlay').css('width'));
     height = parseInt($('#overlay').css('height'));
-    root.renderer = new root.Renderer(gl, width, height);
+    root.display = new root.Display(gl, width, height);
     layout();
     assignEventHandlers();
     return window.requestAnimationFrame(tick, c);
@@ -49,7 +49,7 @@
     if (collapsing || expanding) {
       return;
     }
-    duration = 0.25 * root.renderer.transitionMilliseconds;
+    duration = 0.25 * root.display.transitionMilliseconds;
     collapse = new TWEEN.Tween(CurrentSizes).to(metadata.CollapsedSizes, duration).easing(TWEEN.Easing.Quintic.In).onUpdate(updateNumeralSizes).onComplete(function() {
       return collapsing = false;
     });
@@ -79,7 +79,7 @@
 
   tick = function() {
     var cursor, h, highlightRow, labels, r, top;
-    r = root.renderer;
+    r = root.display;
     window.requestAnimationFrame(tick, $("canvas").get(0));
     TWEEN.update();
     if (!collapsing) {
@@ -104,7 +104,7 @@
       top = r.highlightRow * r.height / r.links.length;
       $('#highlight-row').css('top', top);
     }
-    cursor = root.renderer.hotMouse || root.mouse.hot || root.pageIndex === 0 ? 'pointer' : '';
+    cursor = root.display.hotMouse || root.mouse.hot || root.pageIndex === 0 ? 'pointer' : '';
     $('#rightpage').css({
       'cursor': cursor
     });
@@ -123,16 +123,16 @@
     });
     $(document).keydown(function(e) {
       if (e.keyCode === 38) {
-        root.renderer.moveSelection(0, -1);
+        root.display.moveSelection(0, -1);
       }
       if (e.keyCode === 40) {
-        root.renderer.moveSelection(0, +1);
+        root.display.moveSelection(0, +1);
       }
       if (e.keyCode === 37) {
-        root.renderer.moveSelection(-1, 0);
+        root.display.moveSelection(-1, 0);
       }
       if (e.keyCode === 39) {
-        root.renderer.moveSelection(+1, 0);
+        root.display.moveSelection(+1, 0);
       }
       if (e.keyCode === 32) {
         root.SwipePane();
@@ -171,7 +171,7 @@
       x = root.mouse.position.x = e.clientX - p.left;
       y = root.mouse.position.y = e.clientY - p.top;
       root.mouse.within = 1;
-      return renderer.click();
+      return display.click();
     });
     return $('#wideband').mouseout(function() {
       root.mouse.position.x = -1;
@@ -183,7 +183,7 @@
   exportScreenshot = function() {
     var c, imgUrl;
     c = $('canvas').get(0);
-    root.renderer.render();
+    root.display.render();
     imgUrl = c.toDataURL("image/png");
     window.open(imgUrl, '_blank');
     return window.focus();
@@ -232,8 +232,8 @@
     c.width = c.clientWidth;
     c.clientHeight = height;
     c.height = c.clientHeight;
-    this.renderer.width = width;
-    this.renderer.height = height;
+    this.display.width = width;
+    this.display.height = height;
     root.pan.x = getPagePosition(root.pageIndex);
     return updateSwipeAnimation();
   };

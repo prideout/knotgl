@@ -1,7 +1,7 @@
 root = exports ? this
 gl = null
 
-class Renderer
+class Display
 
   renderIconLink: (link, viewbox, alpha) -> @renderIconKnot(knot, link, viewbox, alpha) for knot in link
 
@@ -447,7 +447,7 @@ class Renderer
     program
 
 # PRIVATE UTILITIES #
-root.Renderer = Renderer
+root.Display = Display
 clone = utility.clone
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot
