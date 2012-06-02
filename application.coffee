@@ -71,16 +71,15 @@ tick = ->
 
   # If we're on the gallery page, update the mouse-over row.
   if root.pageIndex is 0
-    h = r.height / r.links.length
-    highlightRow = Math.floor(root.mouse.position.y / h)
-    highlightRow = null if highlightRow >= r.links.length
-    highlightRow = -1 if $('#grasshopper').is ':hover'
+    if root.mouse.moved
+      h = r.height / r.links.length
+      highlightRow = Math.floor(root.mouse.position.y / h)
+      highlightRow = null if highlightRow >= r.links.length
+      highlightRow = -1 if $('#grasshopper').is ':hover'
+      r.highlightRow = highlightRow
     $('#highlight-row').css('visibility', 'visible')
-    top = highlightRow * r.height / r.links.length
+    top = r.highlightRow * r.height / r.links.length
     $('#highlight-row').css('top', top)
-  else
-    highlightRow = r.selectedRow
-  r.highlightRow = highlightRow
 
   # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
   # or the coffeescript logic can make it hot (this.hotMouse).

@@ -89,21 +89,21 @@
       $('#superscript').text(labels.numComponents);
     }
     if (root.pageIndex === 0) {
-      h = r.height / r.links.length;
-      highlightRow = Math.floor(root.mouse.position.y / h);
-      if (highlightRow >= r.links.length) {
-        highlightRow = null;
-      }
-      if ($('#grasshopper').is(':hover')) {
-        highlightRow = -1;
+      if (root.mouse.moved) {
+        h = r.height / r.links.length;
+        highlightRow = Math.floor(root.mouse.position.y / h);
+        if (highlightRow >= r.links.length) {
+          highlightRow = null;
+        }
+        if ($('#grasshopper').is(':hover')) {
+          highlightRow = -1;
+        }
+        r.highlightRow = highlightRow;
       }
       $('#highlight-row').css('visibility', 'visible');
-      top = highlightRow * r.height / r.links.length;
+      top = r.highlightRow * r.height / r.links.length;
       $('#highlight-row').css('top', top);
-    } else {
-      highlightRow = r.selectedRow;
     }
-    r.highlightRow = highlightRow;
     cursor = root.renderer.hotMouse || root.mouse.hot || root.pageIndex === 0 ? 'pointer' : '';
     $('#rightpage').css({
       'cursor': cursor
