@@ -10,12 +10,33 @@
 
     Renderer.name = 'Renderer';
 
+    Renderer.prototype.renderIconLink = function(link, viewbox, alpha) {
+      var knot, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        _results.push(this.renderIconKnot(knot, link, viewbox, alpha));
+      }
+      return _results;
+    };
+
+    Renderer.prototype.renderBigLink = function(link, pass) {
+      var knot, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        _results.push(this.renderBigKnot(knot, link, pass));
+      }
+      return _results;
+    };
+
     function Renderer(context, width, height) {
       var msg,
         _this = this;
       this.width = width;
       this.height = height;
       gl = context;
+      this.ready = false;
       this.radiansPerSecond = 0.0003;
       this.transitionMilliseconds = 750;
       this.style = Style.SILHOUETTE;
@@ -37,6 +58,69 @@
       this.worker.postMessage(msg);
     }
 
+    Renderer.prototype.render = function() {
+      var aspect, currentTime, dt, elapsed, eye, far, fov, getAlpha, link, model, near, pass, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _ref, _ref1;
+      currentTime = new Date().getTime();
+      if (this.previousTime != null) {
+        elapsed = currentTime - this.previousTime;
+        dt = this.radiansPerSecond * elapsed;
+        if (root.pageIndex === 0) {
+          dt = dt * 32;
+        }
+        spinningRow = this.highlightRow != null ? this.links[this.highlightRow] : null;
+        _ref = this.links;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          row = _ref[_i];
+          if (row === spinningRow || Math.abs(row.theta % TWOPI) > dt) {
+            row.theta += dt;
+          } else {
+            row.theta = 0;
+          }
+        }
+      }
+      this.previousTime = currentTime;
+      this.projection = mat4.perspective(fov = 45, aspect = this.width / this.height, near = 5, far = 90);
+      view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
+      this.updateViewports();
+      getAlpha = function(link) {
+        return 0.25 + 0.75 * link.iconified;
+      };
+      _ref1 = this.links;
+      for (rowIndex = _j = 0, _len1 = _ref1.length; _j < _len1; rowIndex = ++_j) {
+        row = _ref1[rowIndex];
+        model = mat4.create();
+        this.modelview = mat4.create();
+        mat4.identity(model);
+        mat4.rotateX(model, 3.14 / 4);
+        mat4.rotateY(model, row.theta);
+        mat4.multiply(view, model, this.modelview);
+        this.normalMatrix = mat4.toMat3(this.modelview);
+        for (_k = 0, _len2 = row.length; _k < _len2; _k++) {
+          link = row[_k];
+          if (!(link.hidden != null)) {
+            this.renderIconLink(link, link.tableBox, 1);
+          }
+        }
+        if (rowIndex === this.selectedRow) {
+          for (_l = 0, _len3 = row.length; _l < _len3; _l++) {
+            link = row[_l];
+            if (link.ready) {
+              this.renderIconLink(link, link.iconBox, getAlpha(link));
+            }
+          }
+          for (pass = _m = 0; _m <= 1; pass = ++_m) {
+            for (_n = 0, _len4 = row.length; _n < _len4; _n++) {
+              link = row[_n];
+              this.renderBigLink(link, pass);
+            }
+          }
+        }
+      }
+      if (gl.getError() !== gl.NO_ERROR) {
+        return glerr("Render");
+      }
+    };
+
     Renderer.prototype.initializeGL = function() {
       this.compileShaders();
       gl.enable(gl.CULL_FACE);
@@ -46,69 +130,23 @@
     };
 
     Renderer.prototype.parseMetadata = function() {
-      var KnotColors, Table, c, col, i, id, knot, link, range, ranges, row, trivialKnot, trivialLink, x, _i, _j, _k, _len, _len1, _ref;
-      KnotColors = [[0.5, 0.75, 1, 0.75], [0.9, 1, 0.9, 0.75], [1, 0.75, 0.5, 0.75]];
-      Table = [
-        '0.1 3.1 4.1 5.1 5.2 6.1 6.2 6.3 7.1', '7.2 7.3 7.4 7.5 7.6 7.7 8.1 8.2 8.3', ((function() {
-          var _i, _results;
-          _results = [];
-          for (i = _i = 4; _i <= 12; i = ++_i) {
-            _results.push("8." + i);
-          }
-          return _results;
-        })()).join(' '), ((function() {
-          var _i, _results;
-          _results = [];
-          for (i = _i = 13; _i <= 21; i = ++_i) {
-            _results.push("8." + i);
-          }
-          return _results;
-        })()).join(' '), ((function() {
-          var _i, _results;
-          _results = [];
-          for (i = _i = 1; _i <= 9; i = ++_i) {
-            _results.push("9." + i);
-          }
-          return _results;
-        })()).join(' '), ((function() {
-          var _i, _results;
-          _results = [];
-          for (i = _i = 10; _i <= 18; i = ++_i) {
-            _results.push("9." + i);
-          }
-          return _results;
-        })()).join(' '), ((function() {
-          var _i, _results;
-          _results = [];
-          for (i = _i = 19; _i <= 27; i = ++_i) {
-            _results.push("9." + i);
-          }
-          return _results;
-        })()).join(' '), ((function() {
-          var _i, _results;
-          _results = [];
-          for (i = _i = 28; _i <= 36; i = ++_i) {
-            _results.push("9." + i);
-          }
-          return _results;
-        })()).join(' '), '0.2.1 2.2.1 4.2.1 5.2.1 6.2.1 6.2.2 6.2.3 7.2.1 7.2.2', '7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3', '8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1', '6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5'
-      ];
+      var c, col, id, knot, link, range, ranges, row, trivialKnot, trivialLink, x, _i, _j, _k, _len, _len1, _ref;
       this.links = [];
       for (row = _i = 0; _i < 12; row = ++_i) {
         this.links[row] = [];
         this.links[row].theta = 0;
         this.links[row].loaded = false;
         this.links[row].loading = false;
-        if (!Table[row]) {
+        if (!metadata.Gallery[row]) {
           continue;
         }
-        _ref = Table[row].split(' ');
+        _ref = metadata.Gallery[row].split(' ');
         for (col = _j = 0, _len = _ref.length; _j < _len; col = ++_j) {
           id = _ref[col];
           link = [];
           ranges = ((function() {
             var _k, _len1, _ref1, _results;
-            _ref1 = metadata.links;
+            _ref1 = metadata.Links;
             _results = [];
             for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
               x = _ref1[_k];
@@ -123,7 +161,7 @@
             knot = {};
             knot.range = range;
             knot.offset = vec3.create([0, 0, 0]);
-            knot.color = KnotColors[c];
+            knot.color = metadata.KnotColors[c];
             link.push(knot);
           }
           link.iconified = 1;
@@ -141,16 +179,16 @@
       trivialLink.push(clone(trivialKnot));
       trivialLink.push(clone(trivialKnot));
       trivialLink[0].offset = vec3.create([0, 0, 0]);
-      trivialLink[1].color = KnotColors[1];
+      trivialLink[1].color = metadata.KnotColors[1];
       trivialLink[1].offset = vec3.create([0.5, 0, 0]);
       trivialLink = this.links[10][8];
       trivialLink.push(clone(trivialKnot));
       trivialLink.push(clone(trivialKnot));
       trivialLink.push(clone(trivialKnot));
       trivialLink[0].offset = vec3.create([0, 0, 0]);
-      trivialLink[1].color = KnotColors[1];
+      trivialLink[1].color = metadata.KnotColors[1];
       trivialLink[1].offset = vec3.create([0.5, 0, 0]);
-      trivialLink[2].color = KnotColors[2];
+      trivialLink[2].color = metadata.KnotColors[2];
       trivialLink[2].offset = vec3.create([1.0, 0, 0]);
       return this.links[this.selectedRow][this.selectedColumn].iconified = 0;
     };
@@ -164,8 +202,7 @@
           this.spines = this.createVbo(gl.ARRAY_BUFFER, msg.data);
           this.spines.scale = msg.scale;
           this.tessRow(this.links[this.selectedRow]);
-          root.UpdateLabels();
-          return this.render();
+          return this.ready = true;
         case 'mesh-link':
           _ref = msg.id, id = _ref[0], row = _ref[1], col = _ref[2];
           link = this.links[row][col];
@@ -295,117 +332,6 @@
       if (this.incoming != null) {
         return this.incoming.replace(row[this.selectedColumn]);
       }
-    };
-
-    Renderer.prototype.render = function() {
-      var aspect, currentTime, cursor, dt, elapsed, eye, far, fov, getAlpha, h, link, model, near, pass, r, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _ref, _ref1;
-      r = function() {
-        return root.renderer.render();
-      };
-      window.requestAnimationFrame(r, $("canvas").get(0));
-      TWEEN.update();
-      if (root.UpdateLabels != null) {
-        root.UpdateLabels();
-      }
-      if (root.pageIndex === 0) {
-        h = this.height / this.links.length;
-        this.highlightRow = Math.floor(root.mouse.position.y / h);
-        if (this.highlightRow >= this.links.length) {
-          this.highlightRow = null;
-        }
-        if ($('#grasshopper').is(':hover')) {
-          this.highlightRow = -1;
-        }
-        root.UpdateHighlightRow();
-      } else {
-        this.highlightRow = this.selectedRow;
-      }
-      cursor = this.hotMouse || root.mouse.hot || root.pageIndex === 0 ? 'pointer' : '';
-      $('#rightpage').css({
-        'cursor': cursor
-      });
-      $('#leftpage').css({
-        'cursor': cursor
-      });
-      currentTime = new Date().getTime();
-      if (this.previousTime != null) {
-        elapsed = currentTime - this.previousTime;
-        dt = this.radiansPerSecond * elapsed;
-        if (root.pageIndex === 0) {
-          dt = dt * 32;
-        }
-        spinningRow = this.highlightRow != null ? this.links[this.highlightRow] : null;
-        _ref = this.links;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          row = _ref[_i];
-          if (row === spinningRow || Math.abs(row.theta % TWOPI) > dt) {
-            row.theta += dt;
-          } else {
-            row.theta = 0;
-          }
-        }
-      }
-      this.previousTime = currentTime;
-      this.projection = mat4.perspective(fov = 45, aspect = this.width / this.height, near = 5, far = 90);
-      view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
-      this.updateViewports();
-      getAlpha = function(link) {
-        return 0.25 + 0.75 * link.iconified;
-      };
-      _ref1 = this.links;
-      for (rowIndex = _j = 0, _len1 = _ref1.length; _j < _len1; rowIndex = ++_j) {
-        row = _ref1[rowIndex];
-        model = mat4.create();
-        this.modelview = mat4.create();
-        mat4.identity(model);
-        mat4.rotateX(model, 3.14 / 4);
-        mat4.rotateY(model, row.theta);
-        mat4.multiply(view, model, this.modelview);
-        this.normalMatrix = mat4.toMat3(this.modelview);
-        for (_k = 0, _len2 = row.length; _k < _len2; _k++) {
-          link = row[_k];
-          if (!(link.hidden != null)) {
-            this.renderIconLink(link, link.tableBox, 1);
-          }
-        }
-        if (rowIndex === this.selectedRow) {
-          for (_l = 0, _len3 = row.length; _l < _len3; _l++) {
-            link = row[_l];
-            if (link.ready) {
-              this.renderIconLink(link, link.iconBox, getAlpha(link));
-            }
-          }
-          for (pass = _m = 0; _m <= 1; pass = ++_m) {
-            for (_n = 0, _len4 = row.length; _n < _len4; _n++) {
-              link = row[_n];
-              this.renderBigLink(link, pass);
-            }
-          }
-        }
-      }
-      if (gl.getError() !== gl.NO_ERROR) {
-        return glerr("Render");
-      }
-    };
-
-    Renderer.prototype.renderIconLink = function(link, viewbox, alpha) {
-      var knot, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = link.length; _i < _len; _i++) {
-        knot = link[_i];
-        _results.push(this.renderIconKnot(knot, link, viewbox, alpha));
-      }
-      return _results;
-    };
-
-    Renderer.prototype.renderBigLink = function(link, pass) {
-      var knot, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = link.length; _i < _len; _i++) {
-        knot = link[_i];
-        _results.push(this.renderBigKnot(knot, link, pass));
-      }
-      return _results;
     };
 
     Renderer.prototype.updateViewports = function() {

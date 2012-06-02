@@ -2,14 +2,13 @@ root = exports ? this
 
 root.pageIndex = 1
 root.pan = {x: 0}
-
 root.mouse =
   position: {x: -1, y: -1}
   within: false
   hot: false
 
-$(document).ready ->
-  c = $('canvas').get(0)
+$ ->
+  c = $('canvas').get 0
   gl = c.getContext('experimental-webgl', { antialias: true } )
   glerr('Your browser does not support floating-point textures.') unless gl.getExtension('OES_texture_float')
   glerr('Your browser does not support GLSL derivatives.') unless gl.getExtension('OES_standard_derivatives')
@@ -18,44 +17,23 @@ $(document).ready ->
   root.renderer = new root.Renderer gl, width, height
   layout()
   assignEventHandlers()
-
-root.UpdateLabels = UpdateLabels = ->
-  labels = root.renderer.getCurrentLinkInfo()
-  $('#crossings').text(labels.crossings)
-  $('#subscript').text(labels.index)
-  $('#superscript').text(labels.numComponents)
+  window.requestAnimationFrame(tick, c)
 
 root.AnimateNumerals = ->
   return if root.collapse? or root.expand?
   duration = 0.25 * root.renderer.transitionMilliseconds
-  root.collapse = A = new TWEEN.Tween(CurrentSizes)
+  root.collapse = new TWEEN.Tween(CurrentSizes)
     .to(CollapsedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(updateNumeralSizes)
-  root.expand = B = new TWEEN.Tween(CurrentSizes)
+    .onComplete(root.collapse = null)
+  root.expand = new TWEEN.Tween(CurrentSizes)
     .to(ExpandedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(updateNumeralSizes)
-  A.chain(B)
-
-  # Turns off the continuous label update until after the collapse
-  root.UpdateLabels = null
-  root.collapse.onComplete ->
-    root.UpdateLabels = UpdateLabels
-    root.collapse = null
-  root.expand.onComplete ->
-    root.expand = null
-
-  A.start()
-
-root.UpdateHighlightRow = ->
-  r = root.renderer
-  if not r.highlightRow?
-    $('#highlight-row').css('visibility', 'hidden')
-    return
-  $('#highlight-row').css('visibility', 'visible')
-  top = r.highlightRow * r.height / r.links.length
-  $('#highlight-row').css('top', top)
+    .onComplete(root.expand = null)
+  root.collapse.chain root.expand
+  root.collapse.start()
 
 root.SwipePane = ->
   return if root.swipeTween?
@@ -69,7 +47,44 @@ root.SwipePane = ->
       .onComplete(-> root.swipeTween = null)
   root.swipeTween.start()
 
-# PRIVATE UTILITIES #
+tick = ->
+
+  r = root.renderer
+
+  # Request the next tick cycle on vertical refresh (vsync).
+  window.requestAnimationFrame(tick, $("canvas").get 0)
+
+  # Update all the tweening workers for snazzy animations and whatnot.
+  TWEEN.update()
+
+  # Update the Alexander-Briggs labels unless they're collapse-animating.
+  if not root.collapse?
+    labels = r.getCurrentLinkInfo()
+    $('#crossings').text labels.crossings
+    $('#subscript').text labels.index
+    $('#superscript').text labels.numComponents
+
+  # If we're on the gallery page, update the mouse-over row.
+  if root.pageIndex is 0
+    h = r.height / r.links.length
+    highlightRow = Math.floor(root.mouse.position.y / h)
+    highlightRow = null if highlightRow >= r.links.length
+    highlightRow = -1 if $('#grasshopper').is ':hover'
+    $('#highlight-row').css('visibility', 'visible')
+    top = highlightRow * r.height / r.links.length
+    $('#highlight-row').css('top', top)
+  else
+    highlightRow = r.selectedRow
+  r.highlightRow = highlightRow
+
+  # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
+  # or the coffeescript logic can make it hot (this.hotMouse).
+  cursor = if root.renderer.hotMouse or root.mouse.hot or root.pageIndex is 0 then 'pointer' else ''
+  $('#rightpage').css {'cursor' : cursor}
+  $('#leftpage').css {'cursor' : cursor}
+
+  # Lastly, ask the renderer to do its magic.
+  r.render() if r.ready
 
 assignEventHandlers = ->
 

@@ -1,11 +1,15 @@
 root = exports ? this
 gl = null
 
-# All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
+
+  renderIconLink: (link, viewbox, alpha) -> @renderIconKnot(knot, link, viewbox, alpha) for knot in link
+
+  renderBigLink: (link, pass) -> @renderBigKnot(knot, link, pass) for knot in link
 
   constructor: (context, @width, @height) ->
     gl = context
+    @ready = false
     @radiansPerSecond = 0.0003
     @transitionMilliseconds = 750
     @style = Style.SILHOUETTE
@@ -23,6 +27,55 @@ class Renderer
       url: document.URL + 'data/centerlines.bin'
     @worker.postMessage(msg)
 
+  render: ->
+
+    # Update the spinning animation.
+    currentTime = new Date().getTime()
+    if @previousTime?
+      elapsed = currentTime - @previousTime
+      dt = @radiansPerSecond * elapsed
+      dt = dt * 32 if root.pageIndex is 0
+      spinningRow = if @highlightRow? then @links[@highlightRow] else null
+      for row in @links
+        if row is spinningRow or Math.abs(row.theta % TWOPI) > dt
+          row.theta += dt
+        else
+          row.theta = 0
+    @previousTime = currentTime
+
+    # Compute projection and view matrices now.  We'll compute the model matrix later.
+    @projection = mat4.perspective(fov = 45, aspect = @width/@height, near = 5, far = 90)
+    view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
+
+    # Compute all viewports before starting the GL calls
+    @updateViewports()
+
+    # The currently-selected knot is faded out:
+    getAlpha = (link) -> 0.25 + 0.75 * link.iconified
+
+    # Iterate over each row in the gallery
+    for row, rowIndex in @links
+
+      # Each row has a unique spin theta, so compute the model matrix here.
+      model = mat4.create()
+      @modelview = mat4.create()
+      mat4.identity(model)
+      mat4.rotateX(model, 3.14/4)
+      mat4.rotateY(model, row.theta)
+      mat4.multiply(view, model, @modelview)
+      @normalMatrix = mat4.toMat3(@modelview)
+
+      # First, render the row in the table on the west page.
+      # Then, render the east page icons and "big" mesh.
+      # We roughly batch draw calls according to render state.
+      # That's why we don't have an outer loop over the links.
+      (@renderIconLink link, link.tableBox, 1 if not link.hidden?) for link in row
+      if rowIndex is @selectedRow
+        (@renderIconLink(link, link.iconBox, getAlpha link) if link.ready) for link in row
+        @renderBigLink(link, pass) for link in row for pass in [0..1]
+
+    glerr "Render" unless gl.getError() is gl.NO_ERROR
+
   initializeGL: ->
     @compileShaders()
     gl.enable gl.CULL_FACE
@@ -34,40 +87,21 @@ class Renderer
   # Knot properties: range, vbos, color.
   # Each "range" is an [index, count] pair that defines a window into the raw spine data.
   parseMetadata: ->
-    KnotColors = [
-      [0.5,0.75,1,0.75]
-      [0.9,1,0.9,0.75]
-      [1,0.75,0.5,0.75]
-    ]
-    Table = [
-      '0.1 3.1 4.1 5.1 5.2 6.1 6.2 6.3 7.1'
-      '7.2 7.3 7.4 7.5 7.6 7.7 8.1 8.2 8.3'
-      ("8.#{i}" for i in [4..12]).join(' ')
-      ("8.#{i}" for i in [13..21]).join(' ')
-      ("9.#{i}" for i in [1..9]).join(' ')
-      ("9.#{i}" for i in [10..18]).join(' ')
-      ("9.#{i}" for i in [19..27]).join(' ')
-      ("9.#{i}" for i in [28..36]).join(' ')
-      '0.2.1 2.2.1 4.2.1 5.2.1 6.2.1 6.2.2 6.2.3 7.2.1 7.2.2'
-      '7.2.3 7.2.4 7.2.5 7.2.6 7.2.7 7.2.8 8.2.1 8.2.2 8.2.3'
-      '8.2.4 8.2.5 8.2.6 8.2.7 8.2.8 8.2.9 8.2.10 8.2.11 0.3.1'
-      '6.3.1 6.3.2 6.3.3 7.3.1 8.3.1 8.3.2 8.3.3 8.3.4 8.3.5'
-    ]
     @links = []
     for row in [0...12]
         @links[row] = []
         @links[row].theta = 0
         @links[row].loaded = false
         @links[row].loading = false
-        continue if not Table[row]
-        for id, col in Table[row].split(' ')
+        continue if not metadata.Gallery[row]
+        for id, col in metadata.Gallery[row].split(' ')
           link = []
-          ranges = (x[1..] for x in metadata.links when x[0] is id)[0]
+          ranges = (x[1..] for x in metadata.Links when x[0] is id)[0]
           for range, c in ranges
             knot = {}
             knot.range = range
             knot.offset = vec3.create([0,0,0])
-            knot.color = KnotColors[c]
+            knot.color = metadata.KnotColors[c]
             link.push(knot)
           link.iconified = 1
           link.ready = false
@@ -87,7 +121,7 @@ class Renderer
     trivialLink.push(clone trivialKnot)
     trivialLink.push(clone trivialKnot)
     trivialLink[0].offset = vec3.create([0,0,0])
-    trivialLink[1].color = KnotColors[1]
+    trivialLink[1].color = metadata.KnotColors[1]
     trivialLink[1].offset = vec3.create([0.5,0,0])
 
     # Hack for the 0.3.1 knot
@@ -96,9 +130,9 @@ class Renderer
     trivialLink.push(clone trivialKnot)
     trivialLink.push(clone trivialKnot)
     trivialLink[0].offset = vec3.create([0,0,0])
-    trivialLink[1].color = KnotColors[1]
+    trivialLink[1].color = metadata.KnotColors[1]
     trivialLink[1].offset = vec3.create([0.5,0,0])
-    trivialLink[2].color = KnotColors[2]
+    trivialLink[2].color = metadata.KnotColors[2]
     trivialLink[2].offset = vec3.create([1.0,0,0])
 
     @links[@selectedRow][@selectedColumn].iconified = 0
@@ -111,8 +145,7 @@ class Renderer
         @spines = @createVbo gl.ARRAY_BUFFER, msg.data
         @spines.scale = msg.scale
         @tessRow @links[@selectedRow]
-        root.UpdateLabels()
-        @render()
+        @ready = true
       when 'mesh-link'
         [id, row, col] = msg.id
         link = @links[row][col]
@@ -196,90 +229,6 @@ class Renderer
     row[previousColumn].iconified = 1
     row[@selectedColumn].iconified = iconified
     @incoming.replace row[@selectedColumn] if @incoming?
-
-  render: ->
-
-    # Request the next render cycle on vertical refresh (vsync).
-    r = -> root.renderer.render()
-    window.requestAnimationFrame(r, $("canvas").get(0))
-
-    # Update all the tweening workers for snazzy animations and whatnot.
-    TWEEN.update()
-
-    # Update the Alexander-Briggs labels unless they're collapse-animating.
-    root.UpdateLabels() if root.UpdateLabels?
-
-    # If we're on the gallery page, update the mouse-over row.
-    if root.pageIndex is 0
-      h = @height / @links.length
-      @highlightRow = Math.floor(root.mouse.position.y / h)
-      @highlightRow = null if @highlightRow >= @links.length
-      @highlightRow = -1 if $('#grasshopper').is ':hover'
-      root.UpdateHighlightRow()
-    else
-      @highlightRow = @selectedRow
-
-    # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
-    # or the coffeescript logic can make it hot (this.hotMouse).
-    cursor = if @hotMouse or root.mouse.hot or root.pageIndex is 0 then 'pointer' else ''
-    $('#rightpage').css({'cursor' : cursor})
-    $('#leftpage').css({'cursor' : cursor})
-
-    # Update the spinning animation.
-    currentTime = new Date().getTime()
-    if @previousTime?
-      elapsed = currentTime - @previousTime
-      dt = @radiansPerSecond * elapsed
-      dt = dt * 32 if root.pageIndex is 0
-      spinningRow = if @highlightRow? then @links[@highlightRow] else null
-      for row in @links
-        if row is spinningRow or Math.abs(row.theta % TWOPI) > dt
-          row.theta += dt
-        else
-          row.theta = 0
-    @previousTime = currentTime
-
-    # Compute projection and view matrices now.  We'll compute the model matrix later.
-    @projection = mat4.perspective(fov = 45, aspect = @width/@height, near = 5, far = 90)
-    view = mat4.lookAt(eye = [0,-5,5], target = [0,0,0], up = [0,1,0])
-
-    # Compute all viewports before starting the GL calls
-    @updateViewports()
-
-    # This is where I'd normally do a glClear, doesn't seem necessary in WebGL
-    #gl.clearColor(0,0,0,0)
-    #gl.clear(gl.COLOR_BUFFER_BIT)
-
-    # The currently-selected knot is faded out:
-    getAlpha = (link) -> 0.25 + 0.75 * link.iconified
-
-    # Draw each knot in its respective viewport, batching roughly
-    # according to currently to current shader and current VBO:
-    for row, rowIndex in @links
-
-      # Each row has a unique spin theta, so compute the model matrix here.
-      model = mat4.create()
-      @modelview = mat4.create()
-      mat4.identity(model)
-      mat4.rotateX(model, 3.14/4)
-      mat4.rotateY(model, row.theta)
-      mat4.multiply(view, model, @modelview)
-      @normalMatrix = mat4.toMat3(@modelview)
-
-      # Render the row in the table on the west page.
-      (@renderIconLink link, link.tableBox, 1 if not link.hidden?) for link in row
-
-      # Now, render the east page.
-      if rowIndex is @selectedRow
-        for link in row
-          @renderIconLink(link, link.iconBox, getAlpha link) if link.ready
-        for pass in [0..1]
-          @renderBigLink(link, pass) for link in row
-
-    glerr "Render" unless gl.getError() == gl.NO_ERROR
-
-  renderIconLink: (link, viewbox, alpha) -> @renderIconKnot(knot, link, viewbox, alpha) for knot in link
-  renderBigLink: (link, pass) -> @renderBigKnot(knot, link, pass) for knot in link
 
   # Annotates each link with aabb objects: iconBox, centralBox, and tableBox.
   # If a transition animation is underway, centralBox is an interpolated result.
