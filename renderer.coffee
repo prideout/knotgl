@@ -23,7 +23,10 @@ class Renderer
     @parseMetadata()
     @worker = new Worker 'js/worker.js'
     @worker.onmessage = (response) => @onWorkerMessage response.data
-    @downloadSpineData()
+    msg =
+      command: 'download-spines'
+      url: document.URL + 'data/centerlines.bin'
+    @worker.postMessage(msg)
 
   # Read the metadata table (see knots.coffee) and arrange it into a "links" array.
   # Each "link" is an annotated array of "knot" objects.
@@ -98,12 +101,6 @@ class Renderer
 
     @links[@selectedRow][@selectedColumn].iconified = 0
 
-  downloadSpineData: ->
-    msg =
-      command: 'download-spines'
-      url: document.URL + 'data/centerlines.bin'
-    @worker.postMessage(msg)
-
   onWorkerMessage: (msg) ->
     switch msg.command
       when 'centerlines'
@@ -118,45 +115,38 @@ class Renderer
       when 'mesh-link'
         toast "Received mesh for #{msg.id}"
 
-  tessRow: (row) ->
-
-    return if row.loaded?
-    return if row.loading?
-
-    row.loading = true
-    row.loadCount = 0
-
-    onComplete = (event) =>
-      link = event.data
-      for knot in link
-        # Convert Float32Array objects into WebGL VBO's
-        # Annotate each VBO with a byte count
-
-        vbo = @gl.createBuffer()
+  # Convert Float32Array objects into WebGL VBO's
+  # Annotate each VBO with a byte count
+  onComplete: (event) ->
+    link = event.data
+    for knot in link
+      do (vbo = @gl.createBuffer()) =>
         @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
         @gl.bufferData(@gl.ARRAY_BUFFER, knot.vbos.tube, @gl.STATIC_DRAW)
         vbo.count = knot.vbos.tube.length
         knot.vbos.tube = vbo
-
-        vbo = @gl.createBuffer()
+      do (vbo = @gl.createBuffer()) =>
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
         @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, @gl.STATIC_DRAW)
         vbo.count = knot.vbos.wireframe.length
         knot.vbos.wireframe = vbo
-
+      do (vbo = @gl.createBuffer()) =>
         vbo = @gl.createBuffer()
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
         @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.triangles, @gl.STATIC_DRAW)
         vbo.count = knot.vbos.triangles.length
         knot.vbos.triangles = vbo
 
+  tessRow: (row) ->
+    return if row.loaded? or row.loading?
+    row.loading = true
+    row.loadCount = 0
+    for link in row
+      @tessLink(link)
+      @onComplete(data:link)
       if row.loadCount is row.length
         row.loaded = true
         row.loading = false
-
-    for link in row
-      @tessLink(link)
-      onComplete(data:link)
       msg =
         command: 'tessellate-link'
         renderer: this

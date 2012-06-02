@@ -9,7 +9,8 @@
     Renderer.name = 'Renderer';
 
     function Renderer(gl, width, height) {
-      var _this = this;
+      var msg,
+        _this = this;
       this.gl = gl;
       this.width = width;
       this.height = height;
@@ -36,7 +37,11 @@
       this.worker.onmessage = function(response) {
         return _this.onWorkerMessage(response.data);
       };
-      this.downloadSpineData();
+      msg = {
+        command: 'download-spines',
+        url: document.URL + 'data/centerlines.bin'
+      };
+      this.worker.postMessage(msg);
     }
 
     Renderer.prototype.parseMetadata = function() {
@@ -147,15 +152,6 @@
       return this.links[this.selectedRow][this.selectedColumn].iconified = 0;
     };
 
-    Renderer.prototype.downloadSpineData = function() {
-      var msg;
-      msg = {
-        command: 'download-spines',
-        url: document.URL + 'data/centerlines.bin'
-      };
-      return this.worker.postMessage(msg);
-    };
-
     Renderer.prototype.onWorkerMessage = function(msg) {
       switch (msg.command) {
         case 'centerlines':
@@ -174,50 +170,54 @@
       }
     };
 
-    Renderer.prototype.tessRow = function(row) {
-      var link, msg, onComplete, _i, _len, _results,
+    Renderer.prototype.onComplete = function(event) {
+      var knot, link, vbo, _fn, _i, _len, _results,
         _this = this;
-      if (row.loaded != null) {
-        return;
-      }
-      if (row.loading != null) {
-        return;
-      }
-      row.loading = true;
-      row.loadCount = 0;
-      onComplete = function(event) {
-        var knot, link, vbo, _i, _len;
-        link = event.data;
-        for (_i = 0, _len = link.length; _i < _len; _i++) {
-          knot = link[_i];
-          vbo = _this.gl.createBuffer();
-          _this.gl.bindBuffer(_this.gl.ARRAY_BUFFER, vbo);
-          _this.gl.bufferData(_this.gl.ARRAY_BUFFER, knot.vbos.tube, _this.gl.STATIC_DRAW);
-          vbo.count = knot.vbos.tube.length;
-          knot.vbos.tube = vbo;
-          vbo = _this.gl.createBuffer();
-          _this.gl.bindBuffer(_this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-          _this.gl.bufferData(_this.gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, _this.gl.STATIC_DRAW);
-          vbo.count = knot.vbos.wireframe.length;
-          knot.vbos.wireframe = vbo;
+      link = event.data;
+      _fn = function(vbo) {
+        _this.gl.bindBuffer(_this.gl.ELEMENT_ARRAY_BUFFER, vbo);
+        _this.gl.bufferData(_this.gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, _this.gl.STATIC_DRAW);
+        vbo.count = knot.vbos.wireframe.length;
+        return knot.vbos.wireframe = vbo;
+      };
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        vbo = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, knot.vbos.tube, this.gl.STATIC_DRAW);
+        vbo.count = knot.vbos.tube.length;
+        knot.vbos.tube = vbo;
+        _fn(this.gl.createBuffer());
+        _results.push((function(vbo) {
           vbo = _this.gl.createBuffer();
           _this.gl.bindBuffer(_this.gl.ELEMENT_ARRAY_BUFFER, vbo);
           _this.gl.bufferData(_this.gl.ELEMENT_ARRAY_BUFFER, knot.vbos.triangles, _this.gl.STATIC_DRAW);
           vbo.count = knot.vbos.triangles.length;
-          knot.vbos.triangles = vbo;
-        }
-        if (row.loadCount === row.length) {
-          row.loaded = true;
-          return row.loading = false;
-        }
-      };
+          return knot.vbos.triangles = vbo;
+        })(this.gl.createBuffer()));
+      }
+      return _results;
+    };
+
+    Renderer.prototype.tessRow = function(row) {
+      var link, msg, _i, _len, _results;
+      if ((row.loaded != null) || (row.loading != null)) {
+        return;
+      }
+      row.loading = true;
+      row.loadCount = 0;
       _results = [];
       for (_i = 0, _len = row.length; _i < _len; _i++) {
         link = row[_i];
         this.tessLink(link);
-        onComplete({
+        this.onComplete({
           data: link
         });
+        if (row.loadCount === row.length) {
+          row.loaded = true;
+          row.loading = false;
+        }
         _results.push(msg = {
           command: 'tessellate-link',
           renderer: this,
