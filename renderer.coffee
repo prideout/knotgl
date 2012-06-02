@@ -8,7 +8,6 @@ class Renderer
     @transitionMilliseconds = 750
     @style = Style.SILHOUETTE
     @sketchy = true
-    @vbos = {}
     @programs = {}
     @selectedColumn = 0
     @selectedRow = 9
@@ -98,13 +97,10 @@ class Renderer
 
   onWorkerMessage: (msg) ->
     switch msg.command
-      when 'centerlines'
-        @spines = new Float32Array msg.centerlines
-        @vbos.spines = @gl.createBuffer()
-        @gl.bindBuffer @gl.ARRAY_BUFFER, @vbos.spines
-        @gl.bufferData @gl.ARRAY_BUFFER, @spines, @gl.STATIC_DRAW
-        glerr("Error when trying to create spine VBO") unless @gl.getError() == @gl.NO_ERROR
-        @tessRow(@links[@selectedRow])
+      when 'spine-data'
+        @spines = @createVbo @gl.ARRAY_BUFFER, msg.data
+        @spines.scale = msg.scale
+        @tessRow @links[@selectedRow]
         root.UpdateLabels()
         @render()
       when 'mesh-link'
@@ -359,12 +355,12 @@ class Renderer
     @gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
     @gl.enable(@gl.BLEND)
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @vbos.spines)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @spines)
     @gl.enableVertexAttribArray(POSITION)
     @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix4fv(program.projection, false, projection)
-    @gl.uniform1f(program.scale, 0.15) # <----------------------TODO send a conf message
+    @gl.uniform1f(program.scale, @spines.scale)
     @setColor(program.color, COLORS.black, alpha)
     [startVertex, vertexCount] = knot.range
     @gl.enable(@gl.DEPTH_TEST)

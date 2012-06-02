@@ -3367,9 +3367,10 @@
 # wireframe: <Uint16Array>
 # triangles: <Uint16Array>
 # ---------------------------
-#     command: 'centerlines' <----------- TEMPORARY MESSAGE.  TO BE REMOVED.
+#     command: 'spine-data'
 #        type: worker -> client
 # centerlines: <ArrayBuffer>
+#       scale: <float>
 # ---------------------------
 #
 */
@@ -3395,8 +3396,9 @@
         rawdata = download(msg.url);
         spines = new Float32Array(rawdata);
         response = {
-          command: 'centerlines',
-          centerlines: rawdata
+          command: 'spine-data',
+          data: rawdata,
+          scale: tubeGen.scale
         };
         return this.postMessage(response);
       case 'tessellate-link':

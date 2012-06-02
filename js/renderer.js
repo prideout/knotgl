@@ -18,7 +18,6 @@
       this.transitionMilliseconds = 750;
       this.style = Style.SILHOUETTE;
       this.sketchy = true;
-      this.vbos = {};
       this.programs = {};
       this.selectedColumn = 0;
       this.selectedRow = 9;
@@ -150,14 +149,9 @@
     Renderer.prototype.onWorkerMessage = function(msg) {
       var col, i, id, link, mesh, row, v, _i, _len, _ref, _ref1;
       switch (msg.command) {
-        case 'centerlines':
-          this.spines = new Float32Array(msg.centerlines);
-          this.vbos.spines = this.gl.createBuffer();
-          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
-          this.gl.bufferData(this.gl.ARRAY_BUFFER, this.spines, this.gl.STATIC_DRAW);
-          if (this.gl.getError() !== this.gl.NO_ERROR) {
-            glerr("Error when trying to create spine VBO");
-          }
+        case 'spine-data':
+          this.spines = this.createVbo(this.gl.ARRAY_BUFFER, msg.data);
+          this.spines.scale = msg.scale;
           this.tessRow(this.links[this.selectedRow]);
           root.UpdateLabels();
           return this.render();
@@ -517,12 +511,12 @@
       this.gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2]);
       this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbos.spines);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.spines);
       this.gl.enableVertexAttribArray(POSITION);
       this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniformMatrix4fv(program.projection, false, projection);
-      this.gl.uniform1f(program.scale, 0.15);
+      this.gl.uniform1f(program.scale, this.spines.scale);
       this.setColor(program.color, COLORS.black, alpha);
       _ref = knot.range, startVertex = _ref[0], vertexCount = _ref[1];
       this.gl.enable(this.gl.DEPTH_TEST);
