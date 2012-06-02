@@ -14,16 +14,12 @@ watchedFiles  = [
   'renderer'
   'shaders'
   'tube'
+  'worker-core'
 ]
 
 graceful = false
 linux = true
 appname = 'knotgl'
-
-workerCoffee = [
-  'tube'
-  'worker-core'
-]
 
 workerArtifacts = [
   'js/gl-matrix.js'
@@ -32,10 +28,6 @@ workerArtifacts = [
 ]
 
 task 'worker', 'Build a monolithic worker from a collection of javascript and coffeescript files.', ->
-  for file in workerCoffee
-    console.info "coffee --bare --compile --output js #{file}.coffee"
-    exec "coffee --bare --compile --output js #{file}.coffee", (err, stdout, stderr) ->
-      console.log stdout + stderr
   appContents = new Array remaining = workerArtifacts.length
   for file, index in workerArtifacts then do (file, index) ->
     fs.readFile file, 'utf8', (err, fileContents) ->
@@ -49,6 +41,7 @@ task 'worker', 'Build a monolithic worker from a collection of javascript and co
 task 'build', 'Compile CoffeeScript from *.coffee to js/*.js', ->
   exec 'coffee --compile --output js/ ./', (err, stdout, stderr) ->
     console.log stdout + stderr
+  invoke 'worker'
 
 task 'minify', 'Minify the resulting application file after build using Google Closure.', ->
   e = if linux then '/usr/lib/jvm/java/bin/java' else 'java'

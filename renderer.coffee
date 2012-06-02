@@ -100,6 +100,8 @@ class Renderer
 
   onWorkerMessage: (msg) ->
     switch msg.command
+      when 'debug-message'
+        toast msg.text
       when 'spine-data'
         @spines = @createVbo @gl.ARRAY_BUFFER, msg.data
         @spines.scale = msg.scale

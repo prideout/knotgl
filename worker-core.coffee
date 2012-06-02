@@ -1,7 +1,6 @@
 ###
 #
 # This worker file needs to be concatenated with TubeGenerator and gl-matrix.
-# It also needs to be built with the --bare flag so that it can access TubeGenerator. <--- IS THIS TRUE?
 # Type "cake worker" to ask the cakefile to do all this work.
 #
 # Here's our little JSON-based communication protocol.  Eveything in the left column
@@ -32,6 +31,10 @@
 #      tube: <Float32Array>
 # wireframe: <Uint16Array>
 # triangles: <Uint16Array>
+# ---------------------------
+#   command: 'debug-message'
+#      type: worker -> client
+#      text: <anything>
 # ---------------------------
 #
 ###
