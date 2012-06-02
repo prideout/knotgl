@@ -50,9 +50,6 @@ class Renderer
     # Compute all viewports before starting the GL calls
     @updateViewports()
 
-    # The currently-selected knot is faded out:
-    getAlpha = (link) -> 0.25 + 0.75 * link.iconified
-
     # Iterate over each row in the gallery
     for row, rowIndex in @links
 
@@ -65,13 +62,18 @@ class Renderer
       mat4.multiply(view, model, @modelview)
       @normalMatrix = mat4.toMat3(@modelview)
 
+      # Update stale alpha
+      for link in row
+        link.alpha = 0.3 if link.iconified is 0
+        link.alpha = 1.0 if link.iconified is 1
+
       # First, render the row in the table on the west page.
       # Then, render the east page icons and "big" mesh.
       # We roughly batch draw calls according to render state.
       # That's why we don't have an outer loop over the links.
       (@renderIconLink link, link.tableBox, 1 if not link.hidden?) for link in row
       if rowIndex is @selectedRow
-        (@renderIconLink(link, link.iconBox, getAlpha link) if link.ready) for link in row
+        (@renderIconLink(link, link.iconBox, link.alpha) if link.ready) for link in row
         @renderBigLink(link, pass) for link in row for pass in [0..1]
 
     glerr "Render" unless gl.getError() is gl.NO_ERROR
@@ -104,6 +106,7 @@ class Renderer
             knot.color = metadata.KnotColors[c]
             link.push(knot)
           link.iconified = 1
+          link.alpha = 1
           link.ready = false
           link.id = [id, row, col]
           @links[row].push(link)
@@ -209,15 +212,18 @@ class Renderer
 
     # Note that "iconified" is an animation percentange in [0,1]
     # If the current selection has animation = 0, then start a new transition.
-    iconified = row[previousColumn].iconified
-    if iconified is 0
+    newLink = row[@selectedColumn]
+    previousLink = row[previousColumn]
+    if previousLink.iconified is 0
       duration = @transitionMilliseconds
-      @incoming = new TWEEN.Tween(row[@selectedColumn])
+      @incoming1 = new TWEEN.Tween(newLink).to(alpha: 0.3, duration).start()
+      @incoming2 = new TWEEN.Tween(newLink)
         .to(iconified: 0, duration)
         .easing(TWEEN.Easing.Bounce.Out)
         .start()
       duration = 0.5 * @transitionMilliseconds
-      @outgoing = new TWEEN.Tween(row[previousColumn])
+      new TWEEN.Tween(previousLink).to(alpha: 1.0, duration).start()
+      outgoing = new TWEEN.Tween(previousLink)
         .to(iconified: 1, duration)
         .easing(TWEEN.Easing.Quartic.Out)
         .start()
@@ -226,9 +232,12 @@ class Renderer
     # If we reached this point, we're interupting an in-progress transition.
     # We instantly snap the currently-incoming element back to the toolbar
     # by forcibly setting its percentage to 1.
-    row[previousColumn].iconified = 1
-    row[@selectedColumn].iconified = iconified
-    @incoming.replace row[@selectedColumn] if @incoming?
+    iconified = previousLink.iconified; previousLink.iconified = 1
+    newLink.iconified = iconified
+    alpha = previousLink.alpha; previousLink.alpha = 1
+    newLink.alpha = alpha
+    @incoming1.replace newLink if @incoming1?
+    @incoming2.replace newLink if @incoming2?
 
   # Annotates each link with aabb objects: iconBox, centralBox, and tableBox.
   # If a transition animation is underway, centralBox is an interpolated result.

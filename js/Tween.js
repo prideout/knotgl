@@ -194,6 +194,11 @@ TWEEN.Tween = function ( object ) {
 
 	};
 
+    this.getElapsed = function () {
+		var elapsed = ( time - _startTime ) / _duration;
+		return elapsed > 1 ? 1 : elapsed;
+    }
+
 	this.update = function ( time ) {
 
 		if ( time < _startTime ) {

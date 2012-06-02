@@ -59,7 +59,7 @@
     }
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, dt, elapsed, eye, far, fov, getAlpha, link, model, near, pass, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _ref, _ref1;
+      var aspect, currentTime, dt, elapsed, eye, far, fov, link, model, near, pass, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _o, _ref, _ref1;
       currentTime = new Date().getTime();
       if (this.previousTime != null) {
         elapsed = currentTime - this.previousTime;
@@ -82,9 +82,6 @@
       this.projection = mat4.perspective(fov = 45, aspect = this.width / this.height, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
       this.updateViewports();
-      getAlpha = function(link) {
-        return 0.25 + 0.75 * link.iconified;
-      };
       _ref1 = this.links;
       for (rowIndex = _j = 0, _len1 = _ref1.length; _j < _len1; rowIndex = ++_j) {
         row = _ref1[rowIndex];
@@ -97,20 +94,29 @@
         this.normalMatrix = mat4.toMat3(this.modelview);
         for (_k = 0, _len2 = row.length; _k < _len2; _k++) {
           link = row[_k];
+          if (link.iconified === 0) {
+            link.alpha = 0.3;
+          }
+          if (link.iconified === 1) {
+            link.alpha = 1.0;
+          }
+        }
+        for (_l = 0, _len3 = row.length; _l < _len3; _l++) {
+          link = row[_l];
           if (!(link.hidden != null)) {
             this.renderIconLink(link, link.tableBox, 1);
           }
         }
         if (rowIndex === this.selectedRow) {
-          for (_l = 0, _len3 = row.length; _l < _len3; _l++) {
-            link = row[_l];
+          for (_m = 0, _len4 = row.length; _m < _len4; _m++) {
+            link = row[_m];
             if (link.ready) {
-              this.renderIconLink(link, link.iconBox, getAlpha(link));
+              this.renderIconLink(link, link.iconBox, link.alpha);
             }
           }
-          for (pass = _m = 0; _m <= 1; pass = ++_m) {
-            for (_n = 0, _len4 = row.length; _n < _len4; _n++) {
-              link = row[_n];
+          for (pass = _n = 0; _n <= 1; pass = ++_n) {
+            for (_o = 0, _len5 = row.length; _o < _len5; _o++) {
+              link = row[_o];
               this.renderBigLink(link, pass);
             }
           }
@@ -165,6 +171,7 @@
             link.push(knot);
           }
           link.iconified = 1;
+          link.alpha = 1;
           link.ready = false;
           link.id = [id, row, col];
           this.links[row].push(link);
@@ -291,7 +298,7 @@
     };
 
     Renderer.prototype.changeSelection = function(nextX, nextY) {
-      var changingRow, duration, iconified, link, previousColumn, row, _i, _len, _ref;
+      var alpha, changingRow, duration, iconified, link, newLink, outgoing, previousColumn, previousLink, row, _i, _len, _ref;
       previousColumn = this.selectedColumn;
       changingRow = false;
       if (nextY !== this.selectedRow) {
@@ -315,22 +322,36 @@
       if (changingRow) {
         return;
       }
-      iconified = row[previousColumn].iconified;
-      if (iconified === 0) {
+      newLink = row[this.selectedColumn];
+      previousLink = row[previousColumn];
+      if (previousLink.iconified === 0) {
         duration = this.transitionMilliseconds;
-        this.incoming = new TWEEN.Tween(row[this.selectedColumn]).to({
+        this.incoming1 = new TWEEN.Tween(newLink).to({
+          alpha: 0.3
+        }, duration).start();
+        this.incoming2 = new TWEEN.Tween(newLink).to({
           iconified: 0
         }, duration).easing(TWEEN.Easing.Bounce.Out).start();
         duration = 0.5 * this.transitionMilliseconds;
-        this.outgoing = new TWEEN.Tween(row[previousColumn]).to({
+        new TWEEN.Tween(previousLink).to({
+          alpha: 1.0
+        }, duration).start();
+        outgoing = new TWEEN.Tween(previousLink).to({
           iconified: 1
         }, duration).easing(TWEEN.Easing.Quartic.Out).start();
         return;
       }
-      row[previousColumn].iconified = 1;
-      row[this.selectedColumn].iconified = iconified;
-      if (this.incoming != null) {
-        return this.incoming.replace(row[this.selectedColumn]);
+      iconified = previousLink.iconified;
+      previousLink.iconified = 1;
+      newLink.iconified = iconified;
+      alpha = previousLink.alpha;
+      previousLink.alpha = 1;
+      newLink.alpha = alpha;
+      if (this.incoming1 != null) {
+        this.incoming1.replace(newLink);
+      }
+      if (this.incoming2 != null) {
+        return this.incoming2.replace(newLink);
       }
     };
 
