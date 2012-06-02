@@ -19,11 +19,11 @@ shaders.solidmesh = {
     Normal: semantics.NORMAL
   },
   uniforms: {
-    Projection: 'projection',
-    Modelview: 'modelview',
-    NormalMatrix: 'normalmatrix',
-    Color: 'color',
-    WorldOffset: 'worldOffset'
+    projection: 'projection',
+    modelview: 'modelview',
+    normalmatrix: 'normalmatrix',
+    color: 'color',
+    worldOffset: 'worldOffset'
   }
 };
 
@@ -33,13 +33,13 @@ shaders.wireframe = {
     Position: semantics.POSITION
   },
   uniforms: {
-    Projection: 'projection',
-    Modelview: 'modelview',
-    DepthOffset: 'depthOffset',
-    Offset: 'offset',
-    WorldOffset: 'worldOffset',
-    Color: 'color',
-    Scale: 'scale'
+    projection: 'projection',
+    modelview: 'modelview',
+    depthOffset: 'depthOffset',
+    screenOffset: 'screenOffset',
+    worldOffset: 'worldOffset',
+    color: 'color',
+    scale: 'scale'
   }
 };
 
@@ -49,18 +49,18 @@ shaders.vignette = {
     VertexID: semantics.VERTEXID
   },
   uniforms: {
-    Viewport: 'viewport'
+    viewport: 'viewport'
   }
 };
 
-shaders.source["VS-Scene"] = "attribute vec4 Position;\nattribute vec3 Normal;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform mat3 NormalMatrix;\nuniform vec3 WorldOffset;\nvarying vec3 vPosition;\nvarying vec3 vNormal;\nvoid main(void)\n{\n    vPosition = Position.xyz + WorldOffset;\n    vNormal = NormalMatrix * Normal;\n    vec4 p = vec4(vPosition, 1);\n    gl_Position = Projection * Modelview * p;\n}";
+shaders.source["VS-Scene"] = "attribute vec4 Position;\nattribute vec3 Normal;\nuniform mat4 modelview;\nuniform mat4 projection;\nuniform mat3 normalmatrix;\nuniform vec3 worldOffset;\nvarying vec3 vPosition;\nvarying vec3 vNormal;\nvoid main(void)\n{\n    vPosition = Position.xyz + worldOffset;\n    vNormal = normalmatrix * Normal;\n    vec4 p = vec4(vPosition, 1);\n    gl_Position = projection * modelview * p;\n}";
 
-shaders.source["VS-Wireframe"] = "attribute vec4 Position;\nuniform mat4 Modelview;\nuniform mat4 Projection;\nuniform float DepthOffset;\nuniform float Scale;\nuniform vec2 Offset;\nuniform vec3 WorldOffset;\nvoid main(void)\n{\n    vec4 p = Position;\n    p.xyz *= Scale;\n    p.xyz += WorldOffset;\n    gl_Position = Projection * Modelview * p;\n    gl_Position.z += DepthOffset;\n    gl_Position.xy += Offset * 0.15;\n}";
+shaders.source["VS-Wireframe"] = "attribute vec4 Position;\nuniform mat4 modelview;\nuniform mat4 projection;\nuniform float depthOffset;\nuniform float scale;\nuniform vec2 screenOffset;\nuniform vec3 worldOffset;\nvoid main(void)\n{\n    vec4 p = Position;\n    p.xyz *= scale;\n    p.xyz += worldOffset;\n    gl_Position = projection * modelview * p;\n    gl_Position.z += depthOffset;\n    gl_Position.xy += screenOffset * 0.15;\n}";
 
-shaders.source["FS-Wireframe"] = "precision highp float;\nprecision highp vec3;\nuniform vec4 Color;\nvoid main()\n{\n    gl_FragColor = Color;\n}";
+shaders.source["FS-Wireframe"] = "precision highp float;\nprecision highp vec3;\nuniform vec4 color;\nvoid main()\n{\n    gl_FragColor = color;\n}";
 
-shaders.source["FS-Scene"] = "precision highp float;\nprecision highp vec3;\nvarying vec3 vNormal;\nvarying vec3 vPosition;\n\nvec3 LightPosition = vec3(0.25, 0.5, 1.0);\nvec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);\nvec3 SpecularMaterial = vec3(0.25, 0.25, 0.25);\nvec3 FrontMaterial = vec3(0.25, 0.5, 0.75);\nvec3 BackMaterial = vec3(0.75, 0.75, 0.7);\nfloat Shininess = 50.0;\n\nuniform vec4 Color;\n\nvoid main()\n{\n    vec3 N = normalize(vNormal);\n    if (!gl_FrontFacing)\n        N = -N;\n\n    vec3 L = normalize(LightPosition);\n    vec3 Eye = vec3(0, 0, 1);\n    vec3 H = normalize(L + Eye);\n\n    float df = max(0.0, dot(N, L));\n    float sf = max(0.0, dot(N, H));\n    sf = pow(sf, Shininess);\n\n    vec3 P = vPosition;\n    vec3 I = normalize(P);\n    float cosTheta = abs(dot(I, N));\n    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);\n\n    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;\n    color *= Color.rgb;\n    vec3 lighting = AmbientMaterial + df * color;\n    if (gl_FrontFacing)\n        lighting += sf * SpecularMaterial;\n\n    lighting += fresnel;\n    gl_FragColor = vec4(lighting,1);\n}";
+shaders.source["FS-Scene"] = "precision highp float;\nprecision highp vec3;\nvarying vec3 vNormal;\nvarying vec3 vPosition;\n\nvec3 LightPosition = vec3(0.25, 0.5, 1.0);\nvec3 AmbientMaterial = vec3(0.04, 0.04, 0.04);\nvec3 SpecularMaterial = vec3(0.25, 0.25, 0.25);\nvec3 FrontMaterial = vec3(0.25, 0.5, 0.75);\nvec3 BackMaterial = vec3(0.75, 0.75, 0.7);\nfloat Shininess = 50.0;\n\nuniform vec4 color;\n\nvoid main()\n{\n    vec3 N = normalize(vNormal);\n    if (!gl_FrontFacing)\n        N = -N;\n\n    vec3 L = normalize(LightPosition);\n    vec3 Eye = vec3(0, 0, 1);\n    vec3 H = normalize(L + Eye);\n\n    float df = max(0.0, dot(N, L));\n    float sf = max(0.0, dot(N, H));\n    sf = pow(sf, Shininess);\n\n    vec3 P = vPosition;\n    vec3 I = normalize(P);\n    float cosTheta = abs(dot(I, N));\n    float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);\n\n    vec3 mat = !gl_FrontFacing ? FrontMaterial : BackMaterial;\n    mat *= color.rgb;\n    vec3 lighting = AmbientMaterial + df * mat;\n    if (gl_FrontFacing)\n        lighting += sf * SpecularMaterial;\n\n    lighting += fresnel;\n    gl_FragColor = vec4(lighting,1);\n}";
 
 shaders.source["VS-Vignette"] = "attribute vec2 VertexID;\nvoid main(void)\n{\n    vec2 p = 3.0 - 4.0 * VertexID;\n    gl_Position = vec4(p, 0, 1);\n}";
 
-shaders.source["FS-Vignette"] = "precision highp float;\nprecision highp vec2;\n\nuniform vec2 Viewport;\nvoid main()\n{\n    vec2 c = gl_FragCoord.xy / Viewport;\n    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);\n    gl_FragColor = vec4(f, f, f, 1);\n    gl_FragColor.rgb *= vec3(0.867, 0.18, 0.447); // Hot Pink!\n}";
+shaders.source["FS-Vignette"] = "precision highp float;\nprecision highp vec2;\n\nuniform vec2 viewport;\nvoid main()\n{\n    vec2 c = gl_FragCoord.xy / viewport;\n    float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);\n    gl_FragColor = vec4(f, f, f, 1);\n    gl_FragColor.rgb *= vec3(0.867, 0.18, 0.447); // Hot Pink!\n}";

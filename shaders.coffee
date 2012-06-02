@@ -12,68 +12,68 @@ shaders.solidmesh =
     Position: semantics.POSITION
     Normal: semantics.NORMAL
   uniforms:
-    Projection: 'projection'
-    Modelview: 'modelview'
-    NormalMatrix: 'normalmatrix'
-    Color: 'color'
-    WorldOffset: 'worldOffset'
+    projection: 'projection'
+    modelview: 'modelview'
+    normalmatrix: 'normalmatrix'
+    color: 'color'
+    worldOffset: 'worldOffset'
 
 shaders.wireframe =
   keys: ["VS-Wireframe", "FS-Wireframe"]
   attribs:
     Position: semantics.POSITION
   uniforms:
-    Projection: 'projection'
-    Modelview: 'modelview'
-    DepthOffset: 'depthOffset'
-    Offset: 'offset'
-    WorldOffset: 'worldOffset'
-    Color: 'color'
-    Scale: 'scale'
+    projection: 'projection'
+    modelview: 'modelview'
+    depthOffset: 'depthOffset'
+    screenOffset: 'screenOffset'
+    worldOffset: 'worldOffset'
+    color: 'color'
+    scale: 'scale'
 
 shaders.vignette =
   keys: ["VS-Vignette", "FS-Vignette"]
   attribs:
     VertexID: semantics.VERTEXID
   uniforms:
-    Viewport: 'viewport'
+    viewport: 'viewport'
 
 shaders.source["VS-Scene"] =
 """
 attribute vec4 Position;
 attribute vec3 Normal;
-uniform mat4 Modelview;
-uniform mat4 Projection;
-uniform mat3 NormalMatrix;
-uniform vec3 WorldOffset;
+uniform mat4 modelview;
+uniform mat4 projection;
+uniform mat3 normalmatrix;
+uniform vec3 worldOffset;
 varying vec3 vPosition;
 varying vec3 vNormal;
 void main(void)
 {
-    vPosition = Position.xyz + WorldOffset;
-    vNormal = NormalMatrix * Normal;
+    vPosition = Position.xyz + worldOffset;
+    vNormal = normalmatrix * Normal;
     vec4 p = vec4(vPosition, 1);
-    gl_Position = Projection * Modelview * p;
+    gl_Position = projection * modelview * p;
 }
 """
 
 shaders.source["VS-Wireframe"] =
 """
 attribute vec4 Position;
-uniform mat4 Modelview;
-uniform mat4 Projection;
-uniform float DepthOffset;
-uniform float Scale;
-uniform vec2 Offset;
-uniform vec3 WorldOffset;
+uniform mat4 modelview;
+uniform mat4 projection;
+uniform float depthOffset;
+uniform float scale;
+uniform vec2 screenOffset;
+uniform vec3 worldOffset;
 void main(void)
 {
     vec4 p = Position;
-    p.xyz *= Scale;
-    p.xyz += WorldOffset;
-    gl_Position = Projection * Modelview * p;
-    gl_Position.z += DepthOffset;
-    gl_Position.xy += Offset * 0.15;
+    p.xyz *= scale;
+    p.xyz += worldOffset;
+    gl_Position = projection * modelview * p;
+    gl_Position.z += depthOffset;
+    gl_Position.xy += screenOffset * 0.15;
 }
 """
 
@@ -81,10 +81,10 @@ shaders.source["FS-Wireframe"] =
 """
 precision highp float;
 precision highp vec3;
-uniform vec4 Color;
+uniform vec4 color;
 void main()
 {
-    gl_FragColor = Color;
+    gl_FragColor = color;
 }
 """
 
@@ -102,7 +102,7 @@ vec3 FrontMaterial = vec3(0.25, 0.5, 0.75);
 vec3 BackMaterial = vec3(0.75, 0.75, 0.7);
 float Shininess = 50.0;
 
-uniform vec4 Color;
+uniform vec4 color;
 
 void main()
 {
@@ -123,9 +123,9 @@ void main()
     float cosTheta = abs(dot(I, N));
     float fresnel = 1.0 - clamp(pow(1.0 - cosTheta, 0.125), 0.0, 1.0);
 
-    vec3 color = !gl_FrontFacing ? FrontMaterial : BackMaterial;
-    color *= Color.rgb;
-    vec3 lighting = AmbientMaterial + df * color;
+    vec3 mat = !gl_FrontFacing ? FrontMaterial : BackMaterial;
+    mat *= color.rgb;
+    vec3 lighting = AmbientMaterial + df * mat;
     if (gl_FrontFacing)
         lighting += sf * SpecularMaterial;
 
@@ -149,10 +149,10 @@ shaders.source["FS-Vignette"] =
 precision highp float;
 precision highp vec2;
 
-uniform vec2 Viewport;
+uniform vec2 viewport;
 void main()
 {
-    vec2 c = gl_FragCoord.xy / Viewport;
+    vec2 c = gl_FragCoord.xy / viewport;
     float f = 1.0 - 0.5 * pow(distance(c, vec2(0.5)), 1.5);
     gl_FragColor = vec4(f, f, f, 1);
     gl_FragColor.rgb *= vec3(0.867, 0.18, 0.447); // Hot Pink!

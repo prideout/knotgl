@@ -173,14 +173,16 @@ class Renderer
     # If the current selection has animation = 0, then start a new transition.
     iconified = row[previousColumn].iconified
     if iconified is 0
-      root.outgoing = new TWEEN.Tween(row[previousColumn])
-        .to({iconified: 1}, 0.5 * @transitionMilliseconds)
-        .easing(TWEEN.Easing.Quartic.Out)
-      root.incoming = new TWEEN.Tween(row[@selectedColumn])
-        .to({iconified: 0}, @transitionMilliseconds)
+      duration = @transitionMilliseconds
+      @incoming = new TWEEN.Tween(row[@selectedColumn])
+        .to(iconified: 0, duration)
         .easing(TWEEN.Easing.Bounce.Out)
-      root.incoming.start()
-      root.outgoing.start()
+        .start()
+      duration = 0.5 * @transitionMilliseconds
+      @outgoing = new TWEEN.Tween(row[previousColumn])
+        .to(iconified: 1, duration)
+        .easing(TWEEN.Easing.Quartic.Out)
+        .start()
       return
 
     # If we reached this point, we're interupting an in-progress transition.
@@ -188,7 +190,7 @@ class Renderer
     # by forcibly setting its percentage to 1.
     row[previousColumn].iconified = 1
     row[@selectedColumn].iconified = iconified
-    root.incoming.replace(row[@selectedColumn]) if root.incoming?
+    @incoming.replace row[@selectedColumn] if @incoming?
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -377,13 +379,13 @@ class Renderer
     @gl.lineWidth(2)
     for x in [-1..1] by 2
       for y in [-1..1] by 2
-        @gl.uniform2f(program.offset, x,y)
+        @gl.uniform2f(program.screenOffset, x,y)
         @gl.uniform1f(program.depthOffset, 0)
         @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
 
     # Draw the center line using the color of the link component.
     @setColor(program.color, knot.color, alpha)
-    @gl.uniform2f(program.offset, 0,0)
+    @gl.uniform2f(program.screenOffset, 0,0)
     @gl.uniform1f(program.depthOffset, -0.5)
     @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
     @gl.disableVertexAttribArray(semantics.POSITION)

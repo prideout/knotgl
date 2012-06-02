@@ -246,7 +246,7 @@
     };
 
     Renderer.prototype.changeSelection = function(nextX, nextY) {
-      var changingRow, iconified, link, previousColumn, row, _i, _len, _ref;
+      var changingRow, duration, iconified, link, previousColumn, row, _i, _len, _ref;
       previousColumn = this.selectedColumn;
       changingRow = false;
       if (nextY !== this.selectedRow) {
@@ -272,20 +272,20 @@
       }
       iconified = row[previousColumn].iconified;
       if (iconified === 0) {
-        root.outgoing = new TWEEN.Tween(row[previousColumn]).to({
-          iconified: 1
-        }, 0.5 * this.transitionMilliseconds).easing(TWEEN.Easing.Quartic.Out);
-        root.incoming = new TWEEN.Tween(row[this.selectedColumn]).to({
+        duration = this.transitionMilliseconds;
+        this.incoming = new TWEEN.Tween(row[this.selectedColumn]).to({
           iconified: 0
-        }, this.transitionMilliseconds).easing(TWEEN.Easing.Bounce.Out);
-        root.incoming.start();
-        root.outgoing.start();
+        }, duration).easing(TWEEN.Easing.Bounce.Out).start();
+        duration = 0.5 * this.transitionMilliseconds;
+        this.outgoing = new TWEEN.Tween(row[previousColumn]).to({
+          iconified: 1
+        }, duration).easing(TWEEN.Easing.Quartic.Out).start();
         return;
       }
       row[previousColumn].iconified = 1;
       row[this.selectedColumn].iconified = iconified;
-      if (root.incoming != null) {
-        return root.incoming.replace(row[this.selectedColumn]);
+      if (this.incoming != null) {
+        return this.incoming.replace(row[this.selectedColumn]);
       }
     };
 
@@ -537,13 +537,13 @@
       this.gl.lineWidth(2);
       for (x = _i = -1; _i <= 1; x = _i += 2) {
         for (y = _j = -1; _j <= 1; y = _j += 2) {
-          this.gl.uniform2f(program.offset, x, y);
+          this.gl.uniform2f(program.screenOffset, x, y);
           this.gl.uniform1f(program.depthOffset, 0);
           this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
         }
       }
       this.setColor(program.color, knot.color, alpha);
-      this.gl.uniform2f(program.offset, 0, 0);
+      this.gl.uniform2f(program.screenOffset, 0, 0);
       this.gl.uniform1f(program.depthOffset, -0.5);
       this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
       return this.gl.disableVertexAttribArray(semantics.POSITION);
