@@ -170,38 +170,31 @@
       }
     };
 
+    Renderer.prototype.createVbo = function(target, data) {
+      var vbo;
+      vbo = this.gl.createBuffer();
+      this.gl.bindBuffer(target, vbo);
+      this.gl.bufferData(target, data, this.gl.STATIC_DRAW);
+      vbo.count = data.length;
+      return vbo;
+    };
+
     Renderer.prototype.onComplete = function(event) {
-      var knot, link, vbo, _fn, _i, _len, _results,
-        _this = this;
+      var knot, link, v, _i, _len, _results;
       link = event.data;
-      _fn = function(vbo) {
-        _this.gl.bindBuffer(_this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-        _this.gl.bufferData(_this.gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, _this.gl.STATIC_DRAW);
-        vbo.count = knot.vbos.wireframe.length;
-        return knot.vbos.wireframe = vbo;
-      };
       _results = [];
       for (_i = 0, _len = link.length; _i < _len; _i++) {
         knot = link[_i];
-        vbo = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbo);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, knot.vbos.tube, this.gl.STATIC_DRAW);
-        vbo.count = knot.vbos.tube.length;
-        knot.vbos.tube = vbo;
-        _fn(this.gl.createBuffer());
-        _results.push((function(vbo) {
-          vbo = _this.gl.createBuffer();
-          _this.gl.bindBuffer(_this.gl.ELEMENT_ARRAY_BUFFER, vbo);
-          _this.gl.bufferData(_this.gl.ELEMENT_ARRAY_BUFFER, knot.vbos.triangles, _this.gl.STATIC_DRAW);
-          vbo.count = knot.vbos.triangles.length;
-          return knot.vbos.triangles = vbo;
-        })(this.gl.createBuffer()));
+        v = knot.vbos;
+        v.tube = this.createVbo(this.gl.ARRAY_BUFFER, v.tube);
+        v.wireframe = this.createVbo(this.gl.ELEMENT_ARRAY_BUFFER, v.wireframe);
+        _results.push(v.triangles = this.createVbo(this.gl.ELEMENT_ARRAY_BUFFER, v.triangles));
       }
       return _results;
     };
 
     Renderer.prototype.tessRow = function(row) {
-      var link, msg, _i, _len, _results;
+      var knot, link, msg, _i, _len, _results;
       if ((row.loaded != null) || (row.loading != null)) {
         return;
       }
@@ -218,12 +211,20 @@
           row.loaded = true;
           row.loading = false;
         }
-        _results.push(msg = {
+        msg = {
           command: 'tessellate-link',
-          renderer: this,
           id: link.id,
-          link: link.ranges
-        });
+          link: (function() {
+            var _j, _len1, _results1;
+            _results1 = [];
+            for (_j = 0, _len1 = link.length; _j < _len1; _j++) {
+              knot = link[_j];
+              _results1.push(knot.range);
+            }
+            return _results1;
+          })()
+        };
+        _results.push(this.worker.postMessage(msg));
       }
       return _results;
     };

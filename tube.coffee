@@ -39,9 +39,7 @@ class TubeGenerator
         vec3.scale(p, @scale)
         rawBuffer.set(p, j)
         j += 3
-        if j >= rawBuffer.length
-          console.log "Bézier: generated #{j/3} points from #{data.length/3} control points."
-          return rawBuffer
+        return rawBuffer if j >= rawBuffer.length
         t += dt
       i += 3
 
@@ -77,7 +75,6 @@ class TubeGenerator
         mesh.set p, m
         [m, v, theta] = [m+6,v+1,theta+dtheta]
       i++
-    console.log "GenerateTube: generated #{m} vertices from a centerline with #{count} nodes."
 
     # Next, populate normals:
     [i, m] = [0, 0]

@@ -115,27 +115,22 @@ class Renderer
       when 'mesh-link'
         toast "Received mesh for #{msg.id}"
 
+  createVbo: (target, data) ->
+    vbo = @gl.createBuffer()
+    @gl.bindBuffer target, vbo
+    @gl.bufferData target, data, @gl.STATIC_DRAW
+    vbo.count = data.length
+    vbo
+
   # Convert Float32Array objects into WebGL VBO's
   # Annotate each VBO with a byte count
   onComplete: (event) ->
     link = event.data
     for knot in link
-      do (vbo = @gl.createBuffer()) =>
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, vbo)
-        @gl.bufferData(@gl.ARRAY_BUFFER, knot.vbos.tube, @gl.STATIC_DRAW)
-        vbo.count = knot.vbos.tube.length
-        knot.vbos.tube = vbo
-      do (vbo = @gl.createBuffer()) =>
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
-        @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.wireframe, @gl.STATIC_DRAW)
-        vbo.count = knot.vbos.wireframe.length
-        knot.vbos.wireframe = vbo
-      do (vbo = @gl.createBuffer()) =>
-        vbo = @gl.createBuffer()
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbo)
-        @gl.bufferData(@gl.ELEMENT_ARRAY_BUFFER, knot.vbos.triangles, @gl.STATIC_DRAW)
-        vbo.count = knot.vbos.triangles.length
-        knot.vbos.triangles = vbo
+      v = knot.vbos
+      v.tube = @createVbo @gl.ARRAY_BUFFER, v.tube
+      v.wireframe = @createVbo @gl.ELEMENT_ARRAY_BUFFER, v.wireframe
+      v.triangles = @createVbo @gl.ELEMENT_ARRAY_BUFFER, v.triangles
 
   tessRow: (row) ->
     return if row.loaded? or row.loading?
@@ -149,10 +144,9 @@ class Renderer
         row.loading = false
       msg =
         command: 'tessellate-link'
-        renderer: this
         id: link.id
-        link: link.ranges
-      #@worker.postMessage msg
+        link: (knot.range for knot in link)
+      @worker.postMessage msg
 
   tessLink: (link) ->
     for knot in link

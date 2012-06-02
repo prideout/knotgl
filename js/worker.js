@@ -3148,7 +3148,6 @@
           rawBuffer.set(p, j);
           j += 3;
           if (j >= rawBuffer.length) {
-            console.log("Bézier: generated " + (j / 3) + " points from " + (data.length / 3) + " control points.");
             return rawBuffer;
           }
           t += dt;
@@ -3211,7 +3210,6 @@
         }
         i++;
       }
-      console.log("GenerateTube: generated " + m + " vertices from a centerline with " + count + " nodes.");
       _ref2 = [0, 0], i = _ref2[0], m = _ref2[1];
       normal = vec3.create();
       center = vec3.create();
