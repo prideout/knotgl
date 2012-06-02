@@ -3427,11 +3427,7 @@
     tubeGen.polygonSides = 10;
     tubeGen.bézierSlices = 3;
     tubeGen.tangentSmoothness = 3;
-    initialized = true;
-    return this.postMessage({
-      command: 'debug-message',
-      text: 'initializing'
-    });
+    return initialized = true;
   };
 
   download = function(url) {

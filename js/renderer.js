@@ -526,8 +526,8 @@
       this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.spines);
-      this.gl.enableVertexAttribArray(POSITION);
-      this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
+      this.gl.enableVertexAttribArray(semantics.POSITION);
+      this.gl.vertexAttribPointer(semantics.POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniformMatrix4fv(program.projection, false, projection);
       this.gl.uniform1f(program.scale, this.spines.scale);
@@ -546,7 +546,7 @@
       this.gl.uniform2f(program.offset, 0, 0);
       this.gl.uniform1f(program.depthOffset, -0.5);
       this.gl.drawArrays(this.gl.LINE_LOOP, startVertex, vertexCount);
-      return this.gl.disableVertexAttribArray(POSITION);
+      return this.gl.disableVertexAttribArray(semantics.POSITION);
     };
 
     Renderer.prototype.renderBigKnot = function(knot, link, pass) {
@@ -572,18 +572,18 @@
         this.gl.uniformMatrix3fv(program.normalmatrix, false, this.normalMatrix);
         this.gl.uniformMatrix4fv(program.projection, false, projection);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbos.tube);
-        this.gl.enableVertexAttribArray(POSITION);
-        this.gl.enableVertexAttribArray(NORMAL);
-        this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
-        this.gl.vertexAttribPointer(NORMAL, 3, this.gl.FLOAT, false, stride = 24, offset = 12);
+        this.gl.enableVertexAttribArray(semantics.POSITION);
+        this.gl.enableVertexAttribArray(semantics.NORMAL);
+        this.gl.vertexAttribPointer(semantics.POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
+        this.gl.vertexAttribPointer(semantics.NORMAL, 3, this.gl.FLOAT, false, stride = 24, offset = 12);
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbos.triangles);
         if (this.style === Style.SILHOUETTE) {
           this.gl.enable(this.gl.POLYGON_OFFSET_FILL);
           this.gl.polygonOffset(-1, 12);
         }
         this.gl.drawElements(this.gl.TRIANGLES, vbos.triangles.count, this.gl.UNSIGNED_SHORT, 0);
-        this.gl.disableVertexAttribArray(POSITION);
-        this.gl.disableVertexAttribArray(NORMAL);
+        this.gl.disableVertexAttribArray(semantics.POSITION);
+        this.gl.disableVertexAttribArray(semantics.NORMAL);
         this.gl.disable(this.gl.POLYGON_OFFSET_FILL);
       }
       if (pass === 1) {
@@ -596,8 +596,8 @@
         this.gl.uniformMatrix4fv(program.projection, false, projection);
         this.gl.uniform1f(program.scale, 1);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vbos.tube);
-        this.gl.enableVertexAttribArray(POSITION);
-        this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
+        this.gl.enableVertexAttribArray(semantics.POSITION);
+        this.gl.vertexAttribPointer(semantics.POSITION, 3, this.gl.FLOAT, false, stride = 24, 0);
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, vbos.wireframe);
         if (this.style === Style.WIREFRAME) {
           this.gl.lineWidth(1);
@@ -621,7 +621,7 @@
             this.gl.drawElements(this.gl.LINES, vbos.wireframe.count / 2, this.gl.UNSIGNED_SHORT, vbos.wireframe.count);
           }
         }
-        return this.gl.disableVertexAttribArray(POSITION);
+        return this.gl.disableVertexAttribArray(semantics.POSITION);
       }
     };
 

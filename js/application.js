@@ -19,7 +19,7 @@
     hot: false
   };
 
-  root.AppInit = function() {
+  $(document).ready(function() {
     var c, gl, height, width;
     c = $('canvas').get(0);
     gl = c.getContext('experimental-webgl', {
@@ -36,7 +36,7 @@
     root.renderer = new root.Renderer(gl, width, height);
     layout();
     return assignEventHandlers();
-  };
+  });
 
   root.UpdateLabels = UpdateLabels = function() {
     var labels;

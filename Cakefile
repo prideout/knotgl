@@ -1,13 +1,14 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
 
-DevTips =
+tips =
   """
-  To experiment with coffescript, try this from the console:
+  To experiment with coffescript REPL, try this from the console:
   > coffee --require './js/gl-matrix-min.js'
+  Press Ctrl+V to enter multi-line mode, Ctrl+D to exit.
   """
 
-watchedFiles  = [
+coffeeFiles = [
   'utility'
   'application'
   'knots'
@@ -17,9 +18,10 @@ watchedFiles  = [
   'worker-core'
 ]
 
-graceful = false
-linux = true
-appname = 'knotgl'
+bareFiles = [
+  'utility'
+  'shaders'
+]
 
 workerArtifacts = [
   'js/gl-matrix.js'
@@ -27,7 +29,10 @@ workerArtifacts = [
   'js/worker-core.js'
 ]
 
-task 'worker', 'Build a monolithic worker from a collection of javascript and coffeescript files.', ->
+graceful = false
+linux = true
+
+task 'worker', 'Build a monolithic worker from a collection of js and coffee files', ->
   appContents = new Array remaining = workerArtifacts.length
   for file, index in workerArtifacts then do (file, index) ->
     fs.readFile file, 'utf8', (err, fileContents) ->
@@ -39,11 +44,13 @@ task 'worker', 'Build a monolithic worker from a collection of javascript and co
       throw err if err
 
 task 'build', 'Compile CoffeeScript from *.coffee to js/*.js', ->
-  exec 'coffee --compile --output js/ ./', (err, stdout, stderr) ->
-    console.log stdout + stderr
+  for file in coffeeFiles
+    flags = if bareFiles.indexOf(file) isnt -1 then '--bare ' else ''
+    exec "coffee --compile #{flags} --output js/ #{file}.coffee", (err, stdout, stderr) ->
+      console.log stdout + stderr
   invoke 'worker'
 
-task 'minify', 'Minify the resulting application file after build using Google Closure.', ->
+task 'minify', 'Minify the resulting application file after build using Google Closure', ->
   e = if linux then '/usr/lib/jvm/java/bin/java' else 'java'
   console.log 'Minifying...'
   exec "#{e} -jar \"./compiler.jar\" --js js/knotgl.js --js_output_file js/knotgl-min.js", (err, stdout, stderr) ->
@@ -53,7 +60,7 @@ task 'minify', 'Minify the resulting application file after build using Google C
 
 task 'watch', 'Watch prod source files and build changes', ->
   console.log "Watching for changes"
-  for file in watchedFiles then do (file) ->
+  for file in coffeeFiles then do (file) ->
     watch = if linux then fs.watch else fs.watchFile
     watch "#{file}.coffee", (curr, prev) ->
       if +curr.mtime isnt +prev.mtime

@@ -8,7 +8,7 @@ root.mouse =
   within: false
   hot: false
 
-root.AppInit = ->
+$(document).ready ->
   c = $('canvas').get(0)
   gl = c.getContext('experimental-webgl', { antialias: true } )
   glerr('Your browser does not support floating-point textures.') unless gl.getExtension('OES_texture_float')

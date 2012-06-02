@@ -1,6 +1,12 @@
-root = exports ? this
-root.utility = {}
-utility = root.utility
+
+COLORS =
+    black: [0,0,0]
+    darkgray:  [.1,.1,.1]
+
+glerr = (msg) -> $.gritter.add title: 'WebGL Error', text: msg
+toast = (msg) -> $.gritter.add title: 'Notice', text: msg
+
+utility = {}
 
 # Deep copy (why doesn't JS have this natively?)
 # Caution: doesn't seem to work with glmatrix types in Firefox, but works in Chrome.
@@ -18,23 +24,6 @@ utility.clone = (obj) ->
 utility.aabb = class aabb
 
   constructor: (@left, @top, @right, @bottom) ->
-
-  @createFromCorner: (leftTop, size) ->
-    [left, top] = leftTop
-    [right, bottom] = [left + size[0], top + size[1]]
-    new aabb left, top, right, bottom
-
-  @createFromCenter: (center, size) ->
-    [hw, hh] = [size[0]/2, size[1]/2]
-    [left, top] = [center[0] - hw, center[1] - hh]
-    [right, bottom] = [center[0] + hw, center[1] + hh]
-    new aabb left, top, right, bottom
-
-  setFromCenter: (center, size) ->
-    [hw, hh] = [size[0]/2, size[1]/2]
-    [@left, @top] = [center[0] - hw, center[1] - hh]
-    [@right, @bottom] = [center[0] + hw, center[1] + hh]
-
   contains: (x,y) -> x >= @left and x < @right and y >= @top and y < @bottom
   width: -> @right - @left
   height: -> @bottom - @top
@@ -43,14 +32,12 @@ utility.aabb = class aabb
   size: -> [@width(), @height()]
   viewport: (gl) -> gl.viewport @left, @top, @width(), @height()
   translated: (x,y) -> new aabb @left+x,@top+y,@right+x,@bottom+y
-
-  @intersect: (a, b) -> new aabb(
-    Math.max(a.left,b.left),
-    Math.max(a.top,b.top),
-    Math.min(a.right,b.right),
-    Math.min(a.bottom,b.bottom))
-
   degenerate: -> @left >= @right or @top >= @bottom
+
+  setFromCenter: (center, size) ->
+    [hw, hh] = [size[0]/2, size[1]/2]
+    [@left, @top] = [center[0] - hw, center[1] - hh]
+    [@right, @bottom] = [center[0] + hw, center[1] + hh]
 
   inflate: (delta, deltay) ->
     @left -= delta
@@ -66,6 +53,23 @@ utility.aabb = class aabb
     @top += delta
     @bottom -= delta
 
+  @createFromCorner: (leftTop, size) ->
+    [left, top] = leftTop
+    [right, bottom] = [left + size[0], top + size[1]]
+    new aabb left, top, right, bottom
+
+  @createFromCenter: (center, size) ->
+    [hw, hh] = [size[0]/2, size[1]/2]
+    [left, top] = [center[0] - hw, center[1] - hh]
+    [right, bottom] = [center[0] + hw, center[1] + hh]
+    new aabb left, top, right, bottom
+
+  @intersect: (a, b) -> new aabb(
+    Math.max(a.left,b.left),
+    Math.max(a.top,b.top),
+    Math.min(a.right,b.right),
+    Math.min(a.bottom,b.bottom))
+  
   @lerp: (a, b, t) ->
     w = (1-t) * a.width()  + t * b.width()
     h = (1-t) * a.height() + t * b.height()
@@ -77,16 +81,12 @@ utility.aabb = class aabb
   # to "crop" the viewing frustum.
   # See bottom of:
   #   http://github.prideout.net/barrel-distortion/
+  # TODO the code can be vastly simplified with simple algebra
   @cropMatrix: (cropRegion, entireViewport) ->
-
-    # TODO this can be simplified with high-school math skills!
-
     sx = entireViewport.width() / cropRegion.width()
     sy = entireViewport.height() / cropRegion.height()
-
     tx = 2*(entireViewport.width() + 2 * (entireViewport.left - cropRegion.centerx())) / cropRegion.width()
     ty = 2*(entireViewport.height() + 2 * (entireViewport.top - cropRegion.centery())) / cropRegion.height()
-
     m = mat4.create()
     m[0] = sx; m[1] = 0; m[2] = 0; m[3] = tx;
     m[4] = 0; m[5] = sy; m[6] = 0; m[7] = ty;

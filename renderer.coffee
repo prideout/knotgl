@@ -366,8 +366,8 @@ class Renderer
     @gl.enable(@gl.BLEND)
     @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @spines)
-    @gl.enableVertexAttribArray(POSITION)
-    @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
+    @gl.enableVertexAttribArray(semantics.POSITION)
+    @gl.vertexAttribPointer(semantics.POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix4fv(program.projection, false, projection)
     @gl.uniform1f(program.scale, @spines.scale)
@@ -386,7 +386,7 @@ class Renderer
     @gl.uniform2f(program.offset, 0,0)
     @gl.uniform1f(program.depthOffset, -0.5)
     @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
-    @gl.disableVertexAttribArray(POSITION)
+    @gl.disableVertexAttribArray(semantics.POSITION)
 
   renderBigKnot: (knot, link, pass) ->
     return if link.iconified is 1
@@ -406,17 +406,17 @@ class Renderer
         @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
         @gl.uniformMatrix4fv(program.projection, false, projection)
         @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
-        @gl.enableVertexAttribArray(POSITION)
-        @gl.enableVertexAttribArray(NORMAL)
-        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-        @gl.vertexAttribPointer(NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
+        @gl.enableVertexAttribArray(semantics.POSITION)
+        @gl.enableVertexAttribArray(semantics.NORMAL)
+        @gl.vertexAttribPointer(semantics.POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+        @gl.vertexAttribPointer(semantics.NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbos.triangles)
         if @style == Style.SILHOUETTE
           @gl.enable(@gl.POLYGON_OFFSET_FILL)
           @gl.polygonOffset(-1,12)
         @gl.drawElements(@gl.TRIANGLES, vbos.triangles.count, @gl.UNSIGNED_SHORT, 0)
-        @gl.disableVertexAttribArray(POSITION)
-        @gl.disableVertexAttribArray(NORMAL)
+        @gl.disableVertexAttribArray(semantics.POSITION)
+        @gl.disableVertexAttribArray(semantics.NORMAL)
         @gl.disable(@gl.POLYGON_OFFSET_FILL)
 
     # Draw the wireframe
@@ -430,8 +430,8 @@ class Renderer
         @gl.uniformMatrix4fv(program.projection, false, projection)
         @gl.uniform1f(program.scale, 1)
         @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
-        @gl.enableVertexAttribArray(POSITION)
-        @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
+        @gl.enableVertexAttribArray(semantics.POSITION)
+        @gl.vertexAttribPointer(semantics.POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
         @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbos.wireframe)
         if @style == Style.WIREFRAME
           @gl.lineWidth(1)
@@ -453,7 +453,7 @@ class Renderer
             @setColor(program.color, COLORS.darkgray, 1)
             @gl.uniform1f(program.depthOffset, -0.01)
             @gl.drawElements(@gl.LINES, vbos.wireframe.count/2, @gl.UNSIGNED_SHORT, vbos.wireframe.count)
-        @gl.disableVertexAttribArray(POSITION)
+        @gl.disableVertexAttribArray(semantics.POSITION)
 
   # Compile and link the given shader strings and metadata
   compileProgram: (vName, fName, attribs, uniforms) ->

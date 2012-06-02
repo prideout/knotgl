@@ -1,40 +1,44 @@
-root = exports ? this
+semantics =
+  VERTEXID : 0
+  POSITION : 0
+  NORMAL   : 1
+  TEXCOORD : 2
 
-root.shaders =
-  solidmesh:
-    keys: ["VS-Scene", "FS-Scene"]
-    attribs:
-      Position: POSITION
-      Normal: NORMAL
-    uniforms:
-      Projection: 'projection'
-      Modelview: 'modelview'
-      NormalMatrix: 'normalmatrix'
-      Color: 'color'
-      WorldOffset: 'worldOffset'
+shaders = source: {}
 
-  wireframe:
-    keys: ["VS-Wireframe", "FS-Wireframe"]
-    attribs:
-      Position: POSITION
-    uniforms:
-      Projection: 'projection'
-      Modelview: 'modelview'
-      DepthOffset: 'depthOffset'
-      Offset: 'offset'
-      WorldOffset: 'worldOffset'
-      Color: 'color'
-      Scale: 'scale'
+shaders.solidmesh =
+  keys: ["VS-Scene", "FS-Scene"]
+  attribs:
+    Position: semantics.POSITION
+    Normal: semantics.NORMAL
+  uniforms:
+    Projection: 'projection'
+    Modelview: 'modelview'
+    NormalMatrix: 'normalmatrix'
+    Color: 'color'
+    WorldOffset: 'worldOffset'
 
-  vignette:
-    keys: ["VS-Vignette", "FS-Vignette"]
-    attribs:
-      VertexID: VERTEXID
-    uniforms:
-      Viewport: 'viewport'
+shaders.wireframe =
+  keys: ["VS-Wireframe", "FS-Wireframe"]
+  attribs:
+    Position: semantics.POSITION
+  uniforms:
+    Projection: 'projection'
+    Modelview: 'modelview'
+    DepthOffset: 'depthOffset'
+    Offset: 'offset'
+    WorldOffset: 'worldOffset'
+    Color: 'color'
+    Scale: 'scale'
 
-root.shaders.source = {}
-root.shaders.source["VS-Scene"] =
+shaders.vignette =
+  keys: ["VS-Vignette", "FS-Vignette"]
+  attribs:
+    VertexID: semantics.VERTEXID
+  uniforms:
+    Viewport: 'viewport'
+
+shaders.source["VS-Scene"] =
 """
 attribute vec4 Position;
 attribute vec3 Normal;
@@ -53,7 +57,7 @@ void main(void)
 }
 """
 
-root.shaders.source["VS-Wireframe"] =
+shaders.source["VS-Wireframe"] =
 """
 attribute vec4 Position;
 uniform mat4 Modelview;
@@ -73,7 +77,7 @@ void main(void)
 }
 """
 
-root.shaders.source["FS-Wireframe"] =
+shaders.source["FS-Wireframe"] =
 """
 precision highp float;
 precision highp vec3;
@@ -84,7 +88,7 @@ void main()
 }
 """
 
-root.shaders.source["FS-Scene"] =
+shaders.source["FS-Scene"] =
 """
 precision highp float;
 precision highp vec3;
@@ -130,7 +134,7 @@ void main()
 }
 """
 
-root.shaders.source["VS-Vignette"] =
+shaders.source["VS-Vignette"] =
 """
 attribute vec2 VertexID;
 void main(void)
@@ -140,7 +144,7 @@ void main(void)
 }
 """
 
-root.shaders.source["FS-Vignette"] =
+shaders.source["FS-Vignette"] =
 """
 precision highp float;
 precision highp vec2;
