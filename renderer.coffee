@@ -13,10 +13,6 @@ class Renderer
     @selectedColumn = 0
     @selectedRow = 9
     @hotMouse = false
-    @tubeGen = new root.TubeGenerator
-    @tubeGen.polygonSides = 10
-    @tubeGen.bézierSlices = 3
-    @tubeGen.tangentSmoothness = 3
     @compileShaders()
     @gl.disable @gl.CULL_FACE
     glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
@@ -113,7 +109,16 @@ class Renderer
         @render()
       when 'mesh-link'
         [id, row, col] = msg.id
-        toast "Received mesh for #{id} at (#{row}, #{col})"
+        link = @links[row][col]
+        for mesh, i in msg.meshes
+          v = link[i].vbos = {}
+          v.tube = @createVbo @gl.ARRAY_BUFFER, mesh.tube
+          v.wireframe = @createVbo @gl.ELEMENT_ARRAY_BUFFER, mesh.wireframe
+          v.triangles = @createVbo @gl.ELEMENT_ARRAY_BUFFER, mesh.triangles
+        row = @links[row]
+        if ++row.loadCount is row.length
+          row.loaded = true
+          row.loading = false
 
   createVbo: (target, data) ->
     vbo = @gl.createBuffer()
@@ -122,35 +127,16 @@ class Renderer
     vbo.count = data.length
     vbo
 
-  # Convert Float32Array objects into WebGL VBO's
-  # Annotate each VBO with a byte count
-  onComplete: (event) ->
-    link = event.data
-    for knot in link
-      v = knot.vbos
-      v.tube = @createVbo @gl.ARRAY_BUFFER, v.tube
-      v.wireframe = @createVbo @gl.ELEMENT_ARRAY_BUFFER, v.wireframe
-      v.triangles = @createVbo @gl.ELEMENT_ARRAY_BUFFER, v.triangles
-
   tessRow: (row) ->
     return if row.loaded? or row.loading?
     row.loading = true
     row.loadCount = 0
     for link in row
-      @tessLink(link)
-      @onComplete(data:link)
-      if row.loadCount is row.length
-        row.loaded = true
-        row.loading = false
       msg =
         command: 'tessellate-link'
         id: link.id
         link: (knot.range for knot in link)
       @worker.postMessage msg
-
-  tessLink: (link) ->
-    for knot in link
-      knot.vbos = @tessKnot(knot.range)
 
   getCurrentLinkInfo: ->
     X = @links[@selectedRow][@selectedColumn].id[0].split '.'
@@ -378,7 +364,7 @@ class Renderer
     @gl.vertexAttribPointer(POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
     @gl.uniformMatrix4fv(program.modelview, false, @modelview)
     @gl.uniformMatrix4fv(program.projection, false, projection)
-    @gl.uniform1f(program.scale, @tubeGen.scale)
+    @gl.uniform1f(program.scale, 0.15) # <----------------------TODO send a conf message
     @setColor(program.color, COLORS.black, alpha)
     [startVertex, vertexCount] = knot.range
     @gl.enable(@gl.DEPTH_TEST)
@@ -462,72 +448,6 @@ class Renderer
             @gl.uniform1f(program.depthOffset, -0.01)
             @gl.drawElements(@gl.LINES, vbos.wireframe.count/2, @gl.UNSIGNED_SHORT, vbos.wireframe.count)
         @gl.disableVertexAttribArray(POSITION)
-
-  # Tessellate the given knot and create VBOs
-  tessKnot: (component) ->
-
-    # Perform Bézier interpolation
-    byteOffset = component[0] * 3 * 4
-    numFloats = component[1] * 3
-    segmentData = @spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3)
-    centerline = @tubeGen.getKnotPath(segmentData)
-
-    # Create a positions buffer for a swept octagon
-    rawBuffer = @tubeGen.generateTube(centerline)
-    tube = rawBuffer
-
-    # Create the index buffer for the tube wireframe
-    # TODO This can be re-used from one knot to another
-    polygonCount = centerline.length / 3 - 1
-    sides = @tubeGen.polygonSides
-    lineCount = polygonCount * sides * 2
-    rawBuffer = new Uint16Array(lineCount * 2)
-    [i, ptr] = [0, 0]
-    while i < polygonCount * (sides+1)
-      j = 0
-      while j < sides
-        sweepEdge = rawBuffer.subarray(ptr+2, ptr+4)
-        sweepEdge[0] = i+j
-        sweepEdge[1] = i+j+sides+1
-        [ptr, j] = [ptr+2, j+1]
-      i += sides+1
-    i = 0
-    while i < polygonCount * (sides+1)
-      j = 0
-      while j < sides
-        polygonEdge = rawBuffer.subarray(ptr+0, ptr+2)
-        polygonEdge[0] = i+j
-        polygonEdge[1] = i+j+1
-        [ptr, j] = [ptr+2, j+1]
-      i += sides+1
-    wireframe = rawBuffer
-
-    # Create the index buffer for the solid tube
-    # TODO This can be be re-used from one knot to another
-    faceCount = centerline.length/3 * sides * 2
-    rawBuffer = new Uint16Array(faceCount * 3)
-    [i, ptr, v] = [0, 0, 0]
-    while ++i < centerline.length/3
-      j = -1
-      while ++j < sides
-        next = (j + 1) % sides
-        tri = rawBuffer.subarray(ptr+0, ptr+3)
-        tri[0] = v+next+sides+1
-        tri[1] = v+next
-        tri[2] = v+j
-        tri = rawBuffer.subarray(ptr+3, ptr+6)
-        tri[0] = v+j
-        tri[1] = v+j+sides+1
-        tri[2] = v+next+sides+1
-        ptr += 6
-      v += sides+1
-    triangles = rawBuffer
-
-    # Return metadata
-    vbos =
-      tube: tube
-      wireframe: wireframe
-      triangles: triangles
 
   # Compile and link the given shader strings and metadata
   compileProgram: (vName, fName, attribs, uniforms) ->

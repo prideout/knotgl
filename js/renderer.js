@@ -23,10 +23,6 @@
       this.selectedColumn = 0;
       this.selectedRow = 9;
       this.hotMouse = false;
-      this.tubeGen = new root.TubeGenerator;
-      this.tubeGen.polygonSides = 10;
-      this.tubeGen.bézierSlices = 3;
-      this.tubeGen.tangentSmoothness = 3;
       this.compileShaders();
       this.gl.disable(this.gl.CULL_FACE);
       if (this.gl.getError() !== this.gl.NO_ERROR) {
@@ -152,7 +148,7 @@
     };
 
     Renderer.prototype.onWorkerMessage = function(msg) {
-      var col, id, row, _ref;
+      var col, i, id, link, mesh, row, v, _i, _len, _ref, _ref1;
       switch (msg.command) {
         case 'centerlines':
           this.spines = new Float32Array(msg.centerlines);
@@ -167,7 +163,20 @@
           return this.render();
         case 'mesh-link':
           _ref = msg.id, id = _ref[0], row = _ref[1], col = _ref[2];
-          return toast("Received mesh for " + id + " at (" + row + ", " + col + ")");
+          link = this.links[row][col];
+          _ref1 = msg.meshes;
+          for (i = _i = 0, _len = _ref1.length; _i < _len; i = ++_i) {
+            mesh = _ref1[i];
+            v = link[i].vbos = {};
+            v.tube = this.createVbo(this.gl.ARRAY_BUFFER, mesh.tube);
+            v.wireframe = this.createVbo(this.gl.ELEMENT_ARRAY_BUFFER, mesh.wireframe);
+            v.triangles = this.createVbo(this.gl.ELEMENT_ARRAY_BUFFER, mesh.triangles);
+          }
+          row = this.links[row];
+          if (++row.loadCount === row.length) {
+            row.loaded = true;
+            return row.loading = false;
+          }
       }
     };
 
@@ -180,20 +189,6 @@
       return vbo;
     };
 
-    Renderer.prototype.onComplete = function(event) {
-      var knot, link, v, _i, _len, _results;
-      link = event.data;
-      _results = [];
-      for (_i = 0, _len = link.length; _i < _len; _i++) {
-        knot = link[_i];
-        v = knot.vbos;
-        v.tube = this.createVbo(this.gl.ARRAY_BUFFER, v.tube);
-        v.wireframe = this.createVbo(this.gl.ELEMENT_ARRAY_BUFFER, v.wireframe);
-        _results.push(v.triangles = this.createVbo(this.gl.ELEMENT_ARRAY_BUFFER, v.triangles));
-      }
-      return _results;
-    };
-
     Renderer.prototype.tessRow = function(row) {
       var knot, link, msg, _i, _len, _results;
       if ((row.loaded != null) || (row.loading != null)) {
@@ -204,14 +199,6 @@
       _results = [];
       for (_i = 0, _len = row.length; _i < _len; _i++) {
         link = row[_i];
-        this.tessLink(link);
-        this.onComplete({
-          data: link
-        });
-        if (row.loadCount === row.length) {
-          row.loaded = true;
-          row.loading = false;
-        }
         msg = {
           command: 'tessellate-link',
           id: link.id,
@@ -226,16 +213,6 @@
           })()
         };
         _results.push(this.worker.postMessage(msg));
-      }
-      return _results;
-    };
-
-    Renderer.prototype.tessLink = function(link) {
-      var knot, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = link.length; _i < _len; _i++) {
-        knot = link[_i];
-        _results.push(knot.vbos = this.tessKnot(knot.range));
       }
       return _results;
     };
@@ -545,7 +522,7 @@
       this.gl.vertexAttribPointer(POSITION, 3, this.gl.FLOAT, false, stride = 12, 0);
       this.gl.uniformMatrix4fv(program.modelview, false, this.modelview);
       this.gl.uniformMatrix4fv(program.projection, false, projection);
-      this.gl.uniform1f(program.scale, this.tubeGen.scale);
+      this.gl.uniform1f(program.scale, 0.15);
       this.setColor(program.color, COLORS.black, alpha);
       _ref = knot.range, startVertex = _ref[0], vertexCount = _ref[1];
       this.gl.enable(this.gl.DEPTH_TEST);
@@ -638,68 +615,6 @@
         }
         return this.gl.disableVertexAttribArray(POSITION);
       }
-    };
-
-    Renderer.prototype.tessKnot = function(component) {
-      var byteOffset, centerline, faceCount, i, j, lineCount, next, numFloats, polygonCount, polygonEdge, ptr, rawBuffer, segmentData, sides, sweepEdge, tri, triangles, tube, v, vbos, wireframe, _ref, _ref1, _ref2, _ref3;
-      byteOffset = component[0] * 3 * 4;
-      numFloats = component[1] * 3;
-      segmentData = this.spines.subarray(component[0] * 3, component[0] * 3 + component[1] * 3);
-      centerline = this.tubeGen.getKnotPath(segmentData);
-      rawBuffer = this.tubeGen.generateTube(centerline);
-      tube = rawBuffer;
-      polygonCount = centerline.length / 3 - 1;
-      sides = this.tubeGen.polygonSides;
-      lineCount = polygonCount * sides * 2;
-      rawBuffer = new Uint16Array(lineCount * 2);
-      _ref = [0, 0], i = _ref[0], ptr = _ref[1];
-      while (i < polygonCount * (sides + 1)) {
-        j = 0;
-        while (j < sides) {
-          sweepEdge = rawBuffer.subarray(ptr + 2, ptr + 4);
-          sweepEdge[0] = i + j;
-          sweepEdge[1] = i + j + sides + 1;
-          _ref1 = [ptr + 2, j + 1], ptr = _ref1[0], j = _ref1[1];
-        }
-        i += sides + 1;
-      }
-      i = 0;
-      while (i < polygonCount * (sides + 1)) {
-        j = 0;
-        while (j < sides) {
-          polygonEdge = rawBuffer.subarray(ptr + 0, ptr + 2);
-          polygonEdge[0] = i + j;
-          polygonEdge[1] = i + j + 1;
-          _ref2 = [ptr + 2, j + 1], ptr = _ref2[0], j = _ref2[1];
-        }
-        i += sides + 1;
-      }
-      wireframe = rawBuffer;
-      faceCount = centerline.length / 3 * sides * 2;
-      rawBuffer = new Uint16Array(faceCount * 3);
-      _ref3 = [0, 0, 0], i = _ref3[0], ptr = _ref3[1], v = _ref3[2];
-      while (++i < centerline.length / 3) {
-        j = -1;
-        while (++j < sides) {
-          next = (j + 1) % sides;
-          tri = rawBuffer.subarray(ptr + 0, ptr + 3);
-          tri[0] = v + next + sides + 1;
-          tri[1] = v + next;
-          tri[2] = v + j;
-          tri = rawBuffer.subarray(ptr + 3, ptr + 6);
-          tri[0] = v + j;
-          tri[1] = v + j + sides + 1;
-          tri[2] = v + next + sides + 1;
-          ptr += 6;
-        }
-        v += sides + 1;
-      }
-      triangles = rawBuffer;
-      return vbos = {
-        tube: tube,
-        wireframe: wireframe,
-        triangles: triangles
-      };
     };
 
     Renderer.prototype.compileProgram = function(vName, fName, attribs, uniforms) {
