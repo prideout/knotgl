@@ -485,7 +485,9 @@ class Renderer
     @gl.linkProgram program
     status = @gl.getProgramParameter(program, @gl.LINK_STATUS)
     glerr("Could not link #{vName} with #{fName}") unless status
-    program[value] = @gl.getUniformLocation(program, key) for key, value of uniforms
+    numUniforms = @gl.getProgramParameter program, @gl.ACTIVE_UNIFORMS
+    uniforms = (@gl.getActiveUniform(program, u).name for u in [0...numUniforms])
+    program[u] = @gl.getUniformLocation(program, u) for u in uniforms
     program
 
 # PRIVATE UTILITIES #

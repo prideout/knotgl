@@ -11,32 +11,16 @@ shaders.solidmesh =
   attribs:
     Position: semantics.POSITION
     Normal: semantics.NORMAL
-  uniforms:
-    projection: 'projection'
-    modelview: 'modelview'
-    normalmatrix: 'normalmatrix'
-    color: 'color'
-    worldOffset: 'worldOffset'
 
 shaders.wireframe =
   keys: ["VS-Wireframe", "FS-Wireframe"]
   attribs:
     Position: semantics.POSITION
-  uniforms:
-    projection: 'projection'
-    modelview: 'modelview'
-    depthOffset: 'depthOffset'
-    screenOffset: 'screenOffset'
-    worldOffset: 'worldOffset'
-    color: 'color'
-    scale: 'scale'
 
 shaders.vignette =
   keys: ["VS-Vignette", "FS-Vignette"]
   attribs:
     VertexID: semantics.VERTEXID
-  uniforms:
-    viewport: 'viewport'
 
 shaders.source["VS-Scene"] =
 """
