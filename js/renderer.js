@@ -291,21 +291,6 @@
       }
     };
 
-    Renderer.prototype.compileShaders = function() {
-      var fs, metadata, name, vs, _ref, _ref1, _results;
-      _ref = root.shaders;
-      _results = [];
-      for (name in _ref) {
-        metadata = _ref[name];
-        if (name === "source") {
-          continue;
-        }
-        _ref1 = metadata.keys, vs = _ref1[0], fs = _ref1[1];
-        _results.push(this.programs[name] = this.compileProgram(vs, fs, metadata.attribs, metadata.uniforms));
-      }
-      return _results;
-    };
-
     Renderer.prototype.render = function() {
       var aspect, currentTime, cursor, dt, elapsed, eye, far, fov, getAlpha, h, link, model, near, pass, r, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _ref, _ref1;
       r = function() {
@@ -627,27 +612,41 @@
       }
     };
 
-    Renderer.prototype.compileProgram = function(vName, fName, attribs, uniforms) {
-      var compileShader, fShader, fSource, key, numUniforms, program, status, u, vShader, vSource, value, _i, _len;
-      compileShader = function(gl, name, handle) {
-        var status;
-        gl.compileShader(handle);
-        status = gl.getShaderParameter(handle, gl.COMPILE_STATUS);
-        if (!status) {
-          return $.gritter.add({
-            title: "GLSL Error: " + name,
-            text: gl.getShaderInfoLog(handle)
-          });
+    Renderer.prototype.compileShaders = function() {
+      var fs, metadata, name, vs, _ref, _ref1, _results;
+      _ref = root.shaders;
+      _results = [];
+      for (name in _ref) {
+        metadata = _ref[name];
+        if (name === "source") {
+          continue;
         }
-      };
-      vSource = root.shaders.source[vName];
-      vShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-      this.gl.shaderSource(vShader, vSource);
-      compileShader(this.gl, vName, vShader);
-      fSource = root.shaders.source[fName];
-      fShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-      this.gl.shaderSource(fShader, fSource);
-      compileShader(this.gl, fName, fShader);
+        _ref1 = metadata.keys, vs = _ref1[0], fs = _ref1[1];
+        _results.push(this.programs[name] = this.compileProgram(vs, fs, metadata.attribs, metadata.uniforms));
+      }
+      return _results;
+    };
+
+    Renderer.prototype.compileShader = function(name, type) {
+      var handle, source, status;
+      source = root.shaders.source[name];
+      handle = this.gl.createShader(type);
+      this.gl.shaderSource(handle, source);
+      this.gl.compileShader(handle);
+      status = this.gl.getShaderParameter(handle, this.gl.COMPILE_STATUS);
+      if (!status) {
+        $.gritter.add({
+          title: "GLSL Error: " + name,
+          text: this.gl.getShaderInfoLog(handle)
+        });
+      }
+      return handle;
+    };
+
+    Renderer.prototype.compileProgram = function(vName, fName, attribs, uniforms) {
+      var fShader, key, numUniforms, program, status, u, vShader, value, _i, _len;
+      vShader = this.compileShader(vName, this.gl.VERTEX_SHADER);
+      fShader = this.compileShader(fName, this.gl.FRAGMENT_SHADER);
       program = this.gl.createProgram();
       this.gl.attachShader(program, vShader);
       this.gl.attachShader(program, fShader);

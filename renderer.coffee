@@ -192,12 +192,6 @@ class Renderer
     row[@selectedColumn].iconified = iconified
     @incoming.replace row[@selectedColumn] if @incoming?
 
-  compileShaders: ->
-    for name, metadata of root.shaders
-      continue if name == "source"
-      [vs, fs] = metadata.keys
-      @programs[name] = @compileProgram vs, fs, metadata.attribs, metadata.uniforms
-
   render: ->
 
     # Request the next render cycle on vertical refresh (vsync).
@@ -457,27 +451,24 @@ class Renderer
             @gl.drawElements(@gl.LINES, vbos.wireframe.count/2, @gl.UNSIGNED_SHORT, vbos.wireframe.count)
         @gl.disableVertexAttribArray(semantics.POSITION)
 
-  # Compile and link the given shader strings and metadata
+  compileShaders: ->
+    for name, metadata of root.shaders
+      continue if name == "source"
+      [vs, fs] = metadata.keys
+      @programs[name] = @compileProgram vs, fs, metadata.attribs, metadata.uniforms
+
+  compileShader: (name, type) ->
+    source = root.shaders.source[name]
+    handle = @gl.createShader type
+    @gl.shaderSource handle, source
+    @gl.compileShader handle
+    status = @gl.getShaderParameter handle, @gl.COMPILE_STATUS
+    $.gritter.add {title: "GLSL Error: #{name}", text: @gl.getShaderInfoLog(handle)} unless status
+    handle
+
   compileProgram: (vName, fName, attribs, uniforms) ->
-
-    compileShader = (gl, name, handle) ->
-      gl.compileShader handle
-      status = gl.getShaderParameter(handle, gl.COMPILE_STATUS)
-      $.gritter.add {title: "GLSL Error: #{name}", text: gl.getShaderInfoLog(handle)} unless status
-
-    # Compile vertex shader
-    vSource = root.shaders.source[vName]
-    vShader = @gl.createShader(@gl.VERTEX_SHADER)
-    @gl.shaderSource vShader, vSource
-    compileShader @gl, vName, vShader
-
-    # Compile fragment shader
-    fSource = root.shaders.source[fName]
-    fShader = @gl.createShader(@gl.FRAGMENT_SHADER)
-    @gl.shaderSource fShader, fSource
-    compileShader @gl, fName, fShader
-
-    # Link 'em
+    vShader = @compileShader vName, @gl.VERTEX_SHADER
+    fShader = @compileShader fName, @gl.FRAGMENT_SHADER
     program = @gl.createProgram()
     @gl.attachShader program, vShader
     @gl.attachShader program, fShader
