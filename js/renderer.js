@@ -45,7 +45,7 @@
     }
 
     Renderer.prototype.parseMetadata = function() {
-      var KnotColors, Table, c, i, id, knot, link, range, ranges, row, trivialKnot, trivialLink, x, _i, _j, _k, _len, _len1, _ref;
+      var KnotColors, Table, c, col, i, id, knot, link, range, ranges, row, trivialKnot, trivialLink, x, _i, _j, _k, _len, _len1, _ref;
       KnotColors = [[0.5, 0.75, 1, 0.75], [0.9, 1, 0.9, 0.75], [1, 0.75, 0.5, 0.75]];
       Table = [
         '0.1 3.1 4.1 5.1 5.2 6.1 6.2 6.3 7.1', '7.2 7.3 7.4 7.5 7.6 7.7 8.1 8.2 8.3', ((function() {
@@ -100,8 +100,8 @@
           continue;
         }
         _ref = Table[row].split(' ');
-        for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-          id = _ref[_j];
+        for (col = _j = 0, _len = _ref.length; _j < _len; col = ++_j) {
+          id = _ref[col];
           link = [];
           ranges = ((function() {
             var _k, _len1, _ref1, _results;
@@ -115,17 +115,16 @@
             }
             return _results;
           })())[0];
-          c = 0;
-          for (_k = 0, _len1 = ranges.length; _k < _len1; _k++) {
-            range = ranges[_k];
+          for (c = _k = 0, _len1 = ranges.length; _k < _len1; c = ++_k) {
+            range = ranges[c];
             knot = {};
             knot.range = range;
             knot.offset = vec3.create([0, 0, 0]);
-            knot.color = KnotColors[c++];
+            knot.color = KnotColors[c];
             link.push(knot);
           }
           link.iconified = 1;
-          link.id = id;
+          link.id = [id, row, col];
           this.links[row].push(link);
         }
       }
@@ -153,6 +152,7 @@
     };
 
     Renderer.prototype.onWorkerMessage = function(msg) {
+      var col, id, row, _ref;
       switch (msg.command) {
         case 'centerlines':
           this.spines = new Float32Array(msg.centerlines);
@@ -166,7 +166,8 @@
           root.UpdateLabels();
           return this.render();
         case 'mesh-link':
-          return toast("Received mesh for " + msg.id);
+          _ref = msg.id, id = _ref[0], row = _ref[1], col = _ref[2];
+          return toast("Received mesh for " + id + " at (" + row + ", " + col + ")");
       }
     };
 
@@ -241,7 +242,7 @@
 
     Renderer.prototype.getCurrentLinkInfo = function() {
       var X;
-      X = this.links[this.selectedRow][this.selectedColumn].id.split('.');
+      X = this.links[this.selectedRow][this.selectedColumn].id[0].split('.');
       if (X.length === 2) {
         return {
           crossings: X[0],

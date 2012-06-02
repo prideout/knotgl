@@ -58,18 +58,17 @@ class Renderer
         @links[row] = []
         @links[row].theta = 0
         continue if not Table[row]
-        for id in Table[row].split(' ')
+        for id, col in Table[row].split(' ')
           link = []
           ranges = (x[1..] for x in root.links when x[0] is id)[0]
-          c = 0
-          for range in ranges
+          for range, c in ranges
             knot = {}
             knot.range = range
             knot.offset = vec3.create([0,0,0])
-            knot.color = KnotColors[c++]
+            knot.color = KnotColors[c]
             link.push(knot)
           link.iconified = 1
-          link.id = id
+          link.id = [id, row, col]
           @links[row].push(link)
 
     trivialKnot = @links[8][1][0]
@@ -113,7 +112,8 @@ class Renderer
         root.UpdateLabels()
         @render()
       when 'mesh-link'
-        toast "Received mesh for #{msg.id}"
+        [id, row, col] = msg.id
+        toast "Received mesh for #{id} at (#{row}, #{col})"
 
   createVbo: (target, data) ->
     vbo = @gl.createBuffer()
@@ -153,7 +153,7 @@ class Renderer
       knot.vbos = @tessKnot(knot.range)
 
   getCurrentLinkInfo: ->
-    X = @links[@selectedRow][@selectedColumn].id.split '.'
+    X = @links[@selectedRow][@selectedColumn].id[0].split '.'
     return {crossings:X[0], numComponents:"", index:X[1]} if X.length == 2
     {crossings:X[0], numComponents:X[1], index:X[2]}
 
