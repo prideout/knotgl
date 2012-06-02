@@ -6,6 +6,7 @@ root.mouse =
   position: {x: -1, y: -1}
   within: false
   hot: false
+  moved: false
 
 CurrentSizes = utility.clone metadata.ExpandedSizes
 collapsing = expanding = false
@@ -89,6 +90,7 @@ tick = ->
 
   # Lastly, ask the renderer to do its magic.
   r.render() if r.ready
+  root.mouse.moved = false
 
 assignEventHandlers = ->
 
@@ -119,6 +121,7 @@ assignEventHandlers = ->
     x = root.mouse.position.x = e.clientX - p.left
     y = root.mouse.position.y = e.clientY - p.top
     root.mouse.within = 1
+    root.mouse.moved = true
 
   $('#wideband').click (e) ->
     p = $(this).position()

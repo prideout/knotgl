@@ -29,6 +29,9 @@ class Renderer
 
   render: ->
 
+    # Tessellate the current row of meshes if we haven't already.
+    @tessRow() if not @links[@selectedRow].loaded
+
     # Update the spinning animation.
     currentTime = new Date().getTime()
     if @previousTime?
@@ -147,7 +150,6 @@ class Renderer
       when 'spine-data'
         @spines = @createVbo gl.ARRAY_BUFFER, msg.data
         @spines.scale = msg.scale
-        @tessRow @links[@selectedRow]
         @ready = true
       when 'mesh-link'
         [id, row, col] = msg.id
@@ -170,8 +172,9 @@ class Renderer
     vbo.count = data.length
     vbo
 
-  tessRow: (row) ->
-    return if row.loaded or row.loading
+  tessRow: ->
+    row = @links[@selectedRow]
+    return if row.loaded or row.loading or not @ready or root.pageIndex is 0
     row.loading = true
     row.loadCount = 0
     for link in row
@@ -205,7 +208,6 @@ class Renderer
 
     @selectedColumn = nextX
     @selectedRow = nextY
-    @tessRow @links[@selectedRow]
     root.AnimateNumerals()
     row = @links[@selectedRow]
     return if changingRow

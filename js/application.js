@@ -16,7 +16,8 @@
       y: -1
     },
     within: false,
-    hot: false
+    hot: false,
+    moved: false
   };
 
   CurrentSizes = utility.clone(metadata.ExpandedSizes);
@@ -111,8 +112,9 @@
       'cursor': cursor
     });
     if (r.ready) {
-      return r.render();
+      r.render();
     }
+    return root.mouse.moved = false;
   };
 
   assignEventHandlers = function() {
@@ -160,7 +162,8 @@
       p = $(this).position();
       x = root.mouse.position.x = e.clientX - p.left;
       y = root.mouse.position.y = e.clientY - p.top;
-      return root.mouse.within = 1;
+      root.mouse.within = 1;
+      return root.mouse.moved = true;
     });
     $('#wideband').click(function(e) {
       var p, x, y;

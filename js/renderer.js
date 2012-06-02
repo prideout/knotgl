@@ -60,6 +60,9 @@
 
     Renderer.prototype.render = function() {
       var aspect, currentTime, dt, elapsed, eye, far, fov, link, model, near, pass, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _o, _ref, _ref1;
+      if (!this.links[this.selectedRow].loaded) {
+        this.tessRow();
+      }
       currentTime = new Date().getTime();
       if (this.previousTime != null) {
         elapsed = currentTime - this.previousTime;
@@ -208,7 +211,6 @@
         case 'spine-data':
           this.spines = this.createVbo(gl.ARRAY_BUFFER, msg.data);
           this.spines.scale = msg.scale;
-          this.tessRow(this.links[this.selectedRow]);
           return this.ready = true;
         case 'mesh-link':
           _ref = msg.id, id = _ref[0], row = _ref[1], col = _ref[2];
@@ -239,9 +241,10 @@
       return vbo;
     };
 
-    Renderer.prototype.tessRow = function(row) {
-      var knot, link, msg, _i, _len, _results;
-      if (row.loaded || row.loading) {
+    Renderer.prototype.tessRow = function() {
+      var knot, link, msg, row, _i, _len, _results;
+      row = this.links[this.selectedRow];
+      if (row.loaded || row.loading || !this.ready || root.pageIndex === 0) {
         return;
       }
       row.loading = true;
@@ -316,7 +319,6 @@
       }
       this.selectedColumn = nextX;
       this.selectedRow = nextY;
-      this.tessRow(this.links[this.selectedRow]);
       root.AnimateNumerals();
       row = this.links[this.selectedRow];
       if (changingRow) {
