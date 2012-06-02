@@ -52,6 +52,8 @@ class Renderer
     for row in [0...12]
         @links[row] = []
         @links[row].theta = 0
+        @links[row].loaded = false
+        @links[row].loading = false
         continue if not Table[row]
         for id, col in Table[row].split(' ')
           link = []
@@ -63,6 +65,7 @@ class Renderer
             knot.color = KnotColors[c]
             link.push(knot)
           link.iconified = 1
+          link.ready = false
           link.id = [id, row, col]
           @links[row].push(link)
 
@@ -115,6 +118,7 @@ class Renderer
         if ++row.loadCount is row.length
           row.loaded = true
           row.loading = false
+        link.ready = true
 
   createVbo: (target, data) ->
     vbo = @gl.createBuffer()
@@ -124,7 +128,7 @@ class Renderer
     vbo
 
   tessRow: (row) ->
-    return if row.loaded? or row.loading?
+    return if row.loaded or row.loading
     row.loading = true
     row.loadCount = 0
     for link in row
@@ -148,17 +152,20 @@ class Renderer
 
   changeSelection: (nextX, nextY) ->
     previousColumn = @selectedColumn
+    changingRow = false
     if nextY isnt @selectedRow
-      for link in @links[nextY]
-        link.iconified = 1
+      link.iconified = 1 for link in @links[nextY]
+      nextX = 0 if not @links[nextY][nextX].ready
       @links[nextY][nextX].iconified = 0
       @highlightRow = nextY
+      changingRow = true
 
     @selectedColumn = nextX
     @selectedRow = nextY
-    @tessRow(@links[@selectedRow])
+    @tessRow @links[@selectedRow]
     root.AnimateNumerals()
     row = @links[@selectedRow]
+    return if changingRow
 
     # Note that "iconified" is an animation percentange in [0,1]
     # If the current selection has animation = 0, then start a new transition.
@@ -245,7 +252,7 @@ class Renderer
 
     # Draw each knot in its respective viewport, batching roughly
     # according to currently to current shader and current VBO:
-    for row in @links
+    for row, rowIndex in @links
 
       # Each row has a unique spin theta, so compute the model matrix here.
       model = mat4.create()
@@ -260,8 +267,9 @@ class Renderer
       (@renderIconLink link, link.tableBox, 1 if not link.hidden?) for link in row
 
       # Now, render the east page.
-      if @links.indexOf(row) is @selectedRow
-        @renderIconLink(link, link.iconBox, getAlpha link) for link in row
+      if rowIndex is @selectedRow
+        for link in row
+          @renderIconLink(link, link.iconBox, getAlpha link) if link.ready
         for pass in [0..1]
           @renderBigLink(link, pass) for link in row
 

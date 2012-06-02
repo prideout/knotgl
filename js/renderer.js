@@ -91,6 +91,8 @@
       for (row = _i = 0; _i < 12; row = ++_i) {
         this.links[row] = [];
         this.links[row].theta = 0;
+        this.links[row].loaded = false;
+        this.links[row].loading = false;
         if (!Table[row]) {
           continue;
         }
@@ -119,6 +121,7 @@
             link.push(knot);
           }
           link.iconified = 1;
+          link.ready = false;
           link.id = [id, row, col];
           this.links[row].push(link);
         }
@@ -169,8 +172,9 @@
           row = this.links[row];
           if (++row.loadCount === row.length) {
             row.loaded = true;
-            return row.loading = false;
+            row.loading = false;
           }
+          return link.ready = true;
       }
     };
 
@@ -185,7 +189,7 @@
 
     Renderer.prototype.tessRow = function(row) {
       var knot, link, msg, _i, _len, _results;
-      if ((row.loaded != null) || (row.loading != null)) {
+      if (row.loaded || row.loading) {
         return;
       }
       row.loading = true;
@@ -242,22 +246,30 @@
     };
 
     Renderer.prototype.changeSelection = function(nextX, nextY) {
-      var iconified, link, previousColumn, row, _i, _len, _ref;
+      var changingRow, iconified, link, previousColumn, row, _i, _len, _ref;
       previousColumn = this.selectedColumn;
+      changingRow = false;
       if (nextY !== this.selectedRow) {
         _ref = this.links[nextY];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           link = _ref[_i];
           link.iconified = 1;
         }
+        if (!this.links[nextY][nextX].ready) {
+          nextX = 0;
+        }
         this.links[nextY][nextX].iconified = 0;
         this.highlightRow = nextY;
+        changingRow = true;
       }
       this.selectedColumn = nextX;
       this.selectedRow = nextY;
       this.tessRow(this.links[this.selectedRow]);
       root.AnimateNumerals();
       row = this.links[this.selectedRow];
+      if (changingRow) {
+        return;
+      }
       iconified = row[previousColumn].iconified;
       if (iconified === 0) {
         root.outgoing = new TWEEN.Tween(row[previousColumn]).to({
@@ -293,7 +305,7 @@
     };
 
     Renderer.prototype.render = function() {
-      var aspect, currentTime, cursor, dt, elapsed, eye, far, fov, getAlpha, h, link, model, near, pass, r, row, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _ref, _ref1;
+      var aspect, currentTime, cursor, dt, elapsed, eye, far, fov, getAlpha, h, link, model, near, pass, r, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _n, _ref, _ref1;
       r = function() {
         return root.renderer.render();
       };
@@ -348,8 +360,8 @@
         return 0.25 + 0.75 * link.iconified;
       };
       _ref1 = this.links;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        row = _ref1[_j];
+      for (rowIndex = _j = 0, _len1 = _ref1.length; _j < _len1; rowIndex = ++_j) {
+        row = _ref1[rowIndex];
         model = mat4.create();
         this.modelview = mat4.create();
         mat4.identity(model);
@@ -363,10 +375,12 @@
             this.renderIconLink(link, link.tableBox, 1);
           }
         }
-        if (this.links.indexOf(row) === this.selectedRow) {
+        if (rowIndex === this.selectedRow) {
           for (_l = 0, _len3 = row.length; _l < _len3; _l++) {
             link = row[_l];
-            this.renderIconLink(link, link.iconBox, getAlpha(link));
+            if (link.ready) {
+              this.renderIconLink(link, link.iconBox, getAlpha(link));
+            }
           }
           for (pass = _m = 0; _m <= 1; pass = ++_m) {
             for (_n = 0, _len4 = row.length; _n < _len4; _n++) {

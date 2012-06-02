@@ -13,6 +13,11 @@
 #      type: client -> worker
 #       url: <STRING>
 # ---------------------------
+#   command: 'spine-data'
+#      type: worker -> client
+#      data: <ArrayBuffer>
+#     scale: <float>
+# ---------------------------
 #   command: 'tessellate-link'
 #      type: client -> worker
 #        id: <anything>
@@ -27,11 +32,6 @@
 #      tube: <Float32Array>
 # wireframe: <Uint16Array>
 # triangles: <Uint16Array>
-# ---------------------------
-#     command: 'spine-data'
-#        type: worker -> client
-# centerlines: <ArrayBuffer>
-#       scale: <float>
 # ---------------------------
 #
 ###
