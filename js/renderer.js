@@ -420,7 +420,7 @@
 
     Renderer.prototype.setViewport = function(box) {
       var clippedBox, cropMatrix, entireViewport, projection;
-      box = box.translated(window.pan.x, 0);
+      box = box.translated(root.pan.x, 0);
       entireViewport = new aabb(0, 0, this.width, this.height);
       clippedBox = aabb.intersect(box, entireViewport);
       if (clippedBox.degenerate()) {
@@ -613,7 +613,7 @@
 
   root.Renderer = Renderer;
 
-  clone = root.utility.clone;
+  clone = utility.clone;
 
   _ref = (function() {
     var _i, _len, _ref, _results;
@@ -642,7 +642,7 @@
 
   TWOPI = 2 * Math.PI;
 
-  aabb = root.utility.aabb;
+  aabb = utility.aabb;
 
   Style = {
     WIREFRAME: 0,

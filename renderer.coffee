@@ -292,7 +292,7 @@ class Renderer
   # Issues a gl.viewport and returns the projection matrix according
   # to the given viewbox.  The viewbox is clipped against the canvas.
   setViewport: (box) ->
-    box = box.translated(window.pan.x,0)
+    box = box.translated(root.pan.x,0)
     entireViewport = new aabb(0, 0, @width, @height)
     clippedBox = aabb.intersect(box, entireViewport)
     if clippedBox.degenerate()
@@ -437,12 +437,12 @@ class Renderer
 
 # PRIVATE UTILITIES #
 root.Renderer = Renderer
-clone = root.utility.clone
+clone = utility.clone
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot
 sgn = (x) -> if x > 0 then +1 else (if x < 0 then -1 else 0)
 TWOPI = 2 * Math.PI
-aabb = root.utility.aabb
+aabb = utility.aabb
 Style =
   WIREFRAME: 0
   SILHOUETTE: 1

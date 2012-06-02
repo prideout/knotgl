@@ -1,5 +1,15 @@
 metadata = metadata ? {}
 
+metadata.CollapsedSizes =
+  crossings: 10
+  numComponents: 5
+  index: 5
+
+metadata.ExpandedSizes =
+  crossings: 100
+  numComponents: 50
+  index: 50
+
 metadata.KnotColors = [
   [0.5,0.75,1,0.75]
   [0.9,1,0.9,0.75]

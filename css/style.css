@@ -31,16 +31,11 @@ canvas {
     font-size:24px;
 }
 
-h1 {
+.arrow {
     font-family: 'Yanone Kaffeesatz', sans-serif;
-    font-weight:400;
-    font-size:36px;
-}
-
-p {
-    font-family: 'Questrial', sans-serif;
-    line-height:1.25;
-    font-size:14px;
+    font-size:24px;
+    position:absolute;
+    bottom: 5px
 }
 
 .numeral {
@@ -84,13 +79,6 @@ p {
     background-color:#eee;
     overflow-x:hidden;
     overflow-y:hidden;
-}
-
-.arrow {
-    font-family: 'Yanone Kaffeesatz', sans-serif;
-    font-size:24px;
-    position:absolute;
-    bottom: 5px
 }
 
 #grasshopper {

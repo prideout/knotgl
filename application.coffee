@@ -7,6 +7,9 @@ root.mouse =
   within: false
   hot: false
 
+CurrentSizes = utility.clone metadata.ExpandedSizes
+collapsing = expanding = false
+
 $ ->
   c = $('canvas').get 0
   gl = c.getContext('experimental-webgl', { antialias: true } )
@@ -20,20 +23,21 @@ $ ->
   window.requestAnimationFrame(tick, c)
 
 root.AnimateNumerals = ->
-  return if root.collapse? or root.expand?
+  return if collapsing or expanding
   duration = 0.25 * root.renderer.transitionMilliseconds
-  root.collapse = new TWEEN.Tween(CurrentSizes)
-    .to(CollapsedSizes, duration)
+  collapse = new TWEEN.Tween(CurrentSizes)
+    .to(metadata.CollapsedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(updateNumeralSizes)
-    .onComplete(root.collapse = null)
-  root.expand = new TWEEN.Tween(CurrentSizes)
-    .to(ExpandedSizes, duration)
+    .onComplete(-> collapsing = false)
+  expand = new TWEEN.Tween(CurrentSizes)
+    .to(metadata.ExpandedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(updateNumeralSizes)
-    .onComplete(root.expand = null)
-  root.collapse.chain root.expand
-  root.collapse.start()
+    .onComplete(-> expanding = false)
+  collapsing = expanding = true
+  collapse.chain expand
+  collapse.start()
 
 root.SwipePane = ->
   return if root.swipeTween?
@@ -58,7 +62,7 @@ tick = ->
   TWEEN.update()
 
   # Update the Alexander-Briggs labels unless they're collapse-animating.
-  if not root.collapse?
+  if not collapsing
     labels = r.getCurrentLinkInfo()
     $('#crossings').text labels.crossings
     $('#subscript').text labels.index
@@ -171,17 +175,3 @@ layout = ->
   root.pan.x = getPagePosition(root.pageIndex)
   updateSwipeAnimation()
 
-clone = root.utility.clone
-box = root.utility.box
-
-CollapsedSizes =
-  crossings: 10
-  numComponents: 5
-  index: 5
-
-ExpandedSizes =
-  crossings: 100
-  numComponents: 50
-  index: 50
-
-CurrentSizes = clone ExpandedSizes
