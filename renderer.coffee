@@ -1,9 +1,11 @@
 root = exports ? this
+gl = null
 
 # All WebGL rendering and loading takes place here.  Application logic should live elsewhere.
 class Renderer
 
-  constructor: (@gl, @width, @height) ->
+  constructor: (context, @width, @height) ->
+    gl = context
     @radiansPerSecond = 0.0003
     @transitionMilliseconds = 750
     @style = Style.SILHOUETTE
@@ -12,9 +14,7 @@ class Renderer
     @selectedColumn = 0
     @selectedRow = 9
     @hotMouse = false
-    @compileShaders()
-    @gl.disable @gl.CULL_FACE
-    glerr("OpenGL error during init") unless @gl.getError() == @gl.NO_ERROR
+    @initializeGL()
     @parseMetadata()
     @worker = new Worker 'js/worker.js'
     @worker.onmessage = (response) => @onWorkerMessage response.data
@@ -23,7 +23,12 @@ class Renderer
       url: document.URL + 'data/centerlines.bin'
     @worker.postMessage(msg)
 
-  # Read the metadata table (see knots.coffee) and arrange it into a "links" array.
+  initializeGL: ->
+    @compileShaders()
+    gl.enable gl.CULL_FACE
+    glerr("OpenGL error during init") unless gl.getError() is gl.NO_ERROR
+
+  # Read the metadata table and arrange it into a "links" array.
   # Each "link" is an annotated array of "knot" objects.
   # Link properties: id, iconified, iconBox, centralBox, tableBox.
   # Knot properties: range, vbos, color.
@@ -57,7 +62,7 @@ class Renderer
         continue if not Table[row]
         for id, col in Table[row].split(' ')
           link = []
-          ranges = (x[1..] for x in root.links when x[0] is id)[0]
+          ranges = (x[1..] for x in metadata.links when x[0] is id)[0]
           for range, c in ranges
             knot = {}
             knot.range = range
@@ -103,7 +108,7 @@ class Renderer
       when 'debug-message'
         toast msg.text
       when 'spine-data'
-        @spines = @createVbo @gl.ARRAY_BUFFER, msg.data
+        @spines = @createVbo gl.ARRAY_BUFFER, msg.data
         @spines.scale = msg.scale
         @tessRow @links[@selectedRow]
         root.UpdateLabels()
@@ -113,9 +118,9 @@ class Renderer
         link = @links[row][col]
         for mesh, i in msg.meshes
           v = link[i].vbos = {}
-          v.tube = @createVbo @gl.ARRAY_BUFFER, mesh.tube
-          v.wireframe = @createVbo @gl.ELEMENT_ARRAY_BUFFER, mesh.wireframe
-          v.triangles = @createVbo @gl.ELEMENT_ARRAY_BUFFER, mesh.triangles
+          v.tube = @createVbo gl.ARRAY_BUFFER, mesh.tube
+          v.wireframe = @createVbo gl.ELEMENT_ARRAY_BUFFER, mesh.wireframe
+          v.triangles = @createVbo gl.ELEMENT_ARRAY_BUFFER, mesh.triangles
         row = @links[row]
         if ++row.loadCount is row.length
           row.loaded = true
@@ -123,9 +128,9 @@ class Renderer
         link.ready = true
 
   createVbo: (target, data) ->
-    vbo = @gl.createBuffer()
-    @gl.bindBuffer target, vbo
-    @gl.bufferData target, data, @gl.STATIC_DRAW
+    vbo = gl.createBuffer()
+    gl.bindBuffer target, vbo
+    gl.bufferData target, data, gl.STATIC_DRAW
     vbo.count = data.length
     vbo
 
@@ -242,8 +247,8 @@ class Renderer
     @updateViewports()
 
     # This is where I'd normally do a glClear, doesn't seem necessary in WebGL
-    #@gl.clearColor(0,0,0,0)
-    #@gl.clear(@gl.COLOR_BUFFER_BIT)
+    #gl.clearColor(0,0,0,0)
+    #gl.clear(gl.COLOR_BUFFER_BIT)
 
     # The currently-selected knot is faded out:
     getAlpha = (link) -> 0.25 + 0.75 * link.iconified
@@ -271,7 +276,7 @@ class Renderer
         for pass in [0..1]
           @renderBigLink(link, pass) for link in row
 
-    glerr "Render" unless @gl.getError() == @gl.NO_ERROR
+    glerr "Render" unless gl.getError() == gl.NO_ERROR
 
   renderIconLink: (link, viewbox, alpha) -> @renderIconKnot(knot, link, viewbox, alpha) for knot in link
   renderBigLink: (link, pass) -> @renderBigKnot(knot, link, pass) for knot in link
@@ -333,7 +338,7 @@ class Renderer
         @changeSelection(row.indexOf(link), @selectedRow)
 
   # Shortcut for setting up a vec4 color uniform
-  setColor: (loc, c, α) -> @gl.uniform4f(loc, c[0], c[1], c[2], α)
+  setColor: (loc, c, α) -> gl.uniform4f(loc, c[0], c[1], c[2], α)
 
   # Issues a gl.viewport and returns the projection matrix according
   # to the given viewbox.  The viewbox is clipped against the canvas.
@@ -346,7 +351,7 @@ class Renderer
     cropMatrix = aabb.cropMatrix(clippedBox, box)
     projection = mat4.create(@projection)
     mat4.multiply(projection, cropMatrix)
-    clippedBox.viewport @gl
+    clippedBox.viewport gl
     return projection
 
   renderIconKnot: (knot, link, viewbox, alpha) ->
@@ -357,32 +362,32 @@ class Renderer
     # Large values of lineWidth causes ugly fin gaps.
     # Redraw with screen-space offsets to achieve extra thickness.
     program = @programs.wireframe
-    @gl.useProgram(program)
-    @gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
-    @gl.enable(@gl.BLEND)
-    @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @spines)
-    @gl.enableVertexAttribArray(semantics.POSITION)
-    @gl.vertexAttribPointer(semantics.POSITION, 3, @gl.FLOAT, false, stride = 12, 0)
-    @gl.uniformMatrix4fv(program.modelview, false, @modelview)
-    @gl.uniformMatrix4fv(program.projection, false, projection)
-    @gl.uniform1f(program.scale, @spines.scale)
+    gl.useProgram(program)
+    gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.bindBuffer(gl.ARRAY_BUFFER, @spines)
+    gl.enableVertexAttribArray(semantics.POSITION)
+    gl.vertexAttribPointer(semantics.POSITION, 3, gl.FLOAT, false, stride = 12, 0)
+    gl.uniformMatrix4fv(program.modelview, false, @modelview)
+    gl.uniformMatrix4fv(program.projection, false, projection)
+    gl.uniform1f(program.scale, @spines.scale)
     @setColor(program.color, COLORS.black, alpha)
     [startVertex, vertexCount] = knot.range
-    @gl.enable(@gl.DEPTH_TEST)
-    @gl.lineWidth(2)
+    gl.enable(gl.DEPTH_TEST)
+    gl.lineWidth(2)
     for x in [-1..1] by 2
       for y in [-1..1] by 2
-        @gl.uniform2f(program.screenOffset, x,y)
-        @gl.uniform1f(program.depthOffset, 0)
-        @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
+        gl.uniform2f(program.screenOffset, x,y)
+        gl.uniform1f(program.depthOffset, 0)
+        gl.drawArrays(gl.LINE_LOOP, startVertex, vertexCount)
 
     # Draw the center line using the color of the link component.
     @setColor(program.color, knot.color, alpha)
-    @gl.uniform2f(program.screenOffset, 0,0)
-    @gl.uniform1f(program.depthOffset, -0.5)
-    @gl.drawArrays(@gl.LINE_LOOP, startVertex, vertexCount)
-    @gl.disableVertexAttribArray(semantics.POSITION)
+    gl.uniform2f(program.screenOffset, 0,0)
+    gl.uniform1f(program.depthOffset, -0.5)
+    gl.drawArrays(gl.LINE_LOOP, startVertex, vertexCount)
+    gl.disableVertexAttribArray(semantics.POSITION)
 
   renderBigKnot: (knot, link, pass) ->
     return if link.iconified is 1
@@ -394,62 +399,62 @@ class Renderer
     # Draw the solid knot
     if pass is 0
         program = @programs.solidmesh
-        @gl.enable(@gl.DEPTH_TEST)
-        @gl.useProgram(program)
+        gl.enable(gl.DEPTH_TEST)
+        gl.useProgram(program)
         @setColor(program.color, knot.color, 1)
-        @gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
-        @gl.uniformMatrix4fv(program.modelview, false, @modelview)
-        @gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
-        @gl.uniformMatrix4fv(program.projection, false, projection)
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
-        @gl.enableVertexAttribArray(semantics.POSITION)
-        @gl.enableVertexAttribArray(semantics.NORMAL)
-        @gl.vertexAttribPointer(semantics.POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-        @gl.vertexAttribPointer(semantics.NORMAL, 3, @gl.FLOAT, false, stride = 24, offset = 12)
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbos.triangles)
+        gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
+        gl.uniformMatrix4fv(program.modelview, false, @modelview)
+        gl.uniformMatrix3fv(program.normalmatrix, false, @normalMatrix)
+        gl.uniformMatrix4fv(program.projection, false, projection)
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbos.tube)
+        gl.enableVertexAttribArray(semantics.POSITION)
+        gl.enableVertexAttribArray(semantics.NORMAL)
+        gl.vertexAttribPointer(semantics.POSITION, 3, gl.FLOAT, false, stride = 24, 0)
+        gl.vertexAttribPointer(semantics.NORMAL, 3, gl.FLOAT, false, stride = 24, offset = 12)
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.triangles)
         if @style == Style.SILHOUETTE
-          @gl.enable(@gl.POLYGON_OFFSET_FILL)
-          @gl.polygonOffset(-1,12)
-        @gl.drawElements(@gl.TRIANGLES, vbos.triangles.count, @gl.UNSIGNED_SHORT, 0)
-        @gl.disableVertexAttribArray(semantics.POSITION)
-        @gl.disableVertexAttribArray(semantics.NORMAL)
-        @gl.disable(@gl.POLYGON_OFFSET_FILL)
+          gl.enable(gl.POLYGON_OFFSET_FILL)
+          gl.polygonOffset(-1,12)
+        gl.drawElements(gl.TRIANGLES, vbos.triangles.count, gl.UNSIGNED_SHORT, 0)
+        gl.disableVertexAttribArray(semantics.POSITION)
+        gl.disableVertexAttribArray(semantics.NORMAL)
+        gl.disable(gl.POLYGON_OFFSET_FILL)
 
     # Draw the wireframe
     if pass is 1
-        @gl.enable(@gl.BLEND)
-        @gl.blendFunc(@gl.SRC_ALPHA, @gl.ONE_MINUS_SRC_ALPHA)
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
         program = @programs.wireframe
-        @gl.useProgram(program)
-        @gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
-        @gl.uniformMatrix4fv(program.modelview, false, @modelview)
-        @gl.uniformMatrix4fv(program.projection, false, projection)
-        @gl.uniform1f(program.scale, 1)
-        @gl.bindBuffer(@gl.ARRAY_BUFFER, vbos.tube)
-        @gl.enableVertexAttribArray(semantics.POSITION)
-        @gl.vertexAttribPointer(semantics.POSITION, 3, @gl.FLOAT, false, stride = 24, 0)
-        @gl.bindBuffer(@gl.ELEMENT_ARRAY_BUFFER, vbos.wireframe)
+        gl.useProgram(program)
+        gl.uniform3f(program.worldOffset, knot.offset[0], knot.offset[1], knot.offset[2])
+        gl.uniformMatrix4fv(program.modelview, false, @modelview)
+        gl.uniformMatrix4fv(program.projection, false, projection)
+        gl.uniform1f(program.scale, 1)
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbos.tube)
+        gl.enableVertexAttribArray(semantics.POSITION)
+        gl.vertexAttribPointer(semantics.POSITION, 3, gl.FLOAT, false, stride = 24, 0)
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbos.wireframe)
         if @style == Style.WIREFRAME
-          @gl.lineWidth(1)
-          @gl.uniform1f(program.depthOffset, -0.01)
+          gl.lineWidth(1)
+          gl.uniform1f(program.depthOffset, -0.01)
           @setColor(program.color, COLORS.black, 0.75)
-          @gl.drawElements(@gl.LINES, vbos.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+          gl.drawElements(gl.LINES, vbos.wireframe.count, gl.UNSIGNED_SHORT, 0)
         else if @style == Style.RINGS
-          @gl.lineWidth(1)
-          @gl.uniform1f(program.depthOffset, -0.01)
+          gl.lineWidth(1)
+          gl.uniform1f(program.depthOffset, -0.01)
           @setColor(program.color, COLORS.black, 0.75)
-          @gl.drawElements(@gl.LINES, vbos.wireframe.count/2, @gl.UNSIGNED_SHORT, vbos.wireframe.count)
+          gl.drawElements(gl.LINES, vbos.wireframe.count/2, gl.UNSIGNED_SHORT, vbos.wireframe.count)
         else
-          @gl.lineWidth(2)
-          @gl.uniform1f(program.depthOffset, 0.01)
+          gl.lineWidth(2)
+          gl.uniform1f(program.depthOffset, 0.01)
           @setColor(program.color, COLORS.black, 1)
-          @gl.drawElements(@gl.LINES, vbos.wireframe.count, @gl.UNSIGNED_SHORT, 0)
+          gl.drawElements(gl.LINES, vbos.wireframe.count, gl.UNSIGNED_SHORT, 0)
           if @sketchy
-            @gl.lineWidth(1)
+            gl.lineWidth(1)
             @setColor(program.color, COLORS.darkgray, 1)
-            @gl.uniform1f(program.depthOffset, -0.01)
-            @gl.drawElements(@gl.LINES, vbos.wireframe.count/2, @gl.UNSIGNED_SHORT, vbos.wireframe.count)
-        @gl.disableVertexAttribArray(semantics.POSITION)
+            gl.uniform1f(program.depthOffset, -0.01)
+            gl.drawElements(gl.LINES, vbos.wireframe.count/2, gl.UNSIGNED_SHORT, vbos.wireframe.count)
+        gl.disableVertexAttribArray(semantics.POSITION)
 
   compileShaders: ->
     for name, metadata of root.shaders
@@ -459,26 +464,26 @@ class Renderer
 
   compileShader: (name, type) ->
     source = root.shaders.source[name]
-    handle = @gl.createShader type
-    @gl.shaderSource handle, source
-    @gl.compileShader handle
-    status = @gl.getShaderParameter handle, @gl.COMPILE_STATUS
-    $.gritter.add {title: "GLSL Error: #{name}", text: @gl.getShaderInfoLog(handle)} unless status
+    handle = gl.createShader type
+    gl.shaderSource handle, source
+    gl.compileShader handle
+    status = gl.getShaderParameter handle, gl.COMPILE_STATUS
+    $.gritter.add {title: "GLSL Error: #{name}", text: gl.getShaderInfoLog(handle)} unless status
     handle
 
   compileProgram: (vName, fName, attribs, uniforms) ->
-    vShader = @compileShader vName, @gl.VERTEX_SHADER
-    fShader = @compileShader fName, @gl.FRAGMENT_SHADER
-    program = @gl.createProgram()
-    @gl.attachShader program, vShader
-    @gl.attachShader program, fShader
-    @gl.bindAttribLocation(program, value, key) for key, value of attribs
-    @gl.linkProgram program
-    status = @gl.getProgramParameter(program, @gl.LINK_STATUS)
+    vShader = @compileShader vName, gl.VERTEX_SHADER
+    fShader = @compileShader fName, gl.FRAGMENT_SHADER
+    program = gl.createProgram()
+    gl.attachShader program, vShader
+    gl.attachShader program, fShader
+    gl.bindAttribLocation(program, value, key) for key, value of attribs
+    gl.linkProgram program
+    status = gl.getProgramParameter(program, gl.LINK_STATUS)
     glerr("Could not link #{vName} with #{fName}") unless status
-    numUniforms = @gl.getProgramParameter program, @gl.ACTIVE_UNIFORMS
-    uniforms = (@gl.getActiveUniform(program, u).name for u in [0...numUniforms])
-    program[u] = @gl.getUniformLocation(program, u) for u in uniforms
+    numUniforms = gl.getProgramParameter program, gl.ACTIVE_UNIFORMS
+    uniforms = (gl.getActiveUniform(program, u).name for u in [0...numUniforms])
+    program[u] = gl.getUniformLocation(program, u) for u in uniforms
     program
 
 # PRIVATE UTILITIES #

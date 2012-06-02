@@ -1,6 +1,5 @@
-root = exports ? this
-
-root.links = [
+metadata = metadata ? {}
+metadata.links = [
   ["0.1"]
   ["3.1", [3042, 47]]
   ["4.1", [1375, 69]]

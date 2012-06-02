@@ -11,7 +11,7 @@ tips =
 coffeeFiles = [
   'utility'
   'application'
-  'knots'
+  'metadata/knots'
   'renderer'
   'shaders'
   'tube'
@@ -21,6 +21,7 @@ coffeeFiles = [
 bareFiles = [
   'utility'
   'shaders'
+  'metadata/knots'
 ]
 
 workerArtifacts = [
