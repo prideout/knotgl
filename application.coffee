@@ -21,7 +21,7 @@ $ ->
   root.display = new root.Display gl, width, height
   layout()
   assignEventHandlers()
-  window.requestAnimationFrame(tick, c)
+  window.requestAnimationFrame tick, c
 
 root.AnimateNumerals = ->
   return if collapsing or expanding
@@ -71,14 +71,15 @@ tick = ->
 
   # If we're on the gallery page, update the mouse-over row.
   if root.pageIndex is 0
+    numRows = r.gallery.links.length
     if root.mouse.moved
-      h = r.height / r.links.length
+      h = r.height / numRows
       highlightRow = Math.floor(root.mouse.position.y / h)
-      highlightRow = null if highlightRow >= r.links.length
+      highlightRow = null if highlightRow >= numRows
       highlightRow = -1 if $('#grasshopper').is ':hover'
       r.highlightRow = highlightRow
     $('#highlight-row').css('visibility', 'visible')
-    top = r.highlightRow * r.height / r.links.length
+    top = r.highlightRow * r.height / numRows
     $('#highlight-row').css('top', top)
 
   # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),

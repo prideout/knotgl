@@ -11,6 +11,7 @@ tips =
 coffeeFiles = [
   'utility'
   'application'
+  'gallery'
   'metadata/knots'
   'display'
   'shaders'

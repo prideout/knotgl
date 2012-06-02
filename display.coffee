@@ -15,11 +15,10 @@ class Display
     @style = Style.SILHOUETTE
     @sketchy = true
     @programs = {}
-    @selectedColumn = 0
-    @selectedRow = 9
     @hotMouse = false
     @initializeGL()
-    @parseMetadata()
+    @gallery = new root.Gallery
+    @highlightRow = @gallery.j
     @worker = new Worker 'js/worker.js'
     @worker.onmessage = (response) => @onWorkerMessage response.data
     msg =
@@ -30,7 +29,7 @@ class Display
   render: ->
 
     # Tessellate the current row of meshes if we haven't already.
-    @tessRow() if not @links[@selectedRow].loaded
+    @tessRow() if not @gallery.row().loaded
 
     # Update the spinning animation.
     currentTime = new Date().getTime()
@@ -38,9 +37,10 @@ class Display
       elapsed = currentTime - @previousTime
       dt = @radiansPerSecond * elapsed
       dt = dt * 32 if root.pageIndex is 0
-      spinningRow = if @highlightRow? then @links[@highlightRow] else null
-      for row in @links
-        if row is spinningRow or Math.abs(row.theta % TWOPI) > dt
+      spinningRow = @highlightRow ? null
+      spinningRow = @gallery.j if root.pageIndex is 1
+      for row, rowIndex in @gallery.links
+        if rowIndex is spinningRow or Math.abs(row.theta % TWOPI) > dt
           row.theta += dt
         else
           row.theta = 0
@@ -54,7 +54,7 @@ class Display
     @updateViewports()
 
     # Iterate over each row in the gallery
-    for row, rowIndex in @links
+    for row, rowIndex in @gallery.links
 
       # Each row has a unique spin theta, so compute the model matrix here.
       model = mat4.create()
@@ -75,7 +75,7 @@ class Display
       # We roughly batch draw calls according to render state.
       # That's why we don't have an outer loop over the links.
       (@renderIconLink link, link.tableBox, 1 if not link.hidden?) for link in row
-      if rowIndex is @selectedRow
+      if rowIndex is @gallery.j
         (@renderIconLink(link, link.iconBox, link.alpha) if link.ready) for link in row
         @renderBigLink(link, pass) for link in row for pass in [0..1]
 
@@ -85,63 +85,6 @@ class Display
     @compileShaders()
     gl.enable gl.CULL_FACE
     glerr("OpenGL error during init") unless gl.getError() is gl.NO_ERROR
-
-  # Read the metadata table and arrange it into a "links" array.
-  # Each "link" is an annotated array of "knot" objects.
-  # Link properties: id, iconified, iconBox, centralBox, tableBox.
-  # Knot properties: range, vbos, color.
-  # Each "range" is an [index, count] pair that defines a window into the raw spine data.
-  parseMetadata: ->
-    @links = []
-    for row in [0...12]
-        @links[row] = []
-        @links[row].theta = 0
-        @links[row].loaded = false
-        @links[row].loading = false
-        continue if not metadata.Gallery[row]
-        for id, col in metadata.Gallery[row].split(' ')
-          link = []
-          ranges = (x[1..] for x in metadata.Links when x[0] is id)[0]
-          for range, c in ranges
-            knot = {}
-            knot.range = range
-            knot.offset = vec3.create([0,0,0])
-            knot.color = metadata.KnotColors[c]
-            link.push(knot)
-          link.iconified = 1
-          link.alpha = 1
-          link.ready = false
-          link.id = [id, row, col]
-          @links[row].push(link)
-
-    trivialKnot = @links[8][1][0]
-
-    # Hack for the 0.1.1 knot
-    trivialLink = @links[0][0]
-    trivialLink.push(clone trivialKnot)
-    trivialLink[0].offset = vec3.create([0.5,-0.25,0])
-    trivialLink.hidden = true
-
-    # Hack for the 0.2.1 knot
-    trivialLink = @links[8][0]
-    trivialLink.push(clone trivialKnot)
-    trivialLink.push(clone trivialKnot)
-    trivialLink[0].offset = vec3.create([0,0,0])
-    trivialLink[1].color = metadata.KnotColors[1]
-    trivialLink[1].offset = vec3.create([0.5,0,0])
-
-    # Hack for the 0.3.1 knot
-    trivialLink = @links[10][8]
-    trivialLink.push(clone trivialKnot)
-    trivialLink.push(clone trivialKnot)
-    trivialLink.push(clone trivialKnot)
-    trivialLink[0].offset = vec3.create([0,0,0])
-    trivialLink[1].color = metadata.KnotColors[1]
-    trivialLink[1].offset = vec3.create([0.5,0,0])
-    trivialLink[2].color = metadata.KnotColors[2]
-    trivialLink[2].offset = vec3.create([1.0,0,0])
-
-    @links[@selectedRow][@selectedColumn].iconified = 0
 
   onWorkerMessage: (msg) ->
     switch msg.command
@@ -153,13 +96,13 @@ class Display
         @ready = true
       when 'mesh-link'
         [id, row, col] = msg.id
-        link = @links[row][col]
+        link = @gallery.link(row,col)
         for mesh, i in msg.meshes
           v = link[i].vbos = {}
           v.tube = @createVbo gl.ARRAY_BUFFER, mesh.tube
           v.wireframe = @createVbo gl.ELEMENT_ARRAY_BUFFER, mesh.wireframe
           v.triangles = @createVbo gl.ELEMENT_ARRAY_BUFFER, mesh.triangles
-        row = @links[row]
+        row = @gallery.links[row]
         if ++row.loadCount is row.length
           row.loaded = true
           row.loading = false
@@ -173,7 +116,7 @@ class Display
     vbo
 
   tessRow: ->
-    row = @links[@selectedRow]
+    row = @gallery.row()
     return if row.loaded or row.loading or not @ready or root.pageIndex is 0
     row.loading = true
     row.loadCount = 0
@@ -185,36 +128,36 @@ class Display
       @worker.postMessage msg
 
   getCurrentLinkInfo: ->
-    X = @links[@selectedRow][@selectedColumn].id[0].split '.'
+    X = @gallery.link().id[0].split '.'
     return {crossings:X[0], numComponents:"", index:X[1]} if X.length == 2
     {crossings:X[0], numComponents:X[1], index:X[2]}
 
   moveSelection: (dx,dy) ->
-    nextX = @selectedColumn + dx
-    nextY = @selectedRow + dy
-    return if nextY >= @links.length or nextY < 0
-    return if nextX >= @links[nextY].length or nextX < 0
+    nextX = @gallery.i + dx
+    nextY = @gallery.j + dy
+    return if nextY >= @gallery.links.length or nextY < 0
+    return if nextX >= @gallery.links[nextY].length or nextX < 0
     @changeSelection(nextX, nextY)
 
   changeSelection: (nextX, nextY) ->
-    previousColumn = @selectedColumn
+    previousColumn = @gallery.i
     changingRow = false
-    if nextY isnt @selectedRow
-      link.iconified = 1 for link in @links[nextY]
-      nextX = 0 if not @links[nextY][nextX].ready
-      @links[nextY][nextX].iconified = 0
+    if nextY isnt @gallery.j
+      link.iconified = 1 for link in @gallery.links[nextY]
+      nextX = 0 if not @gallery.links[nextY][nextX].ready
+      @gallery.links[nextY][nextX].iconified = 0
       @highlightRow = nextY
       changingRow = true
 
-    @selectedColumn = nextX
-    @selectedRow = nextY
+    @gallery.i = nextX
+    @gallery.j = nextY
     root.AnimateNumerals()
-    row = @links[@selectedRow]
+    row = @gallery.row()
     return if changingRow
 
     # Note that "iconified" is an animation percentange in [0,1]
     # If the current selection has animation = 0, then start a new transition.
-    newLink = row[@selectedColumn]
+    newLink = row[@gallery.i]
     previousLink = row[previousColumn]
     if previousLink.iconified is 0
       duration = @transitionMilliseconds
@@ -248,11 +191,11 @@ class Display
     bigBox = new aabb 0, 0, @width, @height
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
     @hotMouse = false
-    for rowIndex in [0...@links.length]
-      row = @links[rowIndex]
+    for rowIndex in [0...@gallery.links.length]
+      row = @gallery.links[rowIndex]
 
       # First populate the tableBox array.
-      h = tileHeight = @height / @links.length
+      h = tileHeight = @height / @gallery.links.length
       w = tileHeight * @width / @height
       tileWidth = @width / (row.length + 0.5) # <----add some right-hand margin for the arrow icon
       x = -@width + tileWidth / 2
@@ -261,7 +204,7 @@ class Display
         link.tableBox = aabb.createFromCenter [x,y], [w,h]
         link.tableBox.inflate(w/5,h/5) # @tileWidth / 10, @tileHeight / 10)
         x = x + tileWidth
-      continue if rowIndex isnt @selectedRow
+      continue if rowIndex isnt @gallery.j
 
       # Next compute iconBox and centralBox.
       # 'd' is normalized proximity between mouse and icon center.
@@ -286,16 +229,16 @@ class Display
   click: ->
     if root.pageIndex is 0 and not root.swipeTween?
       return if not @highlightRow?
-      @changeSelection(@selectedColumn, @highlightRow)
+      @changeSelection(@gallery.i, @highlightRow)
       root.SwipePane()
       return
-    return if not @links?
-    row = @links[@selectedRow]
+    return if not @gallery.links?
+    row = @gallery.row()
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])
-    for link in row
+    for link, linkIndex in row
       continue if not link or not link.iconBox
       if link.iconBox.contains(mouse[0], mouse[1]) and link.iconified is 1
-        @changeSelection(row.indexOf(link), @selectedRow)
+        @changeSelection(linkIndex, @gallery.j)
 
   # Shortcut for setting up a vec4 color uniform
   setColor: (loc, c, α) -> gl.uniform4f(loc, c[0], c[1], c[2], α)

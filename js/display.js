@@ -42,11 +42,10 @@
       this.style = Style.SILHOUETTE;
       this.sketchy = true;
       this.programs = {};
-      this.selectedColumn = 0;
-      this.selectedRow = 9;
       this.hotMouse = false;
       this.initializeGL();
-      this.parseMetadata();
+      this.gallery = new root.Gallery;
+      this.highlightRow = this.gallery.j;
       this.worker = new Worker('js/worker.js');
       this.worker.onmessage = function(response) {
         return _this.onWorkerMessage(response.data);
@@ -59,8 +58,8 @@
     }
 
     Display.prototype.render = function() {
-      var aspect, currentTime, dt, elapsed, eye, far, fov, link, model, near, pass, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _o, _ref, _ref1;
-      if (!this.links[this.selectedRow].loaded) {
+      var aspect, currentTime, dt, elapsed, eye, far, fov, link, model, near, pass, row, rowIndex, spinningRow, target, up, view, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _o, _ref, _ref1, _ref2;
+      if (!this.gallery.row().loaded) {
         this.tessRow();
       }
       currentTime = new Date().getTime();
@@ -70,11 +69,14 @@
         if (root.pageIndex === 0) {
           dt = dt * 32;
         }
-        spinningRow = this.highlightRow != null ? this.links[this.highlightRow] : null;
-        _ref = this.links;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          row = _ref[_i];
-          if (row === spinningRow || Math.abs(row.theta % TWOPI) > dt) {
+        spinningRow = (_ref = this.highlightRow) != null ? _ref : null;
+        if (root.pageIndex === 1) {
+          spinningRow = this.gallery.j;
+        }
+        _ref1 = this.gallery.links;
+        for (rowIndex = _i = 0, _len = _ref1.length; _i < _len; rowIndex = ++_i) {
+          row = _ref1[rowIndex];
+          if (rowIndex === spinningRow || Math.abs(row.theta % TWOPI) > dt) {
             row.theta += dt;
           } else {
             row.theta = 0;
@@ -85,9 +87,9 @@
       this.projection = mat4.perspective(fov = 45, aspect = this.width / this.height, near = 5, far = 90);
       view = mat4.lookAt(eye = [0, -5, 5], target = [0, 0, 0], up = [0, 1, 0]);
       this.updateViewports();
-      _ref1 = this.links;
-      for (rowIndex = _j = 0, _len1 = _ref1.length; _j < _len1; rowIndex = ++_j) {
-        row = _ref1[rowIndex];
+      _ref2 = this.gallery.links;
+      for (rowIndex = _j = 0, _len1 = _ref2.length; _j < _len1; rowIndex = ++_j) {
+        row = _ref2[rowIndex];
         model = mat4.create();
         this.modelview = mat4.create();
         mat4.identity(model);
@@ -110,7 +112,7 @@
             this.renderIconLink(link, link.tableBox, 1);
           }
         }
-        if (rowIndex === this.selectedRow) {
+        if (rowIndex === this.gallery.j) {
           for (_m = 0, _len4 = row.length; _m < _len4; _m++) {
             link = row[_m];
             if (link.ready) {
@@ -138,71 +140,6 @@
       }
     };
 
-    Display.prototype.parseMetadata = function() {
-      var c, col, id, knot, link, range, ranges, row, trivialKnot, trivialLink, x, _i, _j, _k, _len, _len1, _ref;
-      this.links = [];
-      for (row = _i = 0; _i < 12; row = ++_i) {
-        this.links[row] = [];
-        this.links[row].theta = 0;
-        this.links[row].loaded = false;
-        this.links[row].loading = false;
-        if (!metadata.Gallery[row]) {
-          continue;
-        }
-        _ref = metadata.Gallery[row].split(' ');
-        for (col = _j = 0, _len = _ref.length; _j < _len; col = ++_j) {
-          id = _ref[col];
-          link = [];
-          ranges = ((function() {
-            var _k, _len1, _ref1, _results;
-            _ref1 = metadata.Links;
-            _results = [];
-            for (_k = 0, _len1 = _ref1.length; _k < _len1; _k++) {
-              x = _ref1[_k];
-              if (x[0] === id) {
-                _results.push(x.slice(1));
-              }
-            }
-            return _results;
-          })())[0];
-          for (c = _k = 0, _len1 = ranges.length; _k < _len1; c = ++_k) {
-            range = ranges[c];
-            knot = {};
-            knot.range = range;
-            knot.offset = vec3.create([0, 0, 0]);
-            knot.color = metadata.KnotColors[c];
-            link.push(knot);
-          }
-          link.iconified = 1;
-          link.alpha = 1;
-          link.ready = false;
-          link.id = [id, row, col];
-          this.links[row].push(link);
-        }
-      }
-      trivialKnot = this.links[8][1][0];
-      trivialLink = this.links[0][0];
-      trivialLink.push(clone(trivialKnot));
-      trivialLink[0].offset = vec3.create([0.5, -0.25, 0]);
-      trivialLink.hidden = true;
-      trivialLink = this.links[8][0];
-      trivialLink.push(clone(trivialKnot));
-      trivialLink.push(clone(trivialKnot));
-      trivialLink[0].offset = vec3.create([0, 0, 0]);
-      trivialLink[1].color = metadata.KnotColors[1];
-      trivialLink[1].offset = vec3.create([0.5, 0, 0]);
-      trivialLink = this.links[10][8];
-      trivialLink.push(clone(trivialKnot));
-      trivialLink.push(clone(trivialKnot));
-      trivialLink.push(clone(trivialKnot));
-      trivialLink[0].offset = vec3.create([0, 0, 0]);
-      trivialLink[1].color = metadata.KnotColors[1];
-      trivialLink[1].offset = vec3.create([0.5, 0, 0]);
-      trivialLink[2].color = metadata.KnotColors[2];
-      trivialLink[2].offset = vec3.create([1.0, 0, 0]);
-      return this.links[this.selectedRow][this.selectedColumn].iconified = 0;
-    };
-
     Display.prototype.onWorkerMessage = function(msg) {
       var col, i, id, link, mesh, row, v, _i, _len, _ref, _ref1;
       switch (msg.command) {
@@ -214,7 +151,7 @@
           return this.ready = true;
         case 'mesh-link':
           _ref = msg.id, id = _ref[0], row = _ref[1], col = _ref[2];
-          link = this.links[row][col];
+          link = this.gallery.link(row, col);
           _ref1 = msg.meshes;
           for (i = _i = 0, _len = _ref1.length; _i < _len; i = ++_i) {
             mesh = _ref1[i];
@@ -223,7 +160,7 @@
             v.wireframe = this.createVbo(gl.ELEMENT_ARRAY_BUFFER, mesh.wireframe);
             v.triangles = this.createVbo(gl.ELEMENT_ARRAY_BUFFER, mesh.triangles);
           }
-          row = this.links[row];
+          row = this.gallery.links[row];
           if (++row.loadCount === row.length) {
             row.loaded = true;
             row.loading = false;
@@ -243,7 +180,7 @@
 
     Display.prototype.tessRow = function() {
       var knot, link, msg, row, _i, _len, _results;
-      row = this.links[this.selectedRow];
+      row = this.gallery.row();
       if (row.loaded || row.loading || !this.ready || root.pageIndex === 0) {
         return;
       }
@@ -272,7 +209,7 @@
 
     Display.prototype.getCurrentLinkInfo = function() {
       var X;
-      X = this.links[this.selectedRow][this.selectedColumn].id[0].split('.');
+      X = this.gallery.link().id[0].split('.');
       if (X.length === 2) {
         return {
           crossings: X[0],
@@ -289,12 +226,12 @@
 
     Display.prototype.moveSelection = function(dx, dy) {
       var nextX, nextY;
-      nextX = this.selectedColumn + dx;
-      nextY = this.selectedRow + dy;
-      if (nextY >= this.links.length || nextY < 0) {
+      nextX = this.gallery.i + dx;
+      nextY = this.gallery.j + dy;
+      if (nextY >= this.gallery.links.length || nextY < 0) {
         return;
       }
-      if (nextX >= this.links[nextY].length || nextX < 0) {
+      if (nextX >= this.gallery.links[nextY].length || nextX < 0) {
         return;
       }
       return this.changeSelection(nextX, nextY);
@@ -302,29 +239,29 @@
 
     Display.prototype.changeSelection = function(nextX, nextY) {
       var alpha, changingRow, duration, iconified, link, newLink, outgoing, previousColumn, previousLink, row, _i, _len, _ref;
-      previousColumn = this.selectedColumn;
+      previousColumn = this.gallery.i;
       changingRow = false;
-      if (nextY !== this.selectedRow) {
-        _ref = this.links[nextY];
+      if (nextY !== this.gallery.j) {
+        _ref = this.gallery.links[nextY];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           link = _ref[_i];
           link.iconified = 1;
         }
-        if (!this.links[nextY][nextX].ready) {
+        if (!this.gallery.links[nextY][nextX].ready) {
           nextX = 0;
         }
-        this.links[nextY][nextX].iconified = 0;
+        this.gallery.links[nextY][nextX].iconified = 0;
         this.highlightRow = nextY;
         changingRow = true;
       }
-      this.selectedColumn = nextX;
-      this.selectedRow = nextY;
+      this.gallery.i = nextX;
+      this.gallery.j = nextY;
       root.AnimateNumerals();
-      row = this.links[this.selectedRow];
+      row = this.gallery.row();
       if (changingRow) {
         return;
       }
-      newLink = row[this.selectedColumn];
+      newLink = row[this.gallery.i];
       previousLink = row[previousColumn];
       if (previousLink.iconified === 0) {
         duration = this.transitionMilliseconds;
@@ -363,9 +300,9 @@
       mouse = vec2.create([root.mouse.position.x, this.height - root.mouse.position.y]);
       this.hotMouse = false;
       _results = [];
-      for (rowIndex = _i = 0, _ref = this.links.length; 0 <= _ref ? _i < _ref : _i > _ref; rowIndex = 0 <= _ref ? ++_i : --_i) {
-        row = this.links[rowIndex];
-        h = tileHeight = this.height / this.links.length;
+      for (rowIndex = _i = 0, _ref = this.gallery.links.length; 0 <= _ref ? _i < _ref : _i > _ref; rowIndex = 0 <= _ref ? ++_i : --_i) {
+        row = this.gallery.links[rowIndex];
+        h = tileHeight = this.height / this.gallery.links.length;
         w = tileHeight * this.width / this.height;
         tileWidth = this.width / (row.length + 0.5);
         x = -this.width + tileWidth / 2;
@@ -376,7 +313,7 @@
           link.tableBox.inflate(w / 5, h / 5);
           x = x + tileWidth;
         }
-        if (rowIndex !== this.selectedRow) {
+        if (rowIndex !== this.gallery.j) {
           continue;
         }
         w = tileWidth = this.width / row.length;
@@ -408,28 +345,28 @@
     };
 
     Display.prototype.click = function() {
-      var link, mouse, row, _i, _len, _results;
+      var link, linkIndex, mouse, row, _i, _len, _results;
       if (root.pageIndex === 0 && !(root.swipeTween != null)) {
         if (!(this.highlightRow != null)) {
           return;
         }
-        this.changeSelection(this.selectedColumn, this.highlightRow);
+        this.changeSelection(this.gallery.i, this.highlightRow);
         root.SwipePane();
         return;
       }
-      if (!(this.links != null)) {
+      if (!(this.gallery.links != null)) {
         return;
       }
-      row = this.links[this.selectedRow];
+      row = this.gallery.row();
       mouse = vec2.create([root.mouse.position.x, this.height - root.mouse.position.y]);
       _results = [];
-      for (_i = 0, _len = row.length; _i < _len; _i++) {
-        link = row[_i];
+      for (linkIndex = _i = 0, _len = row.length; _i < _len; linkIndex = ++_i) {
+        link = row[linkIndex];
         if (!link || !link.iconBox) {
           continue;
         }
         if (link.iconBox.contains(mouse[0], mouse[1]) && link.iconified === 1) {
-          _results.push(this.changeSelection(row.indexOf(link), this.selectedRow));
+          _results.push(this.changeSelection(linkIndex, this.gallery.j));
         } else {
           _results.push(void 0);
         }

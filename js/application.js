@@ -78,7 +78,7 @@
   };
 
   tick = function() {
-    var cursor, h, highlightRow, labels, r, top;
+    var cursor, h, highlightRow, labels, numRows, r, top;
     r = root.display;
     window.requestAnimationFrame(tick, $("canvas").get(0));
     TWEEN.update();
@@ -89,10 +89,11 @@
       $('#superscript').text(labels.numComponents);
     }
     if (root.pageIndex === 0) {
+      numRows = r.gallery.links.length;
       if (root.mouse.moved) {
-        h = r.height / r.links.length;
+        h = r.height / numRows;
         highlightRow = Math.floor(root.mouse.position.y / h);
-        if (highlightRow >= r.links.length) {
+        if (highlightRow >= numRows) {
           highlightRow = null;
         }
         if ($('#grasshopper').is(':hover')) {
@@ -101,7 +102,7 @@
         r.highlightRow = highlightRow;
       }
       $('#highlight-row').css('visibility', 'visible');
-      top = r.highlightRow * r.height / r.links.length;
+      top = r.highlightRow * r.height / numRows;
       $('#highlight-row').css('top', top);
     }
     cursor = root.display.hotMouse || root.mouse.hot || root.pageIndex === 0 ? 'pointer' : '';
