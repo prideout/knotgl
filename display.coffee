@@ -3,10 +3,6 @@ gl = null
 
 class Display
 
-  renderIconLink: (link, viewbox, alpha) -> @renderIconKnot(knot, link, viewbox, alpha) for knot in link
-
-  renderBigLink: (link, pass) -> @renderBigKnot(knot, link, pass) for knot in link
-
   constructor: (context, @width, @height) ->
     gl = context
     @ready = false
@@ -19,7 +15,7 @@ class Display
     @initializeGL()
     @gallery = new root.Gallery
     @highlightRow = @gallery.j
-    @worker = new Worker 'js/worker.js'
+    @worker = new Worker 'js/worker.min.js'
     @worker.onmessage = (response) => @onWorkerMessage response.data
     msg =
       command: 'download-spines'
@@ -80,6 +76,12 @@ class Display
         @renderBigLink(link, pass) for link in row for pass in [0..1]
 
     glerr "Render" unless gl.getError() is gl.NO_ERROR
+
+  renderIconLink: (link, viewbox, alpha) ->
+    @renderIconKnot(knot, link, viewbox, alpha) for knot in link
+
+  renderBigLink: (link, pass) ->
+    @renderBigKnot(knot, link, pass) for knot in link
 
   initializeGL: ->
     @compileShaders()
@@ -227,11 +229,6 @@ class Display
 
   # Responds to a mouse click by checking to see if a knot icon was selected.
   click: ->
-    if root.pageIndex is 0 and not root.swipeTween?
-      return if not @highlightRow?
-      @changeSelection(@gallery.i, @highlightRow)
-      root.SwipePane()
-      return
     return if not @gallery.links?
     row = @gallery.row()
     mouse = vec2.create([root.mouse.position.x, @height - root.mouse.position.y])

@@ -1,13 +1,6 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
 
-tips =
-  """
-  To experiment with coffescript REPL, try this from the console:
-  > coffee --require './js/gl-matrix-min.js'
-  Press Ctrl+V to enter multi-line mode, Ctrl+D to exit.
-  """
-
 coffeeFiles = [
   'utility'
   'application'
@@ -31,10 +24,23 @@ workerArtifacts = [
   'js/worker-core.js'
 ]
 
+minifyFiles = [
+  'gl-matrix'
+  'Tween'
+  'RequestAnimationFrame'
+  'utility'
+  'knots'
+  'gallery'
+  'application'
+  'display'
+  'shaders'
+  'worker'
+]
+
 graceful = false
 linux = true
 
-task 'worker', 'Build a monolithic worker from a collection of js and coffee files', ->
+task 'worker', 'Build worker.js by combining a set of js files', ->
   appContents = new Array remaining = workerArtifacts.length
   for file, index in workerArtifacts then do (file, index) ->
     fs.readFile file, 'utf8', (err, fileContents) ->
@@ -52,13 +58,13 @@ task 'build', 'Compile CoffeeScript from *.coffee to js/*.js', ->
       console.log stdout + stderr
   invoke 'worker'
 
-task 'minify', 'Minify the resulting application file after build using Google Closure', ->
+task 'minify', 'Minify an assortment of js files using Google Closure', ->
   e = if linux then '/usr/lib/jvm/java/bin/java' else 'java'
   console.log 'Minifying...'
-  exec "#{e} -jar \"./compiler.jar\" --js js/knotgl.js --js_output_file js/knotgl-min.js", (err, stdout, stderr) ->
-    throw err if err and not graceful
-    console.log stdout + stderr
-    console.log 'Done.'
+  for file in minifyFiles
+    exec "#{e} -jar \"./compiler.jar\" --js js/#{file}.js --js_output_file js/#{file}.min.js", (err, stdout, stderr) ->
+      throw err if err and not graceful
+      console.log stdout + stderr
 
 task 'watch', 'Watch prod source files and build changes', ->
   console.log "Watching for changes"
@@ -70,3 +76,12 @@ task 'watch', 'Watch prod source files and build changes', ->
         graceful = false
         invoke 'build'
         graceful = true
+
+task 'tips', 'Print some development tips', ->
+  tips =
+    """
+    To experiment with coffescript REPL, try this from the console:
+    > coffee --require './js/gl-matrix.js'
+    Press Ctrl+V to enter multi-line mode, Ctrl+D to exit.
+    """
+  console.info tips

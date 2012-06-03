@@ -46,7 +46,7 @@
       this.initializeGL();
       this.gallery = new root.Gallery;
       this.highlightRow = this.gallery.j;
-      this.worker = new Worker('js/worker.js');
+      this.worker = new Worker('js/worker.min.js');
       this.worker.onmessage = function(response) {
         return _this.onWorkerMessage(response.data);
       };
@@ -346,14 +346,6 @@
 
     Display.prototype.click = function() {
       var link, linkIndex, mouse, row, _i, _len, _results;
-      if (root.pageIndex === 0 && !(root.swipeTween != null)) {
-        if (!(this.highlightRow != null)) {
-          return;
-        }
-        this.changeSelection(this.gallery.i, this.highlightRow);
-        root.SwipePane();
-        return;
-      }
       if (!(this.gallery.links != null)) {
         return;
       }

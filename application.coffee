@@ -40,18 +40,6 @@ root.AnimateNumerals = ->
   collapse.chain expand
   collapse.start()
 
-root.SwipePane = ->
-  return if root.swipeTween?
-  root.pageIndex = 1 - root.pageIndex
-  panTarget = getPagePosition(root.pageIndex)
-  swipeDuration = 1000
-  root.swipeTween = new TWEEN.Tween(root.pan)
-      .to({x: panTarget}, swipeDuration)
-      .easing(TWEEN.Easing.Bounce.Out)
-      .onUpdate(updateSwipeAnimation)
-      .onComplete(-> root.swipeTween = null)
-  root.swipeTween.start()
-
 tick = ->
 
   r = root.display
@@ -101,7 +89,7 @@ assignEventHandlers = ->
     root.display.moveSelection(0,+1) if e.keyCode is 40 # down
     root.display.moveSelection(-1,0) if e.keyCode is 37 # left
     root.display.moveSelection(+1,0) if e.keyCode is 39 # right
-    root.SwipePane() if e.keyCode is 32 # space
+    swipePane() if e.keyCode is 32 # space
     exportScreenshot() if e.keyCode is 83 # s
 
   $('.arrow').mouseover ->
@@ -112,7 +100,7 @@ assignEventHandlers = ->
     $(this).css({'color' : ''})
     root.mouse.hot = false
 
-  $('.arrow').click -> root.SwipePane()
+  $('.arrow').click -> swipePane()
 
   $('#grasshopper').click (e) -> e.stopPropagation()
 
@@ -129,6 +117,12 @@ assignEventHandlers = ->
     y = root.mouse.position.y = e.clientY - p.top
     root.mouse.within = 1
     display.click()
+    if root.pageIndex is 0 and not root.swipeTween?
+      d = root.display
+      return if not d.highlightRow?
+      d.changeSelection(d.gallery.i, d.highlightRow)
+      swipePane()
+      return
 
   $('#wideband').mouseout ->
     root.mouse.position.x = -1
@@ -178,3 +172,14 @@ layout = ->
   root.pan.x = getPagePosition(root.pageIndex)
   updateSwipeAnimation()
 
+swipePane = ->
+  return if root.swipeTween?
+  root.pageIndex = 1 - root.pageIndex
+  panTarget = getPagePosition(root.pageIndex)
+  swipeDuration = 1000
+  root.swipeTween = new TWEEN.Tween(root.pan)
+      .to({x: panTarget}, swipeDuration)
+      .easing(TWEEN.Easing.Bounce.Out)
+      .onUpdate(updateSwipeAnimation)
+      .onComplete(-> root.swipeTween = null)
+  root.swipeTween.start()
