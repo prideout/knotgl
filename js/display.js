@@ -6,29 +6,9 @@
 
   gl = null;
 
-  Display = (function() {
+  root.Display = Display = (function() {
 
     Display.name = 'Display';
-
-    Display.prototype.renderIconLink = function(link, viewbox, alpha) {
-      var knot, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = link.length; _i < _len; _i++) {
-        knot = link[_i];
-        _results.push(this.renderIconKnot(knot, link, viewbox, alpha));
-      }
-      return _results;
-    };
-
-    Display.prototype.renderBigLink = function(link, pass) {
-      var knot, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = link.length; _i < _len; _i++) {
-        knot = link[_i];
-        _results.push(this.renderBigKnot(knot, link, pass));
-      }
-      return _results;
-    };
 
     function Display(context, width, height) {
       var msg,
@@ -130,6 +110,26 @@
       if (gl.getError() !== gl.NO_ERROR) {
         return glerr("Render");
       }
+    };
+
+    Display.prototype.renderIconLink = function(link, viewbox, alpha) {
+      var knot, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        _results.push(this.renderIconKnot(knot, link, viewbox, alpha));
+      }
+      return _results;
+    };
+
+    Display.prototype.renderBigLink = function(link, pass) {
+      var knot, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = link.length; _i < _len; _i++) {
+        knot = link[_i];
+        _results.push(this.renderBigKnot(knot, link, pass));
+      }
+      return _results;
     };
 
     Display.prototype.initializeGL = function() {
@@ -562,8 +562,6 @@
     return Display;
 
   })();
-
-  root.Display = Display;
 
   clone = utility.clone;
 

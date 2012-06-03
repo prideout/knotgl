@@ -1,7 +1,7 @@
 root = exports ? this
 gl = null
 
-class Display
+root.Display = class Display
 
   constructor: (context, @width, @height) ->
     gl = context
@@ -387,7 +387,6 @@ class Display
     program
 
 # PRIVATE UTILITIES #
-root.Display = Display
 clone = utility.clone
 [sin, cos, pow, abs] = (Math[f] for f in "sin cos pow abs".split(' '))
 dot = vec3.dot

@@ -1,1 +1,4 @@
 node_modules
+*.jar
+js/worker-core.js
+

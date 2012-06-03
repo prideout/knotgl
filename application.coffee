@@ -1,24 +1,14 @@
 root = exports ? this
 
-root.pageIndex = 1
-root.pan = {x: 0}
-root.mouse =
-  position: {x: -1, y: -1}
-  within: false
-  hot: false
-  moved: false
-
-CurrentSizes = utility.clone metadata.ExpandedSizes
-collapsing = expanding = false
-
+# When the document is loaded, construct a Display object etc.
 $ ->
   c = $('canvas').get 0
-  gl = c.getContext('experimental-webgl', { antialias: true } )
+  gl = c.getContext 'experimental-webgl', { antialias: true }
   glerr('Your browser does not support floating-point textures.') unless gl.getExtension('OES_texture_float')
   glerr('Your browser does not support GLSL derivatives.') unless gl.getExtension('OES_standard_derivatives')
-  width = parseInt($('#overlay').css('width'))
-  height = parseInt($('#overlay').css('height'))
-  root.display = new root.Display gl, width, height
+  width = parseInt $('#overlay').css('width')
+  height = parseInt $('#overlay').css('height')
+  root.display = new root.Display(gl, width, height)
   layout()
   assignEventHandlers()
   window.requestAnimationFrame tick, c
@@ -26,12 +16,12 @@ $ ->
 root.AnimateNumerals = ->
   return if collapsing or expanding
   duration = 0.25 * root.display.transitionMilliseconds
-  collapse = new TWEEN.Tween(CurrentSizes)
+  collapse = new TWEEN.Tween(root.numeralSizes)
     .to(metadata.CollapsedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(updateNumeralSizes)
     .onComplete(-> collapsing = false)
-  expand = new TWEEN.Tween(CurrentSizes)
+  expand = new TWEEN.Tween(root.numeralSizes)
     .to(metadata.ExpandedSizes, duration)
     .easing(TWEEN.Easing.Quintic.In)
     .onUpdate(updateNumeralSizes)
@@ -40,34 +30,29 @@ root.AnimateNumerals = ->
   collapse.chain expand
   collapse.start()
 
+# Update the universe at the browser's discretion.
 tick = ->
-
-  r = root.display
-
-  # Request the next tick cycle on vertical refresh (vsync).
   window.requestAnimationFrame(tick, $("canvas").get 0)
-
-  # Update all the tweening workers for snazzy animations and whatnot.
   TWEEN.update()
 
   # Update the Alexander-Briggs labels unless they're collapse-animating.
   if not collapsing
-    labels = r.getCurrentLinkInfo()
+    labels = root.display.getCurrentLinkInfo()
     $('#crossings').text labels.crossings
     $('#subscript').text labels.index
     $('#superscript').text labels.numComponents
 
   # If we're on the gallery page, update the mouse-over row.
   if root.pageIndex is 0
-    numRows = r.gallery.links.length
+    numRows = root.display.gallery.links.length
     if root.mouse.moved
-      h = r.height / numRows
+      h = root.display.height / numRows
       highlightRow = Math.floor(root.mouse.position.y / h)
       highlightRow = null if highlightRow >= numRows
       highlightRow = -1 if $('#grasshopper').is ':hover'
-      r.highlightRow = highlightRow
+      root.display.highlightRow = highlightRow
     $('#highlight-row').css('visibility', 'visible')
-    top = r.highlightRow * r.height / numRows
+    top = root.display.highlightRow * root.display.height / numRows
     $('#highlight-row').css('top', top)
 
   # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
@@ -76,14 +61,14 @@ tick = ->
   $('#rightpage').css {'cursor' : cursor}
   $('#leftpage').css {'cursor' : cursor}
 
-  # Lastly, ask the display to do its magic.
-  r.render() if r.ready
+  # Ask the root.display to render (it makes WebGL calls)
+  root.display.render() if root.display.ready
+
+  # Lastly, reset the mouse-moved flag so we'll know if an event occured.
   root.mouse.moved = false
 
 assignEventHandlers = ->
-
   $(window).resize -> layout()
-
   $(document).keydown (e) ->
     root.display.moveSelection(0,-1) if e.keyCode is 38 # up
     root.display.moveSelection(0,+1) if e.keyCode is 40 # down
@@ -91,39 +76,33 @@ assignEventHandlers = ->
     root.display.moveSelection(+1,0) if e.keyCode is 39 # right
     swipePane() if e.keyCode is 32 # space
     exportScreenshot() if e.keyCode is 83 # s
-
   $('.arrow').mouseover ->
     $(this).css('color', '#385fa2')
     root.mouse.hot = true
-
   $('.arrow').mouseout ->
     $(this).css({'color' : ''})
     root.mouse.hot = false
-
   $('.arrow').click -> swipePane()
-
   $('#grasshopper').click (e) -> e.stopPropagation()
-
   $('#wideband').mousemove (e) ->
     p = $(this).position()
     x = root.mouse.position.x = e.clientX - p.left
     y = root.mouse.position.y = e.clientY - p.top
     root.mouse.within = 1
     root.mouse.moved = true
-
   $('#wideband').click (e) ->
     p = $(this).position()
     x = root.mouse.position.x = e.clientX - p.left
     y = root.mouse.position.y = e.clientY - p.top
     root.mouse.within = 1
-    display.click()
+    root.display.click()
     if root.pageIndex is 0 and not root.swipeTween?
-      d = root.display
-      return if not d.highlightRow?
-      d.changeSelection(d.gallery.i, d.highlightRow)
+      return if not root.display.highlightRow?
+      root.display.changeSelection(
+        root.display.gallery.i
+        root.display.highlightRow)
       swipePane()
       return
-
   $('#wideband').mouseout ->
     root.mouse.position.x = -1
     root.mouse.position.y = -1
@@ -137,9 +116,9 @@ exportScreenshot = ->
   window.focus()
 
 updateNumeralSizes = ->
-  $('#crossings').css('font-size', CurrentSizes.crossings)
-  $('#superscript').css('font-size', CurrentSizes.numComponents)
-  $('#subscript').css('font-size', CurrentSizes.index)
+  $('#crossings').css('font-size', root.numeralSizes.crossings)
+  $('#superscript').css('font-size', root.numeralSizes.numComponents)
+  $('#subscript').css('font-size', root.numeralSizes.index)
 
 getPagePosition = (pageIndex) ->
   pageWidth = parseInt($('#canvaspage').css('width'))
@@ -167,8 +146,8 @@ layout = ->
   c.width = c.clientWidth
   c.clientHeight = height
   c.height = c.clientHeight
-  this.display.width = width
-  this.display.height = height
+  root.display.width = width
+  root.display.height = height
   root.pan.x = getPagePosition(root.pageIndex)
   updateSwipeAnimation()
 
@@ -183,3 +162,13 @@ swipePane = ->
       .onUpdate(updateSwipeAnimation)
       .onComplete(-> root.swipeTween = null)
   root.swipeTween.start()
+
+root.pageIndex = 1
+root.pan = {x: 0}
+root.mouse =
+  position: {x: -1, y: -1}
+  within: false
+  hot: false
+  moved: false
+root.numeralSizes = utility.clone metadata.ExpandedSizes
+collapsing = expanding = false
