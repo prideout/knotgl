@@ -153,7 +153,7 @@ root.Display = class Display
 
     @gallery.i = nextX
     @gallery.j = nextY
-    root.AnimateNumerals()
+    root.StartNumeralAnimation()
     row = @gallery.row()
     return if changingRow
 

@@ -256,7 +256,7 @@
       }
       this.gallery.i = nextX;
       this.gallery.j = nextY;
-      root.AnimateNumerals();
+      root.StartNumeralAnimation();
       row = this.gallery.row();
       if (changingRow) {
         return;
