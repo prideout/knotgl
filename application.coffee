@@ -8,8 +8,6 @@ numeralSizes = utility.clone metadata.ExpandedSizes
 $(document).ready ->
   c = $('canvas').get 0
   gl = c.getContext 'experimental-webgl', { antialias: true }
-  glerr('Your browser does not support floating-point textures.') unless gl.getExtension('OES_texture_float')
-  glerr('Your browser does not support GLSL derivatives.') unless gl.getExtension('OES_standard_derivatives')
   width = parseInt $('#overlay').css('width')
   height = parseInt $('#overlay').css('height')
   display = new root.Display(gl, width, height)
