@@ -38,6 +38,12 @@ canvas {
     bottom: 5px
 }
 
+p {
+    font-family: 'Yanone Kaffeesatz', sans-serif;
+    font-size:24px;
+    margin-left:10px;
+}
+
 .numeral {
     font-family: 'Nobile', sans-serif;
     font-weight:700;
