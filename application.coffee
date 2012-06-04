@@ -6,12 +6,20 @@ swipeTween = null
 numeralSizes = utility.clone metadata.ExpandedSizes
 
 $(document).ready ->
-  c = $('canvas').get 0
-  gl = c.getContext 'experimental-webgl', { antialias: true }
-  toast('Your browser does not support WebGL.') if not gl
-  width = parseInt $('#overlay').css('width')
-  height = parseInt $('#overlay').css('height')
-  display = new root.Display(gl, width, height)
+
+  try
+    c = $('canvas').get 0
+    gl = c.getContext 'experimental-webgl', antialias: true
+    throw new Error() if not gl
+  catch error
+    msg = 'Your browser does not support WebGL.'
+    $('canvas').replaceWith "<p>#{msg}</p>"
+
+  if gl
+    width = parseInt $('#overlay').css('width')
+    height = parseInt $('#overlay').css('height')
+    display = new root.Display(gl, width, height)
+
   layout()
   assignEventHandlers()
   window.requestAnimationFrame tick, c
@@ -144,6 +152,7 @@ layout = ->
   swipeTween.stop() if swipeTween?
   height = parseInt($('#canvaspage').css('height'))
   c = $('canvas').get 0
+  return if not c
   c.clientWidth = width
   c.width = c.clientWidth
   c.clientHeight = height
