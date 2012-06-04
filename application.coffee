@@ -8,6 +8,7 @@ numeralSizes = utility.clone metadata.ExpandedSizes
 $(document).ready ->
   c = $('canvas').get 0
   gl = c.getContext 'experimental-webgl', { antialias: true }
+  toast("Your browser doesn't support WebGL.") if not gl
   width = parseInt $('#overlay').css('width')
   height = parseInt $('#overlay').css('height')
   display = new root.Display(gl, width, height)
