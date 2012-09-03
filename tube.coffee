@@ -158,6 +158,6 @@ perp = (u, dest) ->
   vec3.cross(u,v,dest)
   e = dot(dest,dest)
   if e < 0.01
-    vec3.set(v,[0,1,0])
+    vec3.set([0,1,0], v)
     vec3.cross(u,v,dest)
   vec3.normalize(dest)
