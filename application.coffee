@@ -4,9 +4,9 @@ collapsing = expanding = false
 display = null
 swipeTween = null
 numeralSizes = utility.clone metadata.ExpandedSizes
+pixelRatio = window.devicePixelRatio or 1
 
 $(document).ready ->
-
   try
     c = $('canvas').get 0
     gl = c.getContext 'experimental-webgl', antialias: true
@@ -14,11 +14,10 @@ $(document).ready ->
   catch error
     msg = 'Your browser does not support WebGL.'
     $('canvas').replaceWith "<p>#{msg}</p>"
-
   if gl
-    width = parseInt $('#overlay').css('width')
-    height = parseInt $('#overlay').css('height')
-    display = new root.Display(gl, width, height)
+    width = pixelRatio * parseInt $('#overlay').css('width')
+    height = pixelRatio * parseInt $('#overlay').css('height')
+    display = new root.Display gl, width, height
 
   layout()
   assignEventHandlers()
@@ -62,7 +61,7 @@ tick = ->
       highlightRow = -1 if $('#grasshopper').is ':hover'
       display.highlightRow = highlightRow
     $('#highlight-row').css('visibility', 'visible')
-    top = display.highlightRow * display.height / numRows
+    top = display.highlightRow * display.height / (numRows * pixelRatio)
     $('#highlight-row').css('top', top)
 
   # The HTML/CSS layer can mark the mouse as hot (window.mouse.hot),
@@ -96,14 +95,18 @@ assignEventHandlers = ->
   $('#grasshopper').click (e) -> e.stopPropagation()
   $('#wideband').mousemove (e) ->
     p = $(this).position()
-    x = root.mouse.position.x = e.clientX - p.left
-    y = root.mouse.position.y = e.clientY - p.top
+    x = e.clientX - p.left
+    y = e.clientY - p.top
+    root.mouse.position.x = x * pixelRatio
+    root.mouse.position.y = y * pixelRatio
     root.mouse.within = 1
     root.mouse.moved = true
   $('#wideband').click (e) ->
     p = $(this).position()
-    x = root.mouse.position.x = e.clientX - p.left
-    y = root.mouse.position.y = e.clientY - p.top
+    x = e.clientX - p.left
+    y = e.clientY - p.top
+    root.mouse.position.x = x * pixelRatio
+    root.mouse.position.y = y * pixelRatio
     root.mouse.within = 1
     display.click()
     if root.pageIndex is 0 and not swipeTween?
@@ -136,7 +139,6 @@ getPagePosition = (pageIndex) ->
 
 updateSwipeAnimation = ->
   w = parseInt($('#canvaspage').css('width'))
-  h = parseInt($('#canvaspage').css('height'))
   $('#leftpage').css('left', -w + root.pan.x)
   $('#leftpage').css('width', w)
   $('#rightpage').css('left', 0 + root.pan.x)
@@ -154,11 +156,11 @@ layout = ->
   c = $('canvas').get 0
   return if not c
   c.clientWidth = width
-  c.width = c.clientWidth
+  c.width = c.clientWidth * pixelRatio
   c.clientHeight = height
-  c.height = c.clientHeight
-  display.width = width
-  display.height = height
+  c.height = c.clientHeight * pixelRatio
+  display.width = width * pixelRatio
+  display.height = height * pixelRatio
   root.pan.x = getPagePosition(root.pageIndex)
   updateSwipeAnimation()
 
@@ -174,6 +176,7 @@ swipePane = ->
       .onComplete(-> swipeTween = null)
   swipeTween.start()
 
+root.pixelRatio = pixelRatio
 root.pageIndex = 1
 root.pan = {x: 0}
 root.mouse =

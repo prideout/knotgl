@@ -38,7 +38,7 @@ minifyFiles = [
 ]
 
 graceful = false
-linux = true
+linux = false
 
 task 'worker', 'Build worker.js by combining a set of js files', ->
   appContents = new Array remaining = workerArtifacts.length

@@ -243,7 +243,7 @@ root.Display = class Display
   # Issues a gl.viewport and returns the projection matrix according
   # to the given viewbox.  The viewbox is clipped against the canvas.
   setViewport: (box) ->
-    box = box.translated(root.pan.x,0)
+    box = box.translated root.pan.x * root.pixelRatio, 0
     entireViewport = new aabb(0, 0, @width, @height)
     clippedBox = aabb.intersect(box, entireViewport)
     if clippedBox.degenerate()
