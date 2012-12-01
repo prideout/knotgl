@@ -91,9 +91,6 @@ uniform vec4 color;
 void main()
 {
     vec3 N = normalize(vNormal);
-    if (!gl_FrontFacing)
-        N = -N;
-
     vec3 L = normalize(LightPosition);
     vec3 Eye = vec3(0, 0, 1);
     vec3 H = normalize(L + Eye);
