@@ -64,7 +64,6 @@ void main(void)
 shaders.source["FS-Wireframe"] =
 """
 precision highp float;
-precision highp vec3;
 uniform vec4 color;
 void main()
 {
@@ -75,7 +74,6 @@ void main()
 shaders.source["FS-Scene"] =
 """
 precision highp float;
-precision highp vec3;
 varying vec3 vNormal;
 varying vec3 vPosition;
 
@@ -128,7 +126,6 @@ void main(void)
 shaders.source["FS-Vignette"] =
 """
 precision highp float;
-precision highp vec2;
 
 uniform vec2 viewport;
 void main()

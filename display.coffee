@@ -15,7 +15,7 @@ root.Display = class Display
     @initializeGL()
     @gallery = new root.Gallery
     @highlightRow = @gallery.j
-    @worker = new Worker 'js/worker.min.js'
+    @worker = new Worker 'js/worker.js'
     @worker.onmessage = (response) => @onWorkerMessage response.data
     msg =
       command: 'download-spines'
