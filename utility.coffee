@@ -80,7 +80,7 @@ utility.aabb = class aabb
   # Generates a mat4 that can be multiplied with a projection matrix
   # to "crop" the viewing frustum.
   # See bottom of:
-  #   http://github.prideout.net/barrel-distortion/
+  #   https://prideout.net/barrel-distortion/
   # TODO the code can be vastly simplified with simple algebra
   @cropMatrix: (cropRegion, entireViewport) ->
     sx = entireViewport.width() / cropRegion.width()
